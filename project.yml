@@ -1,0 +1,78 @@
+name: Vita
+options:
+  bundleIdPrefix: com.example
+  deploymentTarget:
+    iOS: "26.0"
+  createIntermediateGroups: true
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    # DEVELOPMENT_TEAM is supplied per-developer via Config/Secrets.xcconfig
+    # (see Config/Secrets.example.xcconfig) so no team ID lives in the repo.
+    CODE_SIGN_STYLE: Automatic
+    SWIFT_STRICT_CONCURRENCY: complete
+
+targets:
+  Vita:
+    type: application
+    platform: iOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: Vita
+    configFiles:
+      Debug: Config/Secrets.xcconfig
+      Release: Config/Secrets.xcconfig
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.vita
+        CODE_SIGN_ENTITLEMENTS: Support/Vita.entitlements
+        ENABLE_PREVIEWS: YES
+        TARGETED_DEVICE_FAMILY: "1"
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+    info:
+      path: Support/Info.plist
+      properties:
+        CFBundleDisplayName: Vita
+        ANTHROPIC_API_KEY: $(ANTHROPIC_API_KEY)
+        NSHealthShareUsageDescription: vita reads your recent sleep, HRV, heart rate, weight, and steps to ground its educational suggestions. Read-only, and you can skip it.
+        NSCameraUsageDescription: Vita uses the camera so you can photograph a lab report to read its values. Educational only.
+        NSPhotoLibraryUsageDescription: Vita reads a lab-report photo you choose to extract its values. Educational only.
+        UIAppFonts:
+          - InterTight.ttf
+          - InterTight-Bold.ttf
+          - InterTight-Black.ttf
+        UILaunchScreen:
+          UIColorName: ""
+        UIUserInterfaceStyle: Light
+
+  VitaTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: VitaTests
+    dependencies:
+      - target: Vita
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.vita.tests
+        GENERATE_INFOPLIST_FILE: YES
+
+schemes:
+  Vita:
+    build:
+      targets:
+        Vita: all
+        VitaTests: [test]
+    test:
+      targets:
+        - VitaTests
+    run:
+      config: Debug

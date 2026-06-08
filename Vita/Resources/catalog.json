@@ -1,0 +1,1422 @@
+[
+  {
+    "slug": "semaglutide",
+    "name": "Semaglutide",
+    "aliases": [
+      "Ozempic",
+      "Wegovy"
+    ],
+    "category": "weightLoss",
+    "subcategory": "GLP-1 agonist",
+    "rxStatus": "rx",
+    "rxRationale": "FDA-approved prescription GLP-1.",
+    "doseUnit": "mg",
+    "typicalDoseLow": 0.25,
+    "typicalDoseHigh": 2.0,
+    "defaultCadenceLabel": "weekly",
+    "defaultScheduleType": "weekly",
+    "availableVialSizesMg": [
+      5,
+      10,
+      15,
+      20,
+      30
+    ],
+    "defaultVialSizeMg": 5,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "GLP-1 receptor agonist that slows gastric emptying and reduces appetite.",
+    "cycleGuidance": "Titrate the dose up slowly over several weeks.",
+    "about": "A GLP-1 receptor agonist originally developed for type 2 diabetes and weight management. It slows how fast the stomach empties and reduces appetite signaling, which tends to lower overall food intake. Typically dosed once weekly with a slow upward titration to ease nausea."
+  },
+  {
+    "slug": "tirzepatide",
+    "name": "Tirzepatide",
+    "aliases": [
+      "Mounjaro",
+      "Zepbound"
+    ],
+    "category": "weightLoss",
+    "subcategory": "GIP/GLP-1 agonist",
+    "rxStatus": "rx",
+    "rxRationale": "FDA-approved prescription dual agonist.",
+    "doseUnit": "mg",
+    "typicalDoseLow": 2.5,
+    "typicalDoseHigh": 15,
+    "defaultCadenceLabel": "weekly",
+    "defaultScheduleType": "weekly",
+    "availableVialSizesMg": [
+      5,
+      10,
+      15,
+      20,
+      30,
+      40,
+      50,
+      60
+    ],
+    "defaultVialSizeMg": 10,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Dual GIP/GLP-1 agonist for appetite and glucose control.",
+    "cycleGuidance": "Titrate up over weeks to limit GI side effects.",
+    "about": "A dual GIP and GLP-1 receptor agonist studied for blood sugar control and weight loss. Acting on two gut-hormone pathways, it influences appetite and how the body handles glucose. Usually taken once weekly, increased gradually over several weeks."
+  },
+  {
+    "slug": "retatrutide",
+    "name": "Retatrutide",
+    "aliases": [
+      "Reta"
+    ],
+    "category": "weightLoss",
+    "subcategory": "GIP/GLP-1/glucagon agonist",
+    "rxStatus": "rx",
+    "rxRationale": "Investigational triple agonist; clinician oversight.",
+    "doseUnit": "mg",
+    "typicalDoseLow": 1,
+    "typicalDoseHigh": 12,
+    "defaultCadenceLabel": "weekly",
+    "defaultScheduleType": "weekly",
+    "availableVialSizesMg": [
+      5,
+      10,
+      15,
+      20,
+      30,
+      40,
+      50,
+      60
+    ],
+    "defaultVialSizeMg": 10,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Triple GIP/GLP-1/glucagon agonist (investigational).",
+    "cycleGuidance": "Titrate up slowly; investigational compound.",
+    "about": "An investigational triple agonist hitting GIP, GLP-1, and glucagon receptors. Early research focuses on substantial weight reduction and metabolic effects. It is dosed weekly and is still being studied, so data is limited compared with approved agents."
+  },
+  {
+    "slug": "cagrilintide",
+    "name": "Cagrilintide",
+    "aliases": [
+      "Cagri"
+    ],
+    "category": "weightLoss",
+    "subcategory": "Amylin analog",
+    "rxStatus": "ambiguous",
+    "rxRationale": "Investigational; not an approved drug.",
+    "doseUnit": "mg",
+    "typicalDoseLow": 0.3,
+    "typicalDoseHigh": 2.4,
+    "defaultCadenceLabel": "weekly",
+    "defaultScheduleType": "weekly",
+    "availableVialSizesMg": [
+      5,
+      10
+    ],
+    "defaultVialSizeMg": 5,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Long-acting amylin analog supporting satiety (investigational).",
+    "cycleGuidance": "Often paired with a GLP-1; titrate up.",
+    "about": "A long-acting amylin analog that supports feelings of fullness after eating. It is frequently paired with a GLP-1 to complement appetite effects. Investigational and dosed weekly with gradual increases."
+  },
+  {
+    "slug": "cagrilintide-semaglutide",
+    "name": "Cagrilintide + Semaglutide",
+    "aliases": [
+      "CagriSema"
+    ],
+    "category": "weightLoss",
+    "subcategory": "Amylin + GLP-1",
+    "rxStatus": "rx",
+    "rxRationale": "Investigational combination of two clinician-grade agents.",
+    "doseUnit": "mg",
+    "defaultCadenceLabel": "weekly",
+    "defaultScheduleType": "weekly",
+    "availableVialSizesMg": [
+      10
+    ],
+    "defaultVialSizeMg": 10,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Combination amylin + GLP-1 agonist (investigational).",
+    "cycleGuidance": "Titrate up slowly.",
+    "about": "A combination of the amylin analog cagrilintide and the GLP-1 agonist semaglutide, studied together for appetite and weight. The two work on different satiety pathways. It is investigational and taken once weekly."
+  },
+  {
+    "slug": "survodutide",
+    "name": "Survodutide",
+    "category": "weightLoss",
+    "subcategory": "GLP-1/glucagon agonist",
+    "rxStatus": "rx",
+    "rxRationale": "Investigational dual agonist; clinician oversight.",
+    "doseUnit": "mg",
+    "defaultCadenceLabel": "weekly",
+    "defaultScheduleType": "weekly",
+    "availableVialSizesMg": [
+      10
+    ],
+    "defaultVialSizeMg": 10,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "GLP-1/glucagon dual agonist (investigational).",
+    "cycleGuidance": "Titrate up over weeks.",
+    "about": "An investigational GLP-1 and glucagon dual agonist explored for weight loss and liver-related outcomes. Glucagon activity may add an energy-expenditure component alongside appetite effects. Dosed weekly with upward titration."
+  },
+  {
+    "slug": "adipotide",
+    "name": "Adipotide",
+    "aliases": [
+      "FTPP"
+    ],
+    "category": "weightLoss",
+    "subcategory": "Experimental",
+    "rxStatus": "ambiguous",
+    "rxRationale": "Experimental; very limited human safety data.",
+    "doseUnit": "mg",
+    "defaultCadenceLabel": "daily (short courses)",
+    "defaultScheduleType": "daily",
+    "availableVialSizesMg": [
+      2,
+      5
+    ],
+    "defaultVialSizeMg": 5,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Experimental fat-targeted apoptosis peptide; minimal human data.",
+    "cycleGuidance": "Experimental limited data; caution.",
+    "about": "A highly experimental peptide designed to target the blood supply of fat tissue. Human safety data is very limited and it remains a research compound. Any use is purely educational and warrants extreme caution."
+  },
+  {
+    "slug": "aod-9604",
+    "name": "AOD-9604",
+    "category": "weightLoss",
+    "subcategory": "GH fragment",
+    "rxStatus": "nonRx",
+    "doseUnit": "mcg",
+    "typicalDoseLow": 250,
+    "typicalDoseHigh": 500,
+    "defaultCadenceLabel": "daily",
+    "defaultScheduleType": "daily",
+    "availableVialSizesMg": [
+      2,
+      5,
+      10
+    ],
+    "defaultVialSizeMg": 5,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Modified GH fragment studied for fat metabolism.",
+    "cycleGuidance": "Often dosed fasted, AM.",
+    "about": "A modified fragment of growth hormone studied for fat metabolism without the broader effects of full GH. It is often dosed daily, frequently in a fasted state. Evidence in humans is modest."
+  },
+  {
+    "slug": "lemon-bottle",
+    "name": "Lemon Bottle",
+    "category": "weightLoss",
+    "subcategory": "Lipolytic blend",
+    "rxStatus": "ambiguous",
+    "rxRationale": "Cosmetic lipolytic blend, not a single peptide.",
+    "doseUnit": "mg",
+    "defaultCadenceLabel": "per protocol",
+    "defaultScheduleType": "weekly",
+    "availableVialSizesMg": [
+      10
+    ],
+    "defaultVialSizeMg": 10,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Lipolytic injection blend marketed for localized fat (cosmetic).",
+    "about": "A cosmetic lipolytic blend marketed for localized fat rather than a single defined peptide. Its exact contents vary by source. It is used cosmetically and is not a standardized compound."
+  },
+  {
+    "slug": "dsip",
+    "name": "DSIP",
+    "aliases": [
+      "Delta sleep-inducing peptide"
+    ],
+    "category": "cognitive",
+    "subcategory": "Sleep peptide",
+    "rxStatus": "nonRx",
+    "doseUnit": "mcg",
+    "typicalDoseLow": 100,
+    "typicalDoseHigh": 300,
+    "defaultCadenceLabel": "nightly",
+    "defaultScheduleType": "daily",
+    "availableVialSizesMg": [
+      5,
+      10
+    ],
+    "defaultVialSizeMg": 5,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Peptide studied for sleep onset and regulation.",
+    "cycleGuidance": "Taken before bed.",
+    "about": "Delta sleep-inducing peptide, studied for its possible role in sleep regulation and stress. It is usually taken before bed. Human evidence is limited and mixed."
+  },
+  {
+    "slug": "epithalon",
+    "name": "Epithalon",
+    "aliases": [
+      "Epitalon"
+    ],
+    "category": "cognitive",
+    "subcategory": "Longevity peptide",
+    "rxStatus": "nonRx",
+    "doseUnit": "mg",
+    "typicalDoseLow": 5,
+    "typicalDoseHigh": 10,
+    "defaultCadenceLabel": "daily (short cycles)",
+    "defaultScheduleType": "cycle",
+    "availableVialSizesMg": [
+      10,
+      50
+    ],
+    "defaultVialSizeMg": 10,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Pineal/telomere peptide used in short cycles.",
+    "cycleGuidance": "Commonly run in 10–20 day cycles a few times a year.",
+    "about": "A short peptide linked in research to the pineal gland and telomere biology, often discussed in longevity contexts. It is typically run in short cycles a few times per year. Long-term human data is sparse."
+  },
+  {
+    "slug": "selank",
+    "name": "Selank",
+    "category": "cognitive",
+    "subcategory": "Anxiolytic nootropic",
+    "rxStatus": "nonRx",
+    "doseUnit": "mcg",
+    "typicalDoseLow": 250,
+    "typicalDoseHigh": 750,
+    "defaultCadenceLabel": "daily",
+    "defaultScheduleType": "daily",
+    "availableVialSizesMg": [
+      5,
+      10
+    ],
+    "defaultVialSizeMg": 5,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "nasal",
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Anxiolytic nootropic peptide studied for calm and focus.",
+    "about": "An anxiolytic nootropic peptide derived from a natural immune peptide, studied for calm and focus. It is commonly used nasally or subcutaneously. Research is mostly early-stage."
+  },
+  {
+    "slug": "semax",
+    "name": "Semax",
+    "category": "cognitive",
+    "subcategory": "Nootropic",
+    "rxStatus": "nonRx",
+    "doseUnit": "mcg",
+    "typicalDoseLow": 200,
+    "typicalDoseHigh": 600,
+    "defaultCadenceLabel": "daily",
+    "defaultScheduleType": "daily",
+    "availableVialSizesMg": [
+      5,
+      11
+    ],
+    "defaultVialSizeMg": 5,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "nasal",
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Nootropic peptide studied for focus and neuroprotection.",
+    "about": "A nootropic peptide studied for focus, memory, and neuroprotection, popular in some regions for cognitive support. It is often dosed nasally. Most evidence comes from limited studies."
+  },
+  {
+    "slug": "bpc-157",
+    "name": "BPC-157",
+    "aliases": [
+      "Body protection compound"
+    ],
+    "category": "muscleRecovery",
+    "subcategory": "Healing peptide",
+    "rxStatus": "nonRx",
+    "doseUnit": "mcg",
+    "typicalDoseLow": 250,
+    "typicalDoseHigh": 500,
+    "defaultCadenceLabel": "1–2x daily",
+    "defaultScheduleType": "multiDaily",
+    "availableVialSizesMg": [
+      5,
+      10
+    ],
+    "defaultVialSizeMg": 5,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Body-protection peptide studied for tissue, gut, and tendon repair.",
+    "cycleGuidance": "Often run 4–6 weeks, then reassess.",
+    "about": "A synthetic peptide based on a protein found in gastric juice, widely discussed for tissue, tendon, and gut repair. It is typically dosed once or twice daily over several weeks, then reassessed. Human clinical data remains limited."
+  },
+  {
+    "slug": "tb-500",
+    "name": "TB-500",
+    "aliases": [
+      "Thymosin Beta-4"
+    ],
+    "category": "muscleRecovery",
+    "subcategory": "Recovery peptide",
+    "rxStatus": "nonRx",
+    "doseUnit": "mg",
+    "typicalDoseLow": 2,
+    "typicalDoseHigh": 5,
+    "defaultCadenceLabel": "weekly (loading 2x/wk)",
+    "defaultScheduleType": "weekly",
+    "availableVialSizesMg": [
+      2,
+      5,
+      10
+    ],
+    "defaultVialSizeMg": 5,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Actin-regulating peptide studied for recovery and flexibility.",
+    "cycleGuidance": "Loading phase then weekly maintenance.",
+    "about": "A synthetic version of a region of Thymosin Beta-4, studied for recovery, flexibility, and tissue repair. It influences actin, a protein involved in cell movement and healing. Often used in a loading phase followed by weekly maintenance."
+  },
+  {
+    "slug": "bpc-157-tb-500",
+    "name": "BPC-157 + TB-500",
+    "category": "muscleRecovery",
+    "subcategory": "Recovery blend",
+    "rxStatus": "nonRx",
+    "doseUnit": "mg",
+    "defaultCadenceLabel": "daily",
+    "defaultScheduleType": "daily",
+    "availableVialSizesMg": [
+      10,
+      20
+    ],
+    "defaultVialSizeMg": 10,
+    "recommendedWaterMl": 3,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Combined BPC-157 + TB-500 recovery blend.",
+    "about": "A combined blend of BPC-157 and TB-500 aimed at recovery and tissue repair. The two are frequently stacked for complementary effects. Dosing is usually daily during a recovery block."
+  },
+  {
+    "slug": "cjc-1295",
+    "name": "CJC-1295 (no DAC)",
+    "aliases": [
+      "Mod GRF 1-29"
+    ],
+    "category": "muscleRecovery",
+    "subcategory": "GH secretagogue",
+    "rxStatus": "nonRx",
+    "doseUnit": "mcg",
+    "typicalDoseLow": 100,
+    "typicalDoseHigh": 100,
+    "defaultCadenceLabel": "1–3x daily",
+    "defaultScheduleType": "multiDaily",
+    "availableVialSizesMg": [
+      2,
+      5,
+      10
+    ],
+    "defaultVialSizeMg": 5,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "GHRH analog that pulses growth hormone (no DAC = short-acting).",
+    "cycleGuidance": "Often paired with a ghrelin mimetic; dose fasted.",
+    "about": "A growth-hormone-releasing hormone analog that prompts the body to release its own GH in pulses. The no-DAC form is short-acting and often paired with a ghrelin mimetic. Commonly dosed before bed on an empty stomach."
+  },
+  {
+    "slug": "cjc-1295-dac",
+    "name": "CJC-1295 with DAC",
+    "category": "muscleRecovery",
+    "subcategory": "GH secretagogue",
+    "rxStatus": "nonRx",
+    "doseUnit": "mg",
+    "typicalDoseLow": 1,
+    "typicalDoseHigh": 2,
+    "defaultCadenceLabel": "1–2x weekly",
+    "defaultScheduleType": "weekly",
+    "availableVialSizesMg": [
+      2,
+      5
+    ],
+    "defaultVialSizeMg": 2,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "GHRH analog with DAC for a longer-acting GH elevation.",
+    "about": "A longer-acting GHRH analog that includes a drug-affinity complex, extending GH elevation over days. It is usually dosed once or twice weekly. Effects build gradually."
+  },
+  {
+    "slug": "cjc-1295-ipamorelin",
+    "name": "CJC-1295 + Ipamorelin",
+    "category": "muscleRecovery",
+    "subcategory": "GH blend",
+    "rxStatus": "nonRx",
+    "doseUnit": "mcg",
+    "typicalDoseLow": 100,
+    "typicalDoseHigh": 300,
+    "defaultCadenceLabel": "nightly",
+    "defaultScheduleType": "daily",
+    "availableVialSizesMg": [
+      10
+    ],
+    "defaultVialSizeMg": 10,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "GHRH + ghrelin-mimetic blend for synergistic GH pulses.",
+    "cycleGuidance": "Commonly dosed before bed on an empty stomach.",
+    "about": "A popular blend pairing the GHRH analog CJC-1295 with the ghrelin mimetic ipamorelin for synergistic GH pulses. It is commonly taken before bed on an empty stomach. Used for recovery and body-composition goals."
+  },
+  {
+    "slug": "ipamorelin",
+    "name": "Ipamorelin",
+    "category": "muscleRecovery",
+    "subcategory": "GH secretagogue",
+    "rxStatus": "nonRx",
+    "doseUnit": "mcg",
+    "typicalDoseLow": 100,
+    "typicalDoseHigh": 300,
+    "defaultCadenceLabel": "1–3x daily",
+    "defaultScheduleType": "multiDaily",
+    "availableVialSizesMg": [
+      5,
+      10
+    ],
+    "defaultVialSizeMg": 5,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Selective ghrelin/GH secretagogue with minimal side effects.",
+    "about": "A selective ghrelin and growth-hormone secretagogue known for a clean side-effect profile. It nudges natural GH release without strongly raising hunger or cortisol. Often dosed one to three times daily."
+  },
+  {
+    "slug": "ghrp-2",
+    "name": "GHRP-2",
+    "category": "muscleRecovery",
+    "subcategory": "GH secretagogue",
+    "rxStatus": "nonRx",
+    "doseUnit": "mcg",
+    "typicalDoseLow": 100,
+    "typicalDoseHigh": 300,
+    "defaultCadenceLabel": "1–3x daily",
+    "defaultScheduleType": "multiDaily",
+    "availableVialSizesMg": [
+      5,
+      10,
+      15
+    ],
+    "defaultVialSizeMg": 5,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "GH-releasing peptide; also raises appetite.",
+    "about": "A growth-hormone-releasing peptide that prompts GH release and also tends to increase appetite. It is dosed one to three times daily, often around training or sleep. Appetite effects vary between people."
+  },
+  {
+    "slug": "ghrp-6",
+    "name": "GHRP-6",
+    "category": "muscleRecovery",
+    "subcategory": "GH secretagogue",
+    "rxStatus": "nonRx",
+    "doseUnit": "mcg",
+    "typicalDoseLow": 100,
+    "typicalDoseHigh": 300,
+    "defaultCadenceLabel": "1–3x daily",
+    "defaultScheduleType": "multiDaily",
+    "availableVialSizesMg": [
+      5,
+      10
+    ],
+    "defaultVialSizeMg": 5,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "GH-releasing peptide with strong appetite stimulation.",
+    "about": "A growth-hormone-releasing peptide with notably strong appetite stimulation. It works through the ghrelin pathway to release GH. Dosed one to three times daily."
+  },
+  {
+    "slug": "hexarelin",
+    "name": "Hexarelin",
+    "category": "muscleRecovery",
+    "subcategory": "GH secretagogue",
+    "rxStatus": "nonRx",
+    "doseUnit": "mcg",
+    "typicalDoseLow": 100,
+    "typicalDoseHigh": 200,
+    "defaultCadenceLabel": "1–2x daily",
+    "defaultScheduleType": "multiDaily",
+    "availableVialSizesMg": [
+      2,
+      5,
+      10
+    ],
+    "defaultVialSizeMg": 5,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Potent GH secretagogue that desensitizes with continuous use.",
+    "cycleGuidance": "Run in short cycles to limit desensitization.",
+    "about": "A potent growth-hormone secretagogue that can lose effectiveness with continuous use. For that reason it is usually run in short cycles. Dosed one or two times daily."
+  },
+  {
+    "slug": "sermorelin",
+    "name": "Sermorelin",
+    "category": "muscleRecovery",
+    "subcategory": "GHRH analog",
+    "rxStatus": "rx",
+    "rxRationale": "Prescription GHRH analog (often compounded).",
+    "doseUnit": "mcg",
+    "typicalDoseLow": 100,
+    "typicalDoseHigh": 300,
+    "defaultCadenceLabel": "nightly",
+    "defaultScheduleType": "daily",
+    "availableVialSizesMg": [
+      5,
+      10
+    ],
+    "defaultVialSizeMg": 5,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Prescription GHRH analog supporting natural GH release.",
+    "about": "A prescription growth-hormone-releasing hormone analog used to support natural GH output, often compounded. It is typically dosed nightly. Because it is prescription-grade, clinician guidance matters."
+  },
+  {
+    "slug": "tesamorelin",
+    "name": "Tesamorelin",
+    "aliases": [
+      "Egrifta"
+    ],
+    "category": "muscleRecovery",
+    "subcategory": "GHRH analog",
+    "rxStatus": "rx",
+    "rxRationale": "FDA-approved prescription GHRH analog.",
+    "doseUnit": "mg",
+    "typicalDoseLow": 1,
+    "typicalDoseHigh": 2,
+    "defaultCadenceLabel": "daily",
+    "defaultScheduleType": "daily",
+    "availableVialSizesMg": [
+      2,
+      5,
+      10
+    ],
+    "defaultVialSizeMg": 5,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Prescription GHRH analog studied for visceral fat reduction.",
+    "about": "An FDA-approved GHRH analog studied for reducing visceral abdominal fat. It supports the body's own GH release. It is a prescription medication and is dosed daily."
+  },
+  {
+    "slug": "hgh",
+    "name": "HGH (Somatropin)",
+    "aliases": [
+      "Growth hormone",
+      "Somatropin"
+    ],
+    "category": "muscleRecovery",
+    "subcategory": "Growth hormone",
+    "rxStatus": "rx",
+    "rxRationale": "Prescription recombinant growth hormone.",
+    "doseUnit": "iu",
+    "typicalDoseLow": 1,
+    "typicalDoseHigh": 4,
+    "defaultCadenceLabel": "daily",
+    "defaultScheduleType": "daily",
+    "availableVialSizesMg": [
+      10,
+      12,
+      15,
+      24
+    ],
+    "defaultVialSizeMg": 10,
+    "recommendedWaterMl": 1,
+    "reconNote": "Vial sizes are in IU, not mg.",
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Recombinant human growth hormone (prescription).",
+    "about": "Recombinant human growth hormone, a prescription hormone used clinically for deficiency and studied widely for body composition and recovery. Vial strengths are measured in IU. Because it is prescription-grade, clinician oversight is important."
+  },
+  {
+    "slug": "hgh-fragment-176-191",
+    "name": "HGH Fragment 176-191",
+    "aliases": [
+      "Frag 176-191"
+    ],
+    "category": "muscleRecovery",
+    "subcategory": "GH fragment",
+    "rxStatus": "ambiguous",
+    "rxRationale": "Unapproved GH fragment.",
+    "doseUnit": "mcg",
+    "typicalDoseLow": 250,
+    "typicalDoseHigh": 500,
+    "defaultCadenceLabel": "daily",
+    "defaultScheduleType": "daily",
+    "availableVialSizesMg": [
+      5
+    ],
+    "defaultVialSizeMg": 5,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "GH fragment studied for fat loss without full GH activity.",
+    "about": "A fragment of growth hormone studied specifically for fat metabolism without the full range of GH effects. It is usually dosed daily. Human evidence is limited."
+  },
+  {
+    "slug": "igf-1-lr3",
+    "name": "IGF-1 LR3",
+    "category": "muscleRecovery",
+    "subcategory": "IGF analog",
+    "rxStatus": "ambiguous",
+    "rxRationale": "Unapproved; banned in sport, clinician oversight advised.",
+    "doseUnit": "mcg",
+    "typicalDoseLow": 20,
+    "typicalDoseHigh": 50,
+    "defaultCadenceLabel": "daily",
+    "defaultScheduleType": "daily",
+    "availableVialSizesMg": [
+      0.1,
+      1
+    ],
+    "defaultVialSizeMg": 1,
+    "recommendedWaterMl": 1,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Long-acting IGF-1 analog studied for muscle growth.",
+    "about": "A long-acting analog of insulin-like growth factor 1, studied for muscle growth and recovery. It is banned in sport and can affect blood sugar, so caution is warranted. Dosed daily in small amounts."
+  },
+  {
+    "slug": "mots-c",
+    "name": "MOTS-c",
+    "category": "muscleRecovery",
+    "subcategory": "Mitochondrial peptide",
+    "rxStatus": "nonRx",
+    "doseUnit": "mg",
+    "typicalDoseLow": 5,
+    "typicalDoseHigh": 10,
+    "defaultCadenceLabel": "2–3x weekly",
+    "defaultScheduleType": "interval",
+    "availableVialSizesMg": [
+      10,
+      40
+    ],
+    "defaultVialSizeMg": 10,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Mitochondrial-derived peptide studied for metabolism and endurance.",
+    "about": "A mitochondrial-derived peptide studied for metabolism, insulin sensitivity, and endurance. It signals through pathways tied to cellular energy. Often dosed a few times per week."
+  },
+  {
+    "slug": "slu-pp-332",
+    "name": "SLU-PP-332",
+    "category": "muscleRecovery",
+    "subcategory": "Exercise mimetic",
+    "rxStatus": "ambiguous",
+    "rxRationale": "Experimental research compound.",
+    "doseUnit": "mg",
+    "defaultCadenceLabel": "daily",
+    "defaultScheduleType": "daily",
+    "availableVialSizesMg": [
+      5
+    ],
+    "defaultVialSizeMg": 5,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Experimental ERR agonist studied as an 'exercise mimetic'.",
+    "about": "An experimental compound studied as an exercise mimetic by activating energy-related receptors. It is an early research molecule with little human data. Educational interest only."
+  },
+  {
+    "slug": "kisspeptin-10",
+    "name": "Kisspeptin-10",
+    "category": "muscleRecovery",
+    "subcategory": "Hormone peptide",
+    "rxStatus": "ambiguous",
+    "rxRationale": "Affects reproductive hormones; clinician oversight advised.",
+    "doseUnit": "mcg",
+    "defaultCadenceLabel": "as protocol",
+    "defaultScheduleType": "interval",
+    "availableVialSizesMg": [
+      5,
+      10
+    ],
+    "defaultVialSizeMg": 5,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Regulates GnRH and downstream reproductive hormones.",
+    "about": "A peptide that helps regulate the hormones controlling reproduction by acting upstream of GnRH. It is studied for fertility and hormonal signaling. Because it affects reproductive hormones, clinician guidance is advisable."
+  },
+  {
+    "slug": "thymalin",
+    "name": "Thymalin",
+    "category": "muscleRecovery",
+    "subcategory": "Immune peptide",
+    "rxStatus": "nonRx",
+    "doseUnit": "mg",
+    "defaultCadenceLabel": "daily (short cycles)",
+    "defaultScheduleType": "cycle",
+    "availableVialSizesMg": [
+      10
+    ],
+    "defaultVialSizeMg": 10,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Thymic peptide studied for immune modulation.",
+    "about": "A thymus-derived peptide studied for immune modulation, typically run in short cycles. It is of interest in aging and immune-support contexts. Human data is limited."
+  },
+  {
+    "slug": "thymosin-alpha-1",
+    "name": "Thymosin Alpha-1",
+    "category": "muscleRecovery",
+    "subcategory": "Immune peptide",
+    "rxStatus": "ambiguous",
+    "rxRationale": "Approved in some countries; clinician oversight advised.",
+    "doseUnit": "mg",
+    "typicalDoseLow": 1.5,
+    "typicalDoseHigh": 1.6,
+    "defaultCadenceLabel": "2x weekly",
+    "defaultScheduleType": "interval",
+    "availableVialSizesMg": [
+      5,
+      10
+    ],
+    "defaultVialSizeMg": 5,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Immune-modulating thymic peptide.",
+    "about": "An immune-modulating thymic peptide approved in some countries for certain conditions. It is studied for immune support and is usually dosed a couple of times per week. Clinician guidance is advisable."
+  },
+  {
+    "slug": "foxo4-dri",
+    "name": "FOXO4-DRI",
+    "category": "muscleRecovery",
+    "subcategory": "Senolytic",
+    "rxStatus": "ambiguous",
+    "rxRationale": "Experimental senolytic; minimal human data.",
+    "doseUnit": "mg",
+    "defaultCadenceLabel": "short cycles",
+    "defaultScheduleType": "cycle",
+    "availableVialSizesMg": [
+      10
+    ],
+    "defaultVialSizeMg": 10,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Experimental senolytic peptide that targets senescent cells.",
+    "about": "An experimental senolytic peptide designed to target aged, senescent cells. It is an early research molecule with minimal human safety data. Educational interest only."
+  },
+  {
+    "slug": "glow",
+    "name": "Glow",
+    "aliases": [
+      "GHK-Cu + BPC + TB blend"
+    ],
+    "category": "muscleRecovery",
+    "subcategory": "Recovery/skin blend",
+    "rxStatus": "nonRx",
+    "doseUnit": "mg",
+    "defaultCadenceLabel": "daily",
+    "defaultScheduleType": "daily",
+    "availableVialSizesMg": [
+      70
+    ],
+    "defaultVialSizeMg": 70,
+    "recommendedWaterMl": 3,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Blend (GHK-Cu, BPC-157, TB-500) marketed for skin and recovery.",
+    "about": "A blended product combining GHK-Cu, BPC-157, and TB-500, marketed for skin appearance and recovery. It packages several peptides into one vial. Used cosmetically and for recovery."
+  },
+  {
+    "slug": "klow",
+    "name": "Klow",
+    "category": "muscleRecovery",
+    "subcategory": "Recovery blend",
+    "rxStatus": "nonRx",
+    "doseUnit": "mg",
+    "defaultCadenceLabel": "daily",
+    "defaultScheduleType": "daily",
+    "availableVialSizesMg": [
+      80
+    ],
+    "defaultVialSizeMg": 80,
+    "recommendedWaterMl": 3,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Multi-peptide recovery blend (KPV, GHK-Cu, BPC-157, TB-500).",
+    "about": "A multi-peptide recovery blend that typically includes KPV, GHK-Cu, BPC-157, and TB-500. It bundles healing and anti-inflammatory peptides together. Dosed daily during a recovery block."
+  },
+  {
+    "slug": "melanotan-1",
+    "name": "Melanotan 1",
+    "aliases": [
+      "Afamelanotide",
+      "MT-1"
+    ],
+    "category": "sexualHealth",
+    "subcategory": "Melanocortin agonist",
+    "rxStatus": "ambiguous",
+    "rxRationale": "Unapproved for general use.",
+    "doseUnit": "mg",
+    "typicalDoseLow": 0.5,
+    "typicalDoseHigh": 1,
+    "defaultCadenceLabel": "daily (loading)",
+    "defaultScheduleType": "daily",
+    "availableVialSizesMg": [
+      10
+    ],
+    "defaultVialSizeMg": 10,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Melanocortin agonist studied for skin pigmentation.",
+    "about": "A melanocortin agonist studied for skin pigmentation and protection. It is unapproved for general use in most places. Educational interest only."
+  },
+  {
+    "slug": "melanotan-2",
+    "name": "Melanotan 2",
+    "aliases": [
+      "MT-2"
+    ],
+    "category": "sexualHealth",
+    "subcategory": "Melanocortin agonist",
+    "rxStatus": "ambiguous",
+    "rxRationale": "Unapproved for general use.",
+    "doseUnit": "mg",
+    "typicalDoseLow": 0.25,
+    "typicalDoseHigh": 1,
+    "defaultCadenceLabel": "daily (loading)",
+    "defaultScheduleType": "daily",
+    "availableVialSizesMg": [
+      10
+    ],
+    "defaultVialSizeMg": 10,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Melanocortin agonist affecting tanning and libido.",
+    "about": "A melanocortin agonist that affects skin tanning and can also influence libido. It is unapproved for general use and may cause nausea or darkening of moles. Educational interest only."
+  },
+  {
+    "slug": "pt-141",
+    "name": "PT-141",
+    "aliases": [
+      "Bremelanotide"
+    ],
+    "category": "sexualHealth",
+    "subcategory": "Melanocortin agonist",
+    "rxStatus": "rx",
+    "rxRationale": "FDA-approved prescription (Vyleesi).",
+    "doseUnit": "mg",
+    "typicalDoseLow": 0.5,
+    "typicalDoseHigh": 2,
+    "defaultCadenceLabel": "as needed",
+    "defaultScheduleType": "asNeeded",
+    "availableVialSizesMg": [
+      10
+    ],
+    "defaultVialSizeMg": 10,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous",
+      "nasal"
+    ],
+    "mechanismBlurb": "Melanocortin agonist for libido; taken before activity.",
+    "about": "Also called bremelanotide, a melanocortin agonist used for libido and sexual function. The approved version is prescription. It is typically taken as needed before activity."
+  },
+  {
+    "slug": "oxytocin",
+    "name": "Oxytocin",
+    "category": "sexualHealth",
+    "subcategory": "Neuropeptide",
+    "rxStatus": "rx",
+    "rxRationale": "Prescription hormone.",
+    "doseUnit": "iu",
+    "defaultCadenceLabel": "as needed",
+    "defaultScheduleType": "asNeeded",
+    "availableVialSizesMg": [
+      2,
+      5
+    ],
+    "defaultVialSizeMg": 2,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous",
+      "nasal"
+    ],
+    "mechanismBlurb": "Neuropeptide involved in bonding and social connection.",
+    "about": "A natural neuropeptide involved in bonding, trust, and social connection. As a prescription hormone it has defined medical uses. It is usually taken as needed."
+  },
+  {
+    "slug": "ghk-cu",
+    "name": "GHK-Cu",
+    "aliases": [
+      "Copper peptide"
+    ],
+    "category": "generalHealth",
+    "subcategory": "Copper peptide",
+    "rxStatus": "nonRx",
+    "doseUnit": "mg",
+    "typicalDoseLow": 1,
+    "typicalDoseHigh": 2,
+    "defaultCadenceLabel": "daily",
+    "defaultScheduleType": "daily",
+    "availableVialSizesMg": [
+      50,
+      100
+    ],
+    "defaultVialSizeMg": 50,
+    "recommendedWaterMl": 5,
+    "routes": [
+      "subcutaneous",
+      "topical"
+    ],
+    "mechanismBlurb": "Copper peptide studied for skin, healing, and anti-aging.",
+    "about": "A copper-binding peptide studied for skin health, wound healing, and anti-aging. It is used both topically and by injection. Generally considered gentle, with growing cosmetic interest."
+  },
+  {
+    "slug": "glutathione",
+    "name": "Glutathione",
+    "category": "generalHealth",
+    "subcategory": "Antioxidant",
+    "rxStatus": "nonRx",
+    "doseUnit": "mg",
+    "typicalDoseLow": 200,
+    "typicalDoseHigh": 600,
+    "defaultCadenceLabel": "2–3x weekly",
+    "defaultScheduleType": "interval",
+    "availableVialSizesMg": [
+      600,
+      1500
+    ],
+    "defaultVialSizeMg": 600,
+    "recommendedWaterMl": 5,
+    "routes": [
+      "subcutaneous",
+      "intramuscular"
+    ],
+    "mechanismBlurb": "Master antioxidant tripeptide.",
+    "about": "The body's master antioxidant, a small tripeptide central to detoxification and cellular protection. It is used for general wellness and skin goals. Often dosed a few times per week."
+  },
+  {
+    "slug": "nad",
+    "name": "NAD+",
+    "category": "generalHealth",
+    "subcategory": "Coenzyme",
+    "rxStatus": "nonRx",
+    "doseUnit": "mg",
+    "typicalDoseLow": 50,
+    "typicalDoseHigh": 100,
+    "defaultCadenceLabel": "daily",
+    "defaultScheduleType": "daily",
+    "availableVialSizesMg": [
+      100,
+      500
+    ],
+    "defaultVialSizeMg": 100,
+    "recommendedWaterMl": 5,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Coenzyme central to cellular energy and longevity pathways.",
+    "cycleGuidance": "Inject slowly; rapid dosing can cause flushing.",
+    "about": "A coenzyme central to cellular energy production and pathways linked to aging and repair. It is popular in longevity and recovery contexts. Injecting it quickly can cause flushing, so it is given slowly."
+  },
+  {
+    "slug": "snap-8",
+    "name": "SNAP-8",
+    "category": "generalHealth",
+    "subcategory": "Cosmetic peptide",
+    "rxStatus": "nonRx",
+    "doseUnit": "mg",
+    "defaultCadenceLabel": "topical",
+    "defaultScheduleType": "daily",
+    "availableVialSizesMg": [
+      10
+    ],
+    "defaultVialSizeMg": 10,
+    "routes": [
+      "topical"
+    ],
+    "mechanismBlurb": "Topical peptide studied for expression-line softening.",
+    "about": "A topical cosmetic peptide studied for softening expression lines, used in skincare formulations. It works at the surface rather than systemically. Cosmetic use only."
+  },
+  {
+    "slug": "vip",
+    "name": "VIP",
+    "aliases": [
+      "Vasoactive Intestinal Peptide"
+    ],
+    "category": "generalHealth",
+    "subcategory": "Neuropeptide",
+    "rxStatus": "ambiguous",
+    "rxRationale": "Clinician oversight advised.",
+    "doseUnit": "mcg",
+    "defaultCadenceLabel": "as protocol",
+    "defaultScheduleType": "daily",
+    "availableVialSizesMg": [
+      10
+    ],
+    "defaultVialSizeMg": 10,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "nasal",
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Neuropeptide studied for inflammation and CIRS protocols.",
+    "about": "Vasoactive intestinal peptide, a signaling molecule studied for inflammation and in certain chronic-illness protocols. It is usually delivered nasally. Clinician guidance is advisable."
+  },
+  {
+    "slug": "hyaluronic-acid",
+    "name": "Hyaluronic Acid",
+    "category": "generalHealth",
+    "subcategory": "Hydration",
+    "rxStatus": "nonRx",
+    "doseUnit": "mg",
+    "defaultCadenceLabel": "as protocol",
+    "defaultScheduleType": "weekly",
+    "availableVialSizesMg": [
+      5
+    ],
+    "defaultVialSizeMg": 5,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Hydrating molecule used for skin and joints (cosmetic).",
+    "about": "A hydrating molecule naturally found in skin and joints, used cosmetically for moisture and cushioning. It is well known in skincare and joint support. Cosmetic and supportive use."
+  },
+  {
+    "slug": "ara-290",
+    "name": "ARA-290",
+    "aliases": [
+      "Cibinetide"
+    ],
+    "category": "generalHealth",
+    "subcategory": "Neuro-restorative",
+    "rxStatus": "ambiguous",
+    "rxRationale": "Investigational.",
+    "doseUnit": "mg",
+    "typicalDoseLow": 1,
+    "typicalDoseHigh": 4,
+    "defaultCadenceLabel": "daily",
+    "defaultScheduleType": "daily",
+    "availableVialSizesMg": [
+      10
+    ],
+    "defaultVialSizeMg": 10,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Investigational peptide studied for neuropathy and inflammation.",
+    "about": "Also called cibinetide, an investigational peptide studied for nerve health and inflammation without the blood effects of erythropoietin. It is dosed daily in research settings. Human data is early."
+  },
+  {
+    "slug": "5-amino-1mq",
+    "name": "5-Amino-1MQ",
+    "category": "other",
+    "subcategory": "NNMT inhibitor",
+    "rxStatus": "nonRx",
+    "doseUnit": "mg",
+    "typicalDoseLow": 50,
+    "typicalDoseHigh": 150,
+    "defaultCadenceLabel": "daily (oral)",
+    "defaultScheduleType": "daily",
+    "availableVialSizesMg": [
+      5,
+      50
+    ],
+    "defaultVialSizeMg": 50,
+    "routes": [
+      "oral"
+    ],
+    "mechanismBlurb": "NNMT inhibitor studied for metabolism and fat cells.",
+    "about": "A small molecule studied as an NNMT inhibitor, of interest for metabolism and fat cells. It is usually taken orally. Most evidence is preclinical."
+  },
+  {
+    "slug": "aicar",
+    "name": "AICAR",
+    "category": "other",
+    "subcategory": "Exercise mimetic",
+    "rxStatus": "ambiguous",
+    "rxRationale": "Research compound; banned in sport.",
+    "doseUnit": "mg",
+    "defaultCadenceLabel": "as protocol",
+    "defaultScheduleType": "daily",
+    "availableVialSizesMg": [
+      50
+    ],
+    "defaultVialSizeMg": 50,
+    "recommendedWaterMl": 3,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "AMPK activator studied as an endurance 'exercise mimetic'.",
+    "about": "An AMPK activator studied as an endurance or exercise-mimetic compound. It is banned in sport and remains a research molecule. Educational interest only."
+  },
+  {
+    "slug": "cerebrolysin",
+    "name": "Cerebrolysin",
+    "category": "other",
+    "subcategory": "Neurotrophic",
+    "rxStatus": "ambiguous",
+    "rxRationale": "Prescription in some countries.",
+    "doseUnit": "mg",
+    "defaultCadenceLabel": "daily (short cycles)",
+    "defaultScheduleType": "cycle",
+    "availableVialSizesMg": [
+      60
+    ],
+    "defaultVialSizeMg": 60,
+    "routes": [
+      "intramuscular"
+    ],
+    "mechanismBlurb": "Neurotrophic peptide mixture studied for cognition/recovery.",
+    "about": "A mixture of neurotrophic peptides studied for cognition and recovery after brain injury, and prescription in some countries. It is typically run in short daily cycles. Clinician guidance is advisable."
+  },
+  {
+    "slug": "gonadorelin",
+    "name": "Gonadorelin Acetate",
+    "category": "other",
+    "subcategory": "GnRH",
+    "rxStatus": "rx",
+    "rxRationale": "Prescription hormone.",
+    "doseUnit": "mcg",
+    "typicalDoseLow": 100,
+    "typicalDoseHigh": 200,
+    "defaultCadenceLabel": "as protocol",
+    "defaultScheduleType": "interval",
+    "availableVialSizesMg": [
+      2
+    ],
+    "defaultVialSizeMg": 2,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "GnRH (prescription) supporting the HPG axis.",
+    "about": "A prescription form of GnRH used to stimulate the hormones that support testosterone and fertility. It works on the upstream signaling axis. Because it is prescription-grade, clinician oversight matters."
+  },
+  {
+    "slug": "hcg",
+    "name": "HCG",
+    "aliases": [
+      "Human chorionic gonadotropin"
+    ],
+    "category": "other",
+    "subcategory": "Gonadotropin",
+    "rxStatus": "rx",
+    "rxRationale": "Prescription hormone.",
+    "doseUnit": "iu",
+    "defaultCadenceLabel": "2–3x weekly",
+    "defaultScheduleType": "interval",
+    "availableVialSizesMg": [
+      5000,
+      10000
+    ],
+    "defaultVialSizeMg": 5000,
+    "recommendedWaterMl": 3,
+    "reconNote": "Vial sizes are in IU.",
+    "routes": [
+      "subcutaneous",
+      "intramuscular"
+    ],
+    "mechanismBlurb": "Prescription gonadotropin supporting testosterone and fertility.",
+    "about": "Human chorionic gonadotropin, a prescription hormone used to support testosterone production and fertility. Vial strengths are measured in IU. It is dosed a few times per week under clinician guidance."
+  },
+  {
+    "slug": "hmg",
+    "name": "HMG",
+    "aliases": [
+      "Menotropin"
+    ],
+    "category": "other",
+    "subcategory": "Gonadotropin",
+    "rxStatus": "rx",
+    "rxRationale": "Prescription fertility hormone.",
+    "doseUnit": "iu",
+    "defaultCadenceLabel": "as protocol",
+    "defaultScheduleType": "interval",
+    "availableVialSizesMg": [
+      75
+    ],
+    "defaultVialSizeMg": 75,
+    "recommendedWaterMl": 2,
+    "reconNote": "Vial sizes are in IU.",
+    "routes": [
+      "subcutaneous",
+      "intramuscular"
+    ],
+    "mechanismBlurb": "Prescription menotropin used in fertility protocols.",
+    "about": "Human menopausal gonadotropin, a prescription hormone used in fertility protocols. Strengths are measured in IU. It is used under clinician guidance."
+  },
+  {
+    "slug": "kpv",
+    "name": "KPV",
+    "category": "other",
+    "subcategory": "Anti-inflammatory",
+    "rxStatus": "nonRx",
+    "doseUnit": "mcg",
+    "typicalDoseLow": 200,
+    "typicalDoseHigh": 500,
+    "defaultCadenceLabel": "1–2x daily",
+    "defaultScheduleType": "multiDaily",
+    "availableVialSizesMg": [
+      10
+    ],
+    "defaultVialSizeMg": 10,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous",
+      "oral"
+    ],
+    "mechanismBlurb": "Anti-inflammatory tripeptide studied for gut and skin.",
+    "about": "A short anti-inflammatory tripeptide derived from a larger hormone, studied for gut and skin inflammation. It can be used by injection or orally. Research is early but promising."
+  },
+  {
+    "slug": "l-carnitine",
+    "name": "L-Carnitine",
+    "category": "other",
+    "subcategory": "Fat metabolism",
+    "rxStatus": "nonRx",
+    "doseUnit": "mg",
+    "defaultCadenceLabel": "daily",
+    "defaultScheduleType": "daily",
+    "availableVialSizesMg": [
+      600
+    ],
+    "defaultVialSizeMg": 600,
+    "routes": [
+      "intramuscular",
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Amino-acid derivative supporting fat metabolism.",
+    "about": "An amino-acid derivative that helps shuttle fatty acids into cells to be burned for energy. It is used for fat metabolism and exercise support. Commonly dosed daily."
+  },
+  {
+    "slug": "ll-37",
+    "name": "LL-37",
+    "category": "other",
+    "subcategory": "Antimicrobial peptide",
+    "rxStatus": "ambiguous",
+    "rxRationale": "Investigational.",
+    "doseUnit": "mcg",
+    "defaultCadenceLabel": "as protocol",
+    "defaultScheduleType": "interval",
+    "availableVialSizesMg": [
+      5
+    ],
+    "defaultVialSizeMg": 5,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Antimicrobial host-defense peptide (investigational).",
+    "about": "A natural host-defense peptide studied for antimicrobial and immune roles. It is an investigational compound with limited human dosing data. Educational interest only."
+  },
+  {
+    "slug": "melatonin",
+    "name": "Melatonin",
+    "category": "other",
+    "subcategory": "Sleep hormone",
+    "rxStatus": "nonRx",
+    "doseUnit": "mg",
+    "typicalDoseLow": 1,
+    "typicalDoseHigh": 10,
+    "defaultCadenceLabel": "nightly",
+    "defaultScheduleType": "daily",
+    "availableVialSizesMg": [
+      10
+    ],
+    "defaultVialSizeMg": 10,
+    "routes": [
+      "oral",
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Hormone that regulates the sleep–wake cycle.",
+    "about": "A hormone that governs the sleep and wake cycle, widely used to support sleep onset. It is taken at night. Generally familiar and well tolerated at modest amounts."
+  },
+  {
+    "slug": "ss-31",
+    "name": "SS-31",
+    "aliases": [
+      "Elamipretide"
+    ],
+    "category": "other",
+    "subcategory": "Mitochondrial peptide",
+    "rxStatus": "ambiguous",
+    "rxRationale": "Investigational.",
+    "doseUnit": "mg",
+    "typicalDoseLow": 5,
+    "typicalDoseHigh": 10,
+    "defaultCadenceLabel": "daily",
+    "defaultScheduleType": "daily",
+    "availableVialSizesMg": [
+      10,
+      50
+    ],
+    "defaultVialSizeMg": 10,
+    "recommendedWaterMl": 2,
+    "routes": [
+      "subcutaneous"
+    ],
+    "mechanismBlurb": "Mitochondria-targeted peptide studied for cellular energy.",
+    "about": "Also called elamipretide, a mitochondria-targeted peptide studied for protecting and supporting cellular energy production. It is of interest in aging and recovery. Dosed daily in research settings."
+  }
+]

@@ -1,0 +1,20 @@
+# Build artifacts
+build/
+build-device/
+DerivedData/
+*.xcuserstate
+shots/
+
+# XcodeGen output (regenerate with `xcodegen generate`)
+Vita.xcodeproj/
+
+# macOS junk
+.DS_Store
+._*
+Icon?
+
+# Local tooling / agent state
+.claude/
+
+# Secrets — never commit the API key or your signing team
+Config/Secrets.xcconfig

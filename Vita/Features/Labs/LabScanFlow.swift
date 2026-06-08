@@ -1,0 +1,204 @@
+import SwiftUI
+import SwiftData
+import PhotosUI
+import UniformTypeIdentifiers
+
+/// The lab-scan sheet: one-time consent → pick a source (camera / Photos / PDF) →
+/// "Reading your labs…" → review. The picked Data is EXIF-stripped before it is
+/// sent to Claude AND before it's stored. Educational, not medical advice.
+struct LabScanFlow: View {
+    @Environment(\.modelContext) private var context
+    @Environment(\.dismiss) private var dismiss
+    var onSaved: () -> Void = {}
+
+    @State private var phase: Phase = .intro
+    @State private var photoItem: PhotosPickerItem?
+    @State private var showCamera = false
+    @State private var showFiles = false
+    @State private var prepared: (data: Data, mediaType: String)?
+    @State private var dto: LabPanelDTO?
+    @State private var errorText: String?
+
+    private enum Phase { case intro, reading, review, failed }
+
+    var body: some View {
+        NavigationStack {
+            content
+                .background(VT.canvas)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Close") { dismiss() }.foregroundStyle(VT.ink)
+                    }
+                }
+        }
+        .sheet(isPresented: $showCamera) {
+            CameraPicker { data in handle(data, hint: "image/jpeg") }
+                .ignoresSafeArea()
+        }
+        .fileImporter(isPresented: $showFiles, allowedContentTypes: [.pdf]) { result in
+            if case let .success(url) = result { importPDF(url) }
+        }
+        .onChange(of: photoItem) { _, item in
+            guard let item else { return }
+            Task {
+                if let data = try? await item.loadTransferable(type: Data.self) {
+                    await MainActor.run { handle(data, hint: nil) }
+                }
+            }
+        }
+    }
+
+    @ViewBuilder private var content: some View {
+        switch phase {
+        case .intro:
+            ScrollView { intro.padding(VT.sSection) }.scrollIndicators(.hidden)
+        case .reading:
+            reading
+        case .review:
+            if let dto {
+                LabReviewView(dto: dto, scan: prepared) { onSaved(); dismiss() }
+            }
+        case .failed:
+            failed
+        }
+    }
+
+    // MARK: Intro (consent folded in for the first scan)
+
+    private var intro: some View {
+        VStack(alignment: .leading, spacing: VT.sSection) {
+            ScreenHeader(eyebrow: "Labs", title: "Scan your bloodwork.")
+            VStack(alignment: .leading, spacing: VT.sCardGap) {
+                if CameraPicker.isAvailable {
+                    sourceRow("camera.fill", "Take a photo") { showCamera = true }
+                }
+                photoRow
+                sourceRow("doc.fill", "Import a PDF") { showFiles = true }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(VT.sCardPad).vtCard()
+
+            VStack(alignment: .leading, spacing: 6) {
+                vtLead("How it works.", color: VT.dose)
+                Text("Vita sends the image to Anthropic's Claude to read the values, then shows them for you to check before saving. The original stays on your phone.")
+                    .font(.system(size: 14)).foregroundStyle(VT.body).lineSpacing(2)
+                Text("Educational, not medical advice. Discuss results with your clinician.")
+                    .font(.system(size: 12)).foregroundStyle(VT.micro)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(VT.sCardPad).vtCard()
+        }
+    }
+
+    private func sourceRow(_ symbol: String, _ title: String, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                Image(systemName: symbol).font(.system(size: 18)).foregroundStyle(VT.dose).frame(width: 28)
+                Text(title).font(.system(size: 16, weight: .semibold)).foregroundStyle(VT.ink)
+                Spacer()
+                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(VT.micro)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var photoRow: some View {
+        PhotosPicker(selection: $photoItem, matching: .images) {
+            HStack(spacing: 12) {
+                Image(systemName: "photo.fill").font(.system(size: 18)).foregroundStyle(VT.dose).frame(width: 28)
+                Text("Choose from Photos").font(.system(size: 16, weight: .semibold)).foregroundStyle(VT.ink)
+                Spacer()
+                Image(systemName: "chevron.right").font(.system(size: 13, weight: .semibold)).foregroundStyle(VT.micro)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var reading: some View {
+        VStack(spacing: VT.sCardGap) {
+            ThinkingDots(label: "Reading your labs")
+            Text("Reading your labs…")
+                .font(VFont.display(20, weight: .bold, relativeTo: .title3)).foregroundStyle(VT.ink)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    private var failed: some View {
+        VStack(spacing: VT.sCardGap) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 26)).foregroundStyle(VT.overdue)
+            Text(errorText ?? "Couldn't read that clearly.")
+                .font(.system(size: 16)).foregroundStyle(VT.body).multilineTextAlignment(.center)
+            VStack(spacing: 10) {
+                if prepared != nil {
+                    CharcoalPillButton(title: "Retry") {
+                        if let p = prepared { errorText = nil; runInterpret(p) }
+                    }
+                    .frame(maxWidth: 240)
+                }
+                Button("Try another file") { phase = .intro; errorText = nil; prepared = nil }
+                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(VT.dose)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity).padding(VT.sSection)
+    }
+
+    // MARK: Handling
+
+    private func importPDF(_ url: URL) {
+        let access = url.startAccessingSecurityScopedResource()
+        defer { if access { url.stopAccessingSecurityScopedResource() } }
+        guard let data = try? Data(contentsOf: url) else { return }
+        handle(data, hint: "application/pdf")
+    }
+
+    private func handle(_ data: Data, hint: String?) {
+        // One-time consent recorded the first time a scan is actually sent.
+        let settings = CatalogStore.fetchOrCreateSettings(context)
+        if settings.labConsentedAt == nil { settings.labConsentedAt = Date(); try? context.save() }
+
+        let prep = LabImageEncoder.prepare(data: data, mediaTypeHint: hint)
+        prepared = prep
+        photoItem = nil
+        runInterpret(prep)
+    }
+
+    private func runInterpret(_ prep: (data: Data, mediaType: String)) {
+        phase = .reading
+        Task {
+            do {
+                let result = try await LabService(context: context).interpret(imageData: prep.data, mediaType: prep.mediaType)
+                await MainActor.run {
+                    if result.values.isEmpty {
+                        errorText = "No values found on that page. Try a clearer photo or a single-page export."
+                        phase = .failed
+                    } else {
+                        dto = result; phase = .review
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    errorText = Self.labErrorMessage(error)
+                    phase = .failed
+                }
+            }
+        }
+    }
+
+    /// Maps a thrown error to a calm, specific line (offline / busy / too-large / etc.).
+    static func labErrorMessage(_ error: Error) -> String {
+        guard let e = error as? AnthropicClient.AnthropicError else {
+            return "Couldn't read that clearly. Try a sharper, well-lit photo or a PDF."
+        }
+        switch e {
+        case .noKey:      return "No API key found. Add your Anthropic key in Settings to read labs."
+        case .transport:  return "You're offline. Reconnect and try again."
+        case .overloaded: return "The reader is busy right now. Give it a moment and retry."
+        case .http(let code, _): return "Couldn't read that file (error \(code)). Try a photo or a single-page PDF."
+        case .decode, .noToolUse: return "Couldn't make sense of that page. Try a sharper photo or a clearer scan."
+        }
+    }
+}
