@@ -99,6 +99,20 @@ English only. No `Localizable.strings` yet; strings are inline. Externalize befo
 
 ---
 
+## Tracked issues
+
+The backlog above is filed as GitHub issues:
+
+- [#1 M11 — Lab marker-over-time trend charts](https://github.com/advegaf/vita/issues/1)
+- [#2 Set up CI (build + 159 tests)](https://github.com/advegaf/vita/issues/2)
+- [#3 Distribution: proxy backend for the Anthropic key](https://github.com/advegaf/vita/issues/3)
+- [#4 Split into SPM modules](https://github.com/advegaf/vita/issues/4)
+- [#5 Enable CloudKit sync](https://github.com/advegaf/vita/issues/5)
+- [#6 Accessibility audit](https://github.com/advegaf/vita/issues/6)
+- [#7 Labs hardening: PDF hybrid + marker-key alias map](https://github.com/advegaf/vita/issues/7)
+- [#8 UI / snapshot tests](https://github.com/advegaf/vita/issues/8)
+- [#9 Catalog data: clinical review](https://github.com/advegaf/vita/issues/9)
+
 ## Non-goals (for now)
 
 Dark mode (tokens are ready), a watchOS companion, cost/price tracking, multi-user/caregiver sharing, and full App Store hardening (which requires the proxy backend in #1 and a stricter content/compliance review).
