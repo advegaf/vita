@@ -5,6 +5,7 @@ import HealthKit
 /// optional — Health may be unauthorized, unavailable, or sparse.
 struct HealthSnapshot: Sendable, Equatable {
     var weightKg: Double?
+    var heightCm: Double?
     var avgRestingHR: Double?      // bpm
     var avgHRVms: Double?          // SDNN, ms
     var avgSleepHours: Double?     // per night, last 7d
@@ -14,6 +15,7 @@ struct HealthSnapshot: Sendable, Equatable {
     var summaryLine: String? {
         var bits: [String] = []
         if let weightKg, weightKg > 0 { bits.append(String(format: "weight %.0f kg", weightKg)) }
+        if let heightCm, heightCm > 0 { bits.append(String(format: "height %.0f cm", heightCm)) }
         if let avgRestingHR { bits.append(String(format: "resting HR %.0f bpm", avgRestingHR)) }
         if let avgHRVms { bits.append(String(format: "HRV %.0f ms", avgHRVms)) }
         if let avgSleepHours { bits.append(String(format: "sleep %.1f h", avgSleepHours)) }
@@ -37,6 +39,7 @@ actor HealthKitService {
         if let m = HKObjectType.quantityType(forIdentifier: .bodyMass) { t.insert(m) }
         if let hr = HKObjectType.quantityType(forIdentifier: .restingHeartRate) { t.insert(hr) }
         if let hrv = HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN) { t.insert(hrv) }
+        if let ht = HKObjectType.quantityType(forIdentifier: .height) { t.insert(ht) }
         if let steps = HKObjectType.quantityType(forIdentifier: .stepCount) { t.insert(steps) }
         if let sleep = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) { t.insert(sleep) }
         t.insert(HKObjectType.characteristicType(forIdentifier: .dateOfBirth)!)
@@ -74,13 +77,24 @@ actor HealthKitService {
     func snapshot() async -> HealthSnapshot {
         guard Self.isAvailable else { return HealthSnapshot() }
         async let weight = latestQuantity(.bodyMass, unit: .gramUnit(with: .kilo))
+        async let height = latestQuantity(.height, unit: .meterUnit(with: .centi))
         async let hr = avgQuantity(.restingHeartRate, unit: HKUnit.count().unitDivided(by: .minute()), days: 7)
         async let hrv = avgQuantity(.heartRateVariabilitySDNN, unit: HKUnit.secondUnit(with: .milli), days: 7)
         async let steps = avgDailySum(.stepCount, unit: .count(), days: 7)
         async let sleep = avgSleepHours(days: 7)
         return await HealthSnapshot(
-            weightKg: weight, avgRestingHR: hr, avgHRVms: hrv,
+            weightKg: weight, heightCm: height, avgRestingHR: hr, avgHRVms: hrv,
             avgSleepHours: sleep, avgDailySteps: steps)
+    }
+
+    /// Quick profile-fill reads — weight + height + DOB/sex only (no sleep/HRV/steps),
+    /// so connect / re-sync returns fast.
+    func profileVitals() async -> (weightKg: Double?, heightCm: Double?, ageYears: Int?, biologicalSex: String?) {
+        guard Self.isAvailable else { return (nil, nil, nil, nil) }
+        async let w = latestQuantity(.bodyMass, unit: .gramUnit(with: .kilo))
+        async let h = latestQuantity(.height, unit: .meterUnit(with: .centi))
+        let chars = characteristics()
+        return (await w, await h, chars.ageYears, chars.biologicalSex)
     }
 
     /// All bodyMass weigh-ins over the last N days as Sendable tuples (uuid, kg,

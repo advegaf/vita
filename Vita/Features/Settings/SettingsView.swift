@@ -20,11 +20,11 @@ struct SettingsView: View {
     @State private var heightCmText = ""
     @State private var feetText = ""
     @State private var inchesText = ""
-    @State private var heightUnit: HeightUnit = .cm
     @FocusState private var editing: Bool
 
     @AppStorage("vita.weightUnit") private var storedWeightUnit = WeightUnit.lb.rawValue
     @AppStorage("vita.measureUnit") private var storedMeasureUnit = MeasurementUnit.inch.rawValue
+    @AppStorage("vita.heightUnit") private var heightUnitRaw = HeightUnit.ftIn.rawValue
 
     // Apple Health
     @State private var healthConnecting = false
@@ -46,6 +46,7 @@ struct SettingsView: View {
     private var profile: UserProfile? { profileList.first }
     private var weightUnit: WeightUnit { WeightUnit(rawValue: storedWeightUnit) ?? .lb }
     private var measureUnit: MeasurementUnit { MeasurementUnit(rawValue: storedMeasureUnit) ?? .inch }
+    private var heightUnit: HeightUnit { HeightUnit(rawValue: heightUnitRaw) ?? .ftIn }
 
     var body: some View {
         NavigationStack {
@@ -424,11 +425,11 @@ struct SettingsView: View {
             if let cm = Double(heightCmText) {
                 let fi = Units.cmToFeetInches(cm); feetText = String(fi.feet); inchesText = String(fi.inches)
             }
-            heightUnit = .ftIn
+            heightUnitRaw = HeightUnit.ftIn.rawValue
         } else {
             let f = Int(feetText) ?? 0, i = Int(inchesText) ?? 0
             if f + i > 0 { heightCmText = Units.trim(Units.feetInchesToCm(feet: f, inches: i)) }
-            heightUnit = .cm
+            heightUnitRaw = HeightUnit.cm.rawValue
         }
     }
 
@@ -438,29 +439,32 @@ struct SettingsView: View {
         Task {
             let granted = await HealthKitService.shared.requestAuthorization()
             if granted {
-                let snap = await HealthKitService.shared.snapshot()
-                let chars = await HealthKitService.shared.characteristics()
-                let weights = await HealthKitService.shared.weightSamples(daysBack: 90)
+                // Quick reads (weight + height + age + sex) update the profile + finish fast…
+                let v = await HealthKitService.shared.profileVitals()
                 await MainActor.run {
                     if let p = profile {
-                        if let w = snap.weightKg, w > 0 { p.weightKg = w }
-                        if let a = chars.ageYears {
+                        if let w = v.weightKg, w > 0 { p.weightKg = w }
+                        if let h = v.heightCm, h > 0 { p.heightCm = h }
+                        if let a = v.ageYears {
                             p.birthDate = Calendar.current.date(byAdding: .year, value: -a, to: Date())
                         }
-                        if let s = chars.biologicalSex { p.biologicalSexRaw = s }
+                        if let s = v.biologicalSex { p.biologicalSexRaw = s }
                         try? context.save()
                     }
-                    DiaryService(context: context).mergeHealthWeights(weights)
                     loadProfile()
+                    healthConnecting = false
                 }
+                // …the 90-day weight backfill merges in the background.
+                let weights = await HealthKitService.shared.weightSamples(daysBack: 90)
+                await MainActor.run { DiaryService(context: context).mergeHealthWeights(weights) }
             } else {
                 await MainActor.run {
                     healthNote = HealthKitService.isAvailable
                         ? "Couldn't reach Apple Health. Check access in the Health app."
                         : "Apple Health isn't available on this device."
+                    healthConnecting = false
                 }
             }
-            await MainActor.run { healthConnecting = false }
         }
     }
 

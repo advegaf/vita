@@ -50,7 +50,7 @@ enum ClaudeSchemas {
     // MARK: - Lab scan (M8b, forced vision tool)
 
     static let labsToolName = "interpret_labs"
-    static let labsUserPrompt = "Read the attached lab report and extract its values using the interpret_labs tool."
+    static let labsUserPrompt = "Read ALL pages of the attached lab report and extract EVERY marker value using the interpret_labs tool. Do not stop early; a full panel often has dozens of markers."
 
     /// `interpret_labs` — strict JSON, additionalProperties:false (mirrors emit_protocol).
     /// The app recomputes flags from value vs range; the model's flag_raw is verbatim only.
@@ -100,6 +100,7 @@ enum ClaudeSchemas {
         diagnose, interpret causation, or prescribe. Extract only what is printed on the page.
 
         Rules:
+        - Extract EVERY marker row on EVERY page, top to bottom. A typical comprehensive panel has 30 to 70 markers. Do not stop after the first few, do not summarize the list, and do not abbreviate. If the report shows results, the values array must be complete, not empty or near-empty.
         - Transcribe each marker row exactly: name, numeric value, unit, and reference range as printed. Do not invent values, units, or ranges.
         - marker_key is a normalized snake_case identifier so the same marker matches across reports (glucose_fasting, hemoglobin_a1c, hdl_cholesterol, ldl_cholesterol, triglycerides, tsh, testosterone_total, vitamin_d, ferritin, alt, ast, creatinine, etc.). If unsure, derive it from the printed name.
         - When a value is unreadable or ambiguous, omit that row rather than guessing.

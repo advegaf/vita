@@ -12,6 +12,24 @@ final class LabVisionRequestTests: XCTestCase {
         XCTAssertTrue(LabScanFlow.labErrorMessage(AnthropicClient.AnthropicError.overloaded(529)).lowercased().contains("busy"))
     }
 
+    func testPdfTextLayerDetection() {
+        let bounds = CGRect(x: 0, y: 0, width: 612, height: 792)
+        let textPDF = UIGraphicsPDFRenderer(bounds: bounds).pdfData { ctx in
+            ctx.beginPage()
+            ("Glucose 104 mg/dL   HDL 41 mg/dL   TSH 2.1 mIU/L" as NSString).draw(
+                at: CGPoint(x: 40, y: 40), withAttributes: [.font: UIFont.systemFont(ofSize: 16)])
+        }
+        XCTAssertTrue(LabImageEncoder.pdfHasTextLayer(textPDF))            // text PDF → read natively
+        let blankPDF = UIGraphicsPDFRenderer(bounds: bounds).pdfData { ctx in ctx.beginPage() }
+        XCTAssertFalse(LabImageEncoder.pdfHasTextLayer(blankPDF))         // scan/blank → rasterize
+        XCTAssertFalse(LabImageEncoder.pdfHasTextLayer(Data([0x00, 0x01])))
+    }
+
+    func testLabsTokenCeilingRaised() {
+        // A multi-page panel needs ~6k output tokens; 4096 truncated to 0 values.
+        XCTAssertGreaterThanOrEqual(ClaudeService().labsMaxTokens, 8192)
+    }
+
     func testRasterizePDFProducesImages() {
         let bounds = CGRect(x: 0, y: 0, width: 612, height: 792)
         let pdf = UIGraphicsPDFRenderer(bounds: bounds).pdfData { ctx in

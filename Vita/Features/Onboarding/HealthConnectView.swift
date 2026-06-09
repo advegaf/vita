@@ -14,12 +14,16 @@ struct HealthConnectView: View {
     @State private var ageText = ""
     @State private var sex = ""                 // "" | female | male | other
     @State private var weightText = ""
-    @State private var weightUnit: WeightUnit = .kg
     @State private var heightCmText = ""        // when heightUnit == .cm
     @State private var feetText = ""            // when heightUnit == .ftIn
     @State private var inchesText = ""
-    @State private var heightUnit: HeightUnit = .cm
     @FocusState private var editing: Bool
+
+    // Shared, persisted unit prefs — default to imperial (lb / ft·in).
+    @AppStorage("vita.weightUnit") private var weightUnitRaw = WeightUnit.lb.rawValue
+    @AppStorage("vita.heightUnit") private var heightUnitRaw = HeightUnit.ftIn.rawValue
+    private var weightUnit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .lb }
+    private var heightUnit: HeightUnit { HeightUnit(rawValue: heightUnitRaw) ?? .ftIn }
 
     private let sexes = ["female", "male", "other"]
 
@@ -151,7 +155,7 @@ struct HealthConnectView: View {
         if let v = Double(weightText) {
             weightText = weightUnit == .kg ? Units.trim(Units.kgToLb(v)) : Units.trim(Units.lbToKg(v))
         }
-        weightUnit = weightUnit == .kg ? .lb : .kg
+        weightUnitRaw = (weightUnit == .kg ? WeightUnit.lb : .kg).rawValue
     }
 
     private func toggleHeightUnit() {
@@ -160,13 +164,23 @@ struct HealthConnectView: View {
                 let fi = Units.cmToFeetInches(cm)
                 feetText = String(fi.feet); inchesText = String(fi.inches)
             }
-            heightUnit = .ftIn
+            heightUnitRaw = HeightUnit.ftIn.rawValue
         } else {
             if let f = Int(feetText) ?? (feetText.isEmpty ? 0 : nil),
                let i = Int(inchesText) ?? (inchesText.isEmpty ? 0 : nil), f + i > 0 {
                 heightCmText = Units.trim(Units.feetInchesToCm(feet: f, inches: i))
             }
-            heightUnit = .cm
+            heightUnitRaw = HeightUnit.cm.rawValue
+        }
+    }
+
+    /// Fills the height field(s) from a cm value in whichever unit is active.
+    private func fillHeight(_ cm: Double) {
+        if heightUnit == .cm {
+            if heightCmText.isEmpty { heightCmText = Units.trim(cm) }
+        } else if feetText.isEmpty && inchesText.isEmpty {
+            let fi = Units.cmToFeetInches(cm)
+            feetText = String(fi.feet); inchesText = String(fi.inches)
         }
     }
 
@@ -177,16 +191,21 @@ struct HealthConnectView: View {
         Task {
             let granted = await HealthKitService.shared.requestAuthorization()
             if granted {
-                let snap = await HealthKitService.shared.snapshot()
-                let chars = await HealthKitService.shared.characteristics()
+                // Quick reads (weight + height + age + sex) fill the form fast…
+                let v = await HealthKitService.shared.profileVitals()
                 await MainActor.run {
-                    model.healthSnapshot = snap
-                    if let w = snap.weightKg, weightText.isEmpty { weightText = String(format: "%.0f", w) }
-                    if let a = chars.ageYears, ageText.isEmpty { ageText = String(a) }
-                    if let s = chars.biologicalSex, sex.isEmpty { sex = s }
+                    if let w = v.weightKg, w > 0, weightText.isEmpty {
+                        weightText = weightUnit == .kg ? Units.trim(w) : Units.trim(Units.kgToLb(w))
+                    }
+                    if let h = v.heightCm, h > 0 { fillHeight(h) }
+                    if let a = v.ageYears, ageText.isEmpty { ageText = String(a) }
+                    if let s = v.biologicalSex, sex.isEmpty { sex = s }
                     connected = true
                     connecting = false
                 }
+                // …the full vitals (sleep/HRV/steps) load in the background for AI grounding.
+                let snap = await HealthKitService.shared.snapshot()
+                await MainActor.run { model.healthSnapshot = snap }
             } else {
                 await MainActor.run {
                     healthNote = HealthKitService.isAvailable

@@ -85,9 +85,10 @@ struct GeneratingView: View {
         try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
     }
 
-    /// Real protocol generation. If the user already picked peptides, leave the
-    /// stack alone. Otherwise ask Claude for a grounded starter; on any failure
-    /// (no key / network / valid output) fall back to the rule-based starter.
+    /// Commit a rule-based starter immediately (so Review appears without waiting on
+    /// the network), then refine it with Claude in the background and swap its plan in
+    /// if the user hasn't edited Review yet. If the user pre-picked peptides, leave the
+    /// stack alone. Final plan is Claude-built; the wait never stalls onboarding.
     private func build() async {
         let svc = StackService(context: context)
         guard svc.items().isEmpty else { return }   // user already picked peptides
@@ -100,24 +101,39 @@ struct GeneratingView: View {
                            typicalDoseLow: c.typicalDoseLow, typicalDoseHigh: c.typicalDoseHigh,
                            route: c.primaryRoute?.label, defaultScheduleTypeRaw: c.defaultScheduleTypeRaw)
         }
-        let settings = CatalogStore.fetchOrCreateSettings(context)
-        let profile = CatalogStore.fetchOrCreateProfile(context, settings: settings)
-        let input = ProtocolInput(
-            goals: goals, pickedSlugs: svc.items().map(\.compoundSlug),
-            catalog: summaries, profile: profileInput(profile), health: model.healthSnapshot)
 
-        let claude = ClaudeServiceFactory.make()
-        do {
-            var dto = try await claude.generateProtocol(input)
-            var drafts = ClaudeService.buildDrafts(from: dto, catalog: summaries)
-            if drafts.isEmpty {
-                dto = try await claude.generateProtocol(input)            // one repair-retry
-                drafts = ClaudeService.buildDrafts(from: dto, catalog: summaries)
-            }
-            guard !drafts.isEmpty else { fallback(svc, goals, summaries); return }
-            for d in drafts { svc.commit(d) }
-        } catch {
-            fallback(svc, goals, summaries)
+        // 1) Instant rule-based starter.
+        for slug in StarterSuggester.slugs(for: goals) {
+            guard let c = all.first(where: { $0.slug == slug }) else { continue }
+            svc.commit(svc.draft(for: c))
+        }
+        model.builtOffline = true
+        let committed = Set(svc.items().map(\.compoundSlug))
+
+        // 2) Refine with Claude in the background; swap its plan in if Review is untouched.
+        let profile = CatalogStore.fetchOrCreateProfile(context, settings: CatalogStore.fetchOrCreateSettings(context))
+        let input = ProtocolInput(
+            goals: goals, pickedSlugs: [], catalog: summaries,
+            profile: profileInput(profile), health: model.healthSnapshot)
+        model.refining = true
+        Task { @MainActor in
+            defer { model.refining = false }
+            let claude = ClaudeServiceFactory.make()
+            do {
+                var dto = try await claude.generateProtocol(input)
+                var drafts = ClaudeService.buildDrafts(from: dto, catalog: summaries)
+                if drafts.isEmpty {
+                    dto = try await claude.generateProtocol(input)        // one repair-retry
+                    drafts = ClaudeService.buildDrafts(from: dto, catalog: summaries)
+                }
+                guard !drafts.isEmpty else { return }                     // keep the starter + "Built offline"
+                let s = StackService(context: context)
+                guard Set(s.items().map(\.compoundSlug)) == committed else { return }  // user edited → don't clobber
+                for item in s.items() { s.remove(item) }
+                for d in drafts { s.commit(d) }
+                model.builtOffline = false
+                model.refinedByAI = true
+            } catch { /* keep the starter + the "Built offline" note */ }
         }
     }
 
@@ -129,15 +145,6 @@ struct GeneratingView: View {
         return ProfileInput(ageYears: age, biologicalSex: p.biologicalSexRaw, weightKg: p.weightKg)
     }
 
-    /// Rule-based starter (the M2 stub), used whenever live generation fails.
-    private func fallback(_ svc: StackService, _ goals: [GoalKind], _ summaries: [CatalogSummary]) {
-        model.builtOffline = true
-        let all = (try? context.fetch(FetchDescriptor<CatalogCompound>())) ?? []
-        for slug in StarterSuggester.slugs(for: goals) {
-            guard let c = all.first(where: { $0.slug == slug }) else { continue }
-            svc.commit(svc.draft(for: c))
-        }
-    }
 }
 
 // MARK: - Review (editable stack)
@@ -164,7 +171,15 @@ struct ReviewView: View {
                                      title: items.isEmpty ? "Your plan." : "Your plan: \(items.count).")
                         Text("Tap to adjust. Everything is editable later, too.")
                             .font(.system(size: 15)).foregroundStyle(VT.body).padding(.top, 2)
-                        if model.builtOffline {
+                        if model.refining {
+                            HStack(spacing: 6) {
+                                ThinkingDots(label: "Refining")
+                                Text("Refining with AI…").font(.system(size: 13)).foregroundStyle(VT.micro)
+                            }.padding(.top, 2)
+                        } else if model.refinedByAI {
+                            Text("Refined with AI.")
+                                .font(.system(size: 13)).foregroundStyle(VT.dose).padding(.top, 2)
+                        } else if model.builtOffline {
                             Text("Built offline. Tap any item to refine it.")
                                 .font(.system(size: 13)).foregroundStyle(VT.micro).padding(.top, 2)
                         }

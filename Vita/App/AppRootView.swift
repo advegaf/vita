@@ -22,6 +22,9 @@ struct AppRootView: View {
         .animation(.easeInOut(duration: 0.3), value: onboarded)
         #if DEBUG
         .task {
+            if ProcessInfo.processInfo.environment["VITA_LAB_SELFTEST"] == "1" {
+                await LabSelfTest.run(context: context)
+            }
             if ProcessInfo.processInfo.environment["VITA_OPEN_CALC"] == "1" {
                 try? await Task.sleep(nanoseconds: 400_000_000)
                 showCalcDebug = true

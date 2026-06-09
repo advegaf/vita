@@ -20,6 +20,10 @@ final class OnboardingModel {
     /// Set when protocol generation fell back to the rule-based starter (no key /
     /// network / valid output) so Review can show a calm "Built offline" note.
     var builtOffline = false
+    /// Claude is refining the starter in the background (Review shows "Refining with AI…").
+    var refining = false
+    /// Claude's plan replaced the starter (Review shows "Refined with AI.").
+    var refinedByAI = false
 
     init() {
         #if DEBUG

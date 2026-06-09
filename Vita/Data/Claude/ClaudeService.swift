@@ -59,32 +59,42 @@ struct ClaudeService: ClaudeServiceProviding {
         }
     }
 
-    var labsMaxTokens = 4096          // comprehensive panels (40-60 markers) overflow 2048
+    var labsMaxTokens = 16384         // a 5-page, ~69-marker panel needs ~6k output tokens; this is a ceiling
+                                      // (the model stops at tool_use when done, so it doesn't slow completed calls)
 
     func interpretLabs(_ input: LabScanInput) async throws -> LabPanelDTO {
         let system = [AnthropicClient.SystemBlock(text: ClaudeSchemas.labsSystemText(), cache: true)]
         let isPDF = input.mediaType == "application/pdf"
-        // Hybrid: native `document` block for small clean PDFs (keeps the text layer);
-        // rasterize big / many-page PDFs up front; and if a native PDF is rejected (4xx),
-        // fall back to rasterized images once.
-        let rasterizeFirst = isPDF &&
-            (input.imageData.count > 4_000_000 || LabImageEncoder.pdfPageCount(input.imageData) > 5)
+        // Route by text layer: a PDF with selectable text reads fastest + most accurately as a native
+        // `document` block; a scan (no text) must be rasterized to images. If a native PDF is rejected
+        // (4xx) we still fall back to rasterizing once.
+        let rasterizeFirst = isPDF && !LabImageEncoder.pdfHasTextLayer(input.imageData)
         let primary: [(base64: String, mediaType: String)] = {
             if rasterizeFirst { let r = rasterized(input); if !r.isEmpty { return r } }
             return [(input.imageData.base64EncodedString(), input.mediaType)]
         }()
-        do {
-            return try await run(system: system, attachments: primary)
-        } catch let e as AnthropicClient.AnthropicError {
-            #if DEBUG
-            NSLog("vita-labs: error %@", String(describing: e))
-            #endif
-            if isPDF, !rasterizeFirst, case .http = e {
-                let imgs = rasterized(input)
-                if !imgs.isEmpty { return try await run(system: system, attachments: imgs) }
+
+        func attempt() async throws -> LabPanelDTO {
+            do {
+                return try await run(system: system, attachments: primary)
+            } catch let e as AnthropicClient.AnthropicError {
+                #if DEBUG
+                NSLog("vita-labs: error %@", String(describing: e))
+                #endif
+                if isPDF, !rasterizeFirst, case .http = e {
+                    let imgs = rasterized(input)
+                    if !imgs.isEmpty { return try await run(system: system, attachments: imgs) }
+                }
+                throw e
             }
-            throw e
         }
+
+        // The model occasionally bails early on a dense multi-page report (returns a
+        // near-empty list). One retry, keeping whichever attempt found more markers.
+        let first = try await attempt()
+        guard first.values.count < 3 else { return first }
+        let second = try await attempt()
+        return second.values.count > first.values.count ? second : first
     }
 
     private func rasterized(_ input: LabScanInput) -> [(base64: String, mediaType: String)] {
@@ -99,7 +109,9 @@ struct ClaudeService: ClaudeServiceProviding {
             toolName: ClaudeSchemas.labsToolName)
         guard let data = result.toolInput else { throw AnthropicClient.AnthropicError.noToolUse }
         #if DEBUG
-        NSLog("vita-labs: interpreted via %d attachment(s), cache_read=%d", attachments.count, result.cacheReadTokens)
+        let rawCount = (try? JSONSerialization.jsonObject(with: data) as? [String: Any])
+            .flatMap { ($0?["values"] as? [Any])?.count }
+        NSLog("vita-labs: interpreted via %d attachment(s), raw_values=%@", attachments.count, String(describing: rawCount))
         #endif
         do { return try JSONDecoder().decode(LabPanelDTO.self, from: data) }
         catch { throw AnthropicClient.AnthropicError.decode }

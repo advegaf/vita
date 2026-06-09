@@ -28,10 +28,21 @@ struct LabPanelDTO: Codable, Equatable, Sendable {
         let c = try decoder.container(keyedBy: CodingKeys.self)
         panelDate = try? c.decodeIfPresent(String.self, forKey: .panelDate)
         sourceLabName = try? c.decodeIfPresent(String.self, forKey: .sourceLabName)
-        values = (try? c.decode([Value].self, forKey: .values)) ?? []
+        // Element-tolerant: a single malformed row (a qualitative result, a null value)
+        // must NOT drop the whole array. Decoding `[Value].self` is all-or-nothing, so
+        // wrap each element in a never-throwing shim and keep the ones that parse.
+        let rows = (try? c.decode([LenientValue].self, forKey: .values)) ?? []
+        values = rows.compactMap(\.value)
         summary = (try? c.decode(String.self, forKey: .summary)) ?? ""
         disclaimer = (try? c.decode(String.self, forKey: .disclaimer))
             ?? "Educational, not medical advice. Discuss results with your clinician."
+    }
+
+    /// Decodes a `Value` but never throws — a bad element becomes nil (skipped) instead
+    /// of failing the entire array decode.
+    private struct LenientValue: Decodable {
+        let value: Value?
+        init(from decoder: Decoder) throws { value = try? Value(from: decoder) }
     }
 
     struct Value: Codable, Equatable, Sendable {

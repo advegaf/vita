@@ -18,6 +18,10 @@ struct LabScanFlow: View {
     @State private var prepared: (data: Data, mediaType: String)?
     @State private var dto: LabPanelDTO?
     @State private var errorText: String?
+    @State private var readingHint: String?
+    @State private var readingStart: Date?
+    @State private var diagText: String?
+    @State private var interpretTask: Task<Void, Never>?
 
     private enum Phase { case intro, reading, review, failed }
 
@@ -122,8 +126,21 @@ struct LabScanFlow: View {
             ThinkingDots(label: "Reading your labs")
             Text("Reading your labs…")
                 .font(VFont.display(20, weight: .bold, relativeTo: .title3)).foregroundStyle(VT.ink)
+            if let readingHint {
+                Text(readingHint)
+                    .font(.system(size: 14)).foregroundStyle(VT.micro)
+                    .multilineTextAlignment(.center)
+            }
+            if let readingStart {
+                TimelineView(.periodic(from: .now, by: 1)) { ctx in
+                    Text("\(Int(ctx.date.timeIntervalSince(readingStart)))s")
+                        .font(.system(size: 13, weight: .medium)).vtTabular().foregroundStyle(VT.micro)
+                }
+            }
+            Button("Cancel") { cancelReading() }
+                .font(.system(size: 15, weight: .semibold)).foregroundStyle(VT.dose).padding(.top, 6)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity).padding(VT.sSection)
     }
 
     private var failed: some View {
@@ -132,6 +149,12 @@ struct LabScanFlow: View {
                 .font(.system(size: 26)).foregroundStyle(VT.overdue)
             Text(errorText ?? "Couldn't read that clearly.")
                 .font(.system(size: 16)).foregroundStyle(VT.body).multilineTextAlignment(.center)
+            #if DEBUG
+            if let diagText {
+                Text(diagText).font(.system(size: 11)).foregroundStyle(VT.micro)
+                    .multilineTextAlignment(.center).padding(.horizontal)
+            }
+            #endif
             VStack(spacing: 10) {
                 if prepared != nil {
                     CharcoalPillButton(title: "Retry") {
@@ -162,30 +185,59 @@ struct LabScanFlow: View {
 
         let prep = LabImageEncoder.prepare(data: data, mediaTypeHint: hint)
         prepared = prep
+        readingHint = Self.readingHint(for: prep)
         photoItem = nil
         runInterpret(prep)
     }
 
+    /// An honest expectation-setter under the spinner — a multi-page report is slow to read.
+    static func readingHint(for prep: (data: Data, mediaType: String)) -> String {
+        if prep.mediaType == "application/pdf" {
+            let n = LabImageEncoder.pdfPageCount(prep.data)
+            if n > 2 { return "Reading \(n) pages. A long report can take up to a minute." }
+        }
+        return "This can take a moment."
+    }
+
     private func runInterpret(_ prep: (data: Data, mediaType: String)) {
         phase = .reading
-        Task {
+        readingStart = Date()
+        diagText = nil
+        interpretTask = Task {
+            let start = Date()
             do {
                 let result = try await LabService(context: context).interpret(imageData: prep.data, mediaType: prep.mediaType)
+                if Task.isCancelled { return }
                 await MainActor.run {
                     if result.values.isEmpty {
                         errorText = "No values found on that page. Try a clearer photo or a single-page export."
-                        phase = .failed
+                        setDiag(prep, "values: 0", start); phase = .failed
                     } else {
                         dto = result; phase = .review
                     }
                 }
             } catch {
+                if Task.isCancelled { return }
                 await MainActor.run {
                     errorText = Self.labErrorMessage(error)
-                    phase = .failed
+                    setDiag(prep, "error: \(error)", start); phase = .failed
                 }
             }
         }
+    }
+
+    private func cancelReading() {
+        interpretTask?.cancel(); interpretTask = nil
+        errorText = nil; readingStart = nil; phase = .intro
+    }
+
+    private func setDiag(_ prep: (data: Data, mediaType: String), _ outcome: String, _ start: Date) {
+        #if DEBUG
+        let pdf = prep.mediaType == "application/pdf"
+        diagText = "pdf=\(pdf) pages=\(pdf ? LabImageEncoder.pdfPageCount(prep.data) : 0)"
+            + " text=\(pdf ? LabImageEncoder.pdfHasTextLayer(prep.data) : false)"
+            + " · \(outcome) · \(Int(Date().timeIntervalSince(start)))s"
+        #endif
     }
 
     /// Maps a thrown error to a calm, specific line (offline / busy / too-large / etc.).
@@ -197,7 +249,11 @@ struct LabScanFlow: View {
         case .noKey:      return "No API key found. Add your Anthropic key in Settings to read labs."
         case .transport:  return "You're offline. Reconnect and try again."
         case .overloaded: return "The reader is busy right now. Give it a moment and retry."
-        case .http(let code, _): return "Couldn't read that file (error \(code)). Try a photo or a single-page PDF."
+        case .http(let code, let body):
+            if body.lowercased().contains("credit") {
+                return "Your Anthropic account is out of credits. Add credits at console.anthropic.com, then retry."
+            }
+            return "Couldn't read that file (error \(code)). Try a photo or a single-page PDF."
         case .decode, .noToolUse: return "Couldn't make sense of that page. Try a sharper photo or a clearer scan."
         }
     }

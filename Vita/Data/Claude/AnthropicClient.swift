@@ -30,7 +30,17 @@ actor AnthropicClient {
     private nonisolated let keyProvider: @Sendable () -> String?
     private let maxRetries = 2
 
-    init(session: URLSession = .shared,
+    /// Longer timeouts than `URLSession.shared` (whose 60s `timeoutIntervalForRequest`
+    /// is too short): a multi-page lab vision read can take 50-60s and would otherwise
+    /// time out on a slower network.
+    nonisolated static let longSession: URLSession = {
+        let c = URLSessionConfiguration.default
+        c.timeoutIntervalForRequest = 180
+        c.timeoutIntervalForResource = 600
+        return URLSession(configuration: c)
+    }()
+
+    init(session: URLSession = AnthropicClient.longSession,
          keyProvider: @escaping @Sendable () -> String? = { Keychain.apiKey }) {
         self.session = session
         self.keyProvider = keyProvider
@@ -163,8 +173,37 @@ actor AnthropicClient {
         let body = Self.makeVisionBody(maxTokens: maxTokens, system: system,
                                        userBlocks: userBlocks, tools: [tool()], toolName: toolName)
         let request = try Self.makeRequest(body: body, apiKey: key)
+        #if DEBUG
+        if ProcessInfo.processInfo.environment["VITA_LAB_SELFTEST"] == "1" {
+            // Write the FULL request body (with base64) so it can be replayed verbatim via curl.
+            if let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first,
+               let j = try? JSONSerialization.data(withJSONObject: body) {
+                try? j.write(to: docs.appendingPathComponent("lastreq.json"))
+            }
+            var dbg = body
+            if var msgs = dbg["messages"] as? [[String: Any]], var content = msgs[0]["content"] as? [[String: Any]] {
+                for i in content.indices {
+                    if var src = content[i]["source"] as? [String: Any], let d = src["data"] as? String {
+                        src["data"] = "<base64 \(d.count) chars>"; content[i]["source"] = src
+                    }
+                }
+                msgs[0]["content"] = content; dbg["messages"] = msgs
+            }
+            if let j = try? JSONSerialization.data(withJSONObject: dbg, options: [.sortedKeys]),
+               let s = String(data: j, encoding: .utf8) {
+                NSLog("vita-vision-req: %@", s)
+            }
+        }
+        #endif
         let (data, response) = try await sendWithRetry(request)
         guard let http = response as? HTTPURLResponse else { throw AnthropicError.transport }
+        #if DEBUG
+        if let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+            NSLog("vita-vision-resp: sent_max_tokens=%d status=%d stop=%@ out=%@",
+                  maxTokens, http.statusCode, String(describing: obj["stop_reason"]),
+                  String(describing: (obj["usage"] as? [String: Any])?["output_tokens"]))
+        }
+        #endif
         guard (200...299).contains(http.statusCode) else {
             let msg = String(data: data, encoding: .utf8) ?? ""
             if [429, 500, 529].contains(http.statusCode) { throw AnthropicError.overloaded(http.statusCode) }
