@@ -10,7 +10,8 @@ struct LabsListView: View {
     private var panels: [LabPanel] { allPanels.sorted { $0.effectiveDate > $1.effectiveDate } }
 
     var body: some View {
-        ScrollView {
+        let markers = LabSeries.trendedMarkers(panels: panels)
+        return ScrollView {
             VStack(alignment: .leading, spacing: VT.sCardGap) {
                 HStack(alignment: .firstTextBaseline) {
                     ScreenHeader(eyebrow: "Labs", title: "Your bloodwork.")
@@ -20,9 +21,18 @@ struct LabsListView: View {
                 if panels.isEmpty {
                     empty
                 } else {
+                    if !markers.trended.isEmpty {
+                        sectionLabel("Trends")
+                        markerCard(markers.trended, quiet: false)
+                        sectionLabel("Panels").padding(.top, 6)
+                    }
                     ForEach(panels) { panel in
                         NavigationLink { LabPanelDetailView(panel: panel) } label: { row(panel) }
-                            .buttonStyle(.plain)
+                            .buttonStyle(.pressableCard)
+                    }
+                    if !markers.single.isEmpty {
+                        sectionLabel("More markers").padding(.top, 6)
+                        markerCard(markers.single, quiet: true)
                     }
                 }
             }
@@ -33,6 +43,65 @@ struct LabsListView: View {
         .background(VT.canvas)
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showScan) { LabScanFlow() }
+    }
+
+    // MARK: Marker trends (M11)
+
+    private func sectionLabel(_ s: String) -> some View {
+        Text(s).font(.system(size: 12, weight: .medium)).tracking(0.4)
+            .textCase(.uppercase).foregroundStyle(VT.micro)
+    }
+
+    /// One grouped, hairline-divided card of marker rows (matches the panel detail's
+    /// values card so the two surfaces read as one family).
+    private func markerCard(_ markers: [LabMarkerSummary], quiet: Bool) -> some View {
+        VStack(spacing: 0) {
+            ForEach(markers.indices, id: \.self) { i in
+                NavigationLink {
+                    MarkerTrendView(markerKey: markers[i].markerKey, markerName: markers[i].name)
+                } label: {
+                    markerRow(markers[i], quiet: quiet)
+                }
+                .buttonStyle(.pressableCard)
+                if i < markers.count - 1 { Rectangle().fill(VT.hairline).frame(height: 1) }
+            }
+        }
+        .padding(.horizontal, VT.sCardPad).padding(.vertical, 6).vtCard()
+    }
+
+    private func markerRow(_ s: LabMarkerSummary, quiet: Bool) -> some View {
+        HStack(spacing: 12) {
+            Circle().fill(s.latestFlag.color).frame(width: 7, height: 7)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(s.name)
+                    .font(.system(size: quiet ? 14 : 15, weight: .semibold)).foregroundStyle(VT.ink)
+                    .lineLimit(2)                                    // uniform type: wrap, never shrink
+                    .fixedSize(horizontal: false, vertical: true)
+                Text("\(s.pointCount) result\(s.pointCount == 1 ? "" : "s")")
+                    .font(.system(size: 12)).vtTabular().foregroundStyle(VT.micro)
+            }
+            Spacer(minLength: 8)
+            VStack(alignment: .trailing, spacing: 2) {
+                Text("\(vtFormatNumber(s.latestValue)) \(s.unit)")
+                    .font(.system(size: quiet ? 14 : 16, weight: quiet ? .medium : .semibold)).vtTabular()
+                    .foregroundStyle(quiet ? VT.micro : (s.latestFlag.isOutOfRange ? VT.overdue : VT.ink))
+                if !quiet, let delta = s.delta, abs(delta) > 0.0001 {
+                    HStack(spacing: 3) {
+                        Image(systemName: delta > 0 ? "arrow.up.right" : "arrow.down.right")
+                            .font(.system(size: 10, weight: .bold))
+                        Text("\(vtFormatNumber(abs(delta))) vs last")
+                            .font(.system(size: 11, weight: .medium)).vtTabular()
+                    }
+                    .foregroundStyle(VT.micro)
+                }
+            }
+            Image(systemName: "chevron.right")
+                .font(.system(size: 13, weight: .semibold)).foregroundStyle(VT.micro)
+        }
+        .padding(.vertical, 12)
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(s.name), latest \(vtFormatNumber(s.latestValue)) \(s.unit), \(s.latestFlag.label)")
     }
 
     private func row(_ panel: LabPanel) -> some View {

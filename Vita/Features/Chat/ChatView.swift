@@ -15,23 +15,25 @@ struct ChatView: View {
     @Query private var profiles: [UserProfile]
     @Query private var diaryEntries: [DiaryEntry]
     @Query private var bodyMetrics: [BodyMetric]
+    @Query private var doseLogs: [DoseLog]
     @AppStorage("vita.weightUnit") private var weightUnitRaw = WeightUnit.lb.rawValue
 
     @State private var net = Connectivity.shared
+    @State private var router = NotificationRouter.shared
     @State private var input = ""
-    @State private var streamingText = ""
-    @State private var isStreaming = false
-    @State private var pendingSuggestions: [PendingSuggestion] = []
-    @State private var retryInput: ChatInput?
-    @State private var streamTask: Task<Void, Never>?
+    // The stream lives in the app-level session so it survives tab switches
+    // (the old view-owned task was cancelled in onDisappear — replies died the
+    // moment the user browsed another tab).
+    @State private var session = ChatSession.shared
     @State private var health: HealthSnapshot?
     @State private var editDraft: DoseDraft?
+    @State private var suggestedNote: String?
     @FocusState private var inputFocused: Bool
 
     private var bySlug: [String: CatalogCompound] {
         Dictionary(compounds.map { ($0.slug, $0) }, uniquingKeysWith: { a, _ in a })
     }
-    private var isThreadEmpty: Bool { messages.isEmpty && !isStreaming && streamingText.isEmpty }
+    private var isThreadEmpty: Bool { messages.isEmpty && !session.isStreaming && session.streamingText.isEmpty }
 
     var body: some View {
         ZStack {
@@ -46,12 +48,17 @@ struct ChatView: View {
             .safeAreaInset(edge: .bottom, spacing: 0) { footer }
         }
         .toolbar(inputFocused ? .hidden : .automatic, for: .tabBar)
-        .sheet(item: $editDraft) { d in
+        .sheet(item: $editDraft, onDismiss: { suggestedNote = nil }) { d in
             let c = bySlug[d.compoundSlug]
-            DoseSetupSheet(draft: d, rangeText: c?.doseRangeText, about: c?.about)
+            DoseSetupSheet(draft: d, rangeText: c?.doseRangeText, about: c?.about,
+                           aiSuggestedNote: suggestedNote)
         }
+        .onAppear { consumePendingPrompt() }
+        .onChange(of: router.pendingChatPrompt) { _, _ in consumePendingPrompt() }
         .task {
-            if health == nil, HealthKitService.isAvailable {
+            // Unconditional refresh: connecting Apple Health in Settings or
+            // onboarding must reach the very next message, not the next relaunch.
+            if HealthKitService.isAvailable {
                 health = await HealthKitService.shared.snapshot()
             }
             #if DEBUG
@@ -64,7 +71,15 @@ struct ChatView: View {
             }
             #endif
         }
-        .onDisappear { streamTask?.cancel() }
+    }
+
+    /// Cross-links (e.g. a lab marker's "Ask vita") prefill the input; sending is
+    /// always the user's tap — never automatic.
+    private func consumePendingPrompt() {
+        guard let prompt = router.pendingChatPrompt else { return }
+        router.pendingChatPrompt = nil
+        input = prompt
+        inputFocused = true
     }
 
     // MARK: Header
@@ -99,7 +114,7 @@ struct ChatView: View {
                         messageRow(role: m.roleRaw, text: m.text,
                                    suggestions: suggestions(for: m))
                     }
-                    if isStreaming || !streamingText.isEmpty {
+                    if session.isStreaming || !session.streamingText.isEmpty {
                         liveRow
                     }
                     Color.clear.frame(height: 1).id("bottom")
@@ -110,7 +125,7 @@ struct ChatView: View {
             .scrollDismissesKeyboard(.interactively)
             .dismissesKeyboardOnTap()
             .onChange(of: messages.count) { _, _ in scrollToBottom(proxy) }
-            .onChange(of: streamingText) { _, _ in scrollToBottom(proxy) }
+            .onChange(of: session.streamingText) { _, _ in scrollToBottom(proxy) }
         }
     }
 
@@ -138,7 +153,7 @@ struct ChatView: View {
     }
 
     private var liveRow: some View {
-        assistantBubble(text: streamingText, suggestions: pendingSuggestions, streaming: true)
+        assistantBubble(text: session.streamingText, suggestions: session.pendingSuggestions, streaming: true)
     }
 
     @ViewBuilder
@@ -155,7 +170,7 @@ struct ChatView: View {
                     .textSelection(.enabled)
             }
             ForEach(suggestions, id: \.slug) { suggestionChip($0) }
-            if retryInput != nil && !streaming {
+            if session.retryInput != nil && !streaming {
                 Button(action: retry) {
                     Label("Couldn't reach vita. Tap to retry.", systemImage: "arrow.clockwise")
                         .font(.system(size: 13, weight: .semibold)).foregroundStyle(VT.body)
@@ -255,7 +270,7 @@ struct ChatView: View {
     }
 
     private var canSend: Bool {
-        !input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isStreaming && net.isOnline
+        !input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !session.isStreaming && net.isOnline
     }
 
     // MARK: Grounding
@@ -273,10 +288,23 @@ struct ChatView: View {
         }
     }
 
+    /// One grounding line per stack item, now including real adherence so vita can
+    /// answer "am I being consistent?" and weigh advice against actual usage.
     private func stackLines() -> [String] {
         items.map { item in
             let cadence = item.cadenceLabel.isEmpty ? "no schedule set" : item.cadenceLabel
-            return "\(item.displayName) — \(item.doseText) — \(cadence)"
+            // " | " separators, not em dashes (dash-heavy grounding primes the
+            // model to echo them back into replies).
+            var line = "\(item.displayName) | \(item.doseText) | \(cadence)"
+            let itemLogs = doseLogs.filter { $0.itemID == item.id }
+            if item.schedule?.frequency == .prn {
+                let n = Adherence.prnCount(item: item, logs: itemLogs)
+                if n > 0 { line += " | used \(n)x in the last 30 days" }
+            } else {
+                let s = Adherence.summary(item: item, logs: itemLogs)
+                if s.scheduled > 0 { line += " | logged \(s.logged) of \(s.scheduled) scheduled days in the last 30" }
+            }
+            return line
         }
     }
 
@@ -293,7 +321,7 @@ struct ChatView: View {
 
     private func send(_ raw: String) {
         let text = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty, !isStreaming, net.isOnline else { return }
+        guard !text.isEmpty, !session.isStreaming, net.isOnline else { return }
         Haptics.press()
         inputFocused = false
         input = ""
@@ -307,7 +335,7 @@ struct ChatView: View {
         let userMsg = ChatMessage()
         userMsg.roleRaw = "user"; userMsg.text = text
         context.insert(userMsg)
-        try? context.save()
+        context.saveLogged("ChatView")
 
         let diaryLine = DiaryGrounding.summaryLine(
             entries: diaryEntries, metrics: bodyMetrics,
@@ -316,85 +344,46 @@ struct ChatView: View {
         let chatInput = ChatInput(turns: turns, catalog: summaries(), goals: goals,
                                   stackLines: stackLines(), profile: profileInput(), health: health,
                                   diaryLine: diaryLine, labsLine: labsLine)
-        startStreaming(chatInput)
-    }
-
-    private func startStreaming(_ chatInput: ChatInput) {
-        isStreaming = true
-        streamingText = ""
-        pendingSuggestions = []
-        retryInput = nil
-        let svc = ClaudeServiceFactory.make()
-        streamTask = Task {
-            do {
-                for try await event in svc.streamChat(chatInput) {
-                    switch event {
-                    case .text(let t):
-                        streamingText += t
-                    case .suggestion(let action, let slug, _):
-                        if let s = validate(action: action, slug: slug),
-                           !pendingSuggestions.contains(where: { $0.slug == s.slug }) {
-                            withAnimation(reduceMotion ? nil : .spring(response: 0.3, dampingFraction: 0.8)) {
-                                pendingSuggestions.append(s)
-                            }
-                        }
-                    case .finished:
-                        break
-                    }
-                }
-                finalizeAssistant()
-            } catch {
-                // Keep the partial reply visible; offer retry.
-                retryInput = chatInput
-                isStreaming = false
-            }
-        }
-    }
-
-    private func finalizeAssistant() {
-        defer { isStreaming = false; streamingText = ""; pendingSuggestions = [] }
-        let body = ChatText.sanitize(streamingText.trimmingCharacters(in: .whitespacesAndNewlines))
-        guard !body.isEmpty || !pendingSuggestions.isEmpty else { return }
-        let msg = ChatMessage()
-        msg.roleRaw = "assistant"
-        msg.text = body
-        msg.suggestionSlugs = pendingSuggestions.map(\.slug)
-        msg.suggestionActions = pendingSuggestions.map(\.action)
-        context.insert(msg)
-        try? context.save()
+        session.send(chatInput)
     }
 
     private func retry() {
-        guard let chatInput = retryInput else { return }
-        retryInput = nil
-        startStreaming(chatInput)
+        session.retry()
     }
 
     private func clearChat() {
-        streamTask?.cancel()
-        isStreaming = false; streamingText = ""; pendingSuggestions = []; retryInput = nil
-        for m in messages { context.delete(m) }
-        try? context.save()
+        session.cancelAndReset()
+        // Batch delete via the shared action: iterating-and-deleting the same
+        // models the live transcript is rendering can trap mid-render.
+        SettingsActions(context: context).clearChat()
     }
 
     // MARK: Suggestion validation + open
 
     /// A suggestion is valid only if it maps to a real action: add a catalog
-    /// compound not in the stack, or adjust one already in it.
-    private func validate(action: String, slug: String) -> PendingSuggestion? {
+    /// compound not in the stack, or adjust one already in it. A suggested dose is
+    /// never trusted raw — clamped into the catalog's educational range.
+    private func validate(action: String, slug: String, dose: Double? = nil) -> PendingSuggestion? {
         guard let c = bySlug[slug] else { return nil }
         let stackSlugs = Set(items.map(\.compoundSlug))
         guard ChatSuggestion.isValid(action: action, slug: slug,
                                      catalogSlugs: Set(bySlug.keys), stackSlugs: stackSlugs)
         else { return nil }
-        return PendingSuggestion(action: action, slug: slug, name: c.name, reason: "")
+        var clamped: Double? = nil
+        if var d = dose, d > 0 {
+            if let lo = c.typicalDoseLow, d < lo { d = lo }
+            if let hi = c.typicalDoseHigh, d > hi { d = hi }
+            clamped = d
+        }
+        return PendingSuggestion(action: action, slug: slug, name: c.name, reason: "", dose: clamped)
     }
 
     private func suggestions(for m: ChatMessage) -> [PendingSuggestion] {
         var out: [PendingSuggestion] = []
         for (i, slug) in m.suggestionSlugs.enumerated() {
             let action = i < m.suggestionActions.count ? m.suggestionActions[i] : "add"
-            if let v = validate(action: action, slug: slug),
+            let dose = i < m.suggestionDoses.count && m.suggestionDoses[i] > 0 ? m.suggestionDoses[i] : nil
+            if let v = validate(action: action, slug: slug, dose: dose),
                !out.contains(where: { $0.slug == v.slug }) {
                 out.append(v)
             }
@@ -405,8 +394,16 @@ struct ChatView: View {
     private func openSuggestion(_ s: PendingSuggestion) {
         let svc = StackService(context: context)
         if s.action == "add", let c = bySlug[s.slug] {
-            editDraft = svc.draft(for: c)
+            var d = svc.draft(for: c)
+            if let dose = s.dose {
+                d.doseAmount = dose
+                suggestedNote = "vita suggested \(vtFormatNumber(dose)) \(c.doseUnit.label) to start."
+            }
+            editDraft = d
         } else if s.action == "adjust", let item = items.first(where: { $0.compoundSlug == s.slug }) {
+            if let dose = s.dose {
+                suggestedNote = "vita suggested \(vtFormatNumber(dose)) \(item.doseUnit.label)."
+            }
             editDraft = svc.draft(for: item)
         }
     }
@@ -423,6 +420,7 @@ struct PendingSuggestion: Equatable {
     let slug: String
     let name: String
     let reason: String
+    var dose: Double? = nil   // vita's suggested starting dose, clamped to the catalog range
 }
 
 // ThinkingDots now lives in DesignSystem/Components/Misc.swift (shared with onboarding).

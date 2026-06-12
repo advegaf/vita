@@ -11,6 +11,7 @@ struct CompoundDetailView: View {
 
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
+    @Query private var allLogs: [DoseLog]
     @State private var inStack = false
     @State private var setupDraft: DoseDraft?
     @State private var showCalculator = false
@@ -22,6 +23,7 @@ struct CompoundDetailView: View {
             VStack(alignment: .leading, spacing: VT.sCardGap) {
                 header
                 doseCard
+                if isStackMode { adherenceCard }
                 timingCard
                 InfoCard(lead: "Why.", leadColor: VT.why,
                          text: compound.about ?? compound.mechanismBlurb ?? "Educational information about this compound.",
@@ -143,6 +145,46 @@ struct CompoundDetailView: View {
     private var protocolLine: String {
         if let item, !item.cadenceLabel.isEmpty { return item.cadenceLabel }
         return compound.defaultCadenceLabel.map { "Typically \($0)." } ?? "Set when added to your stack."
+    }
+
+    // MARK: Adherence card (M13 — "Logged 24 of 26 scheduled days." + 30-day dot grid)
+
+    @ViewBuilder
+    private var adherenceCard: some View {
+        if let item {
+            let cal = Calendar.current
+            let cutoff = cal.date(byAdding: .day, value: -30, to: cal.startOfDay(for: Date())) ?? Date()
+            // Windowed: only this item's logs inside the 30-day window (the log table grows forever).
+            let logs = allLogs.filter { $0.itemID == item.id && $0.scheduledDayStart >= cutoff }
+            let isPRN = item.schedule?.frequency == .prn
+
+            if isPRN {
+                let count = Adherence.prnCount(item: item, logs: allLogs.filter { $0.itemID == item.id })
+                if count > 0 {
+                    adherenceShell(line: "Logged \(count) time\(count == 1 ? "" : "s") in the last 30 days.",
+                                   days: Adherence.prnDays(item: item, logs: allLogs.filter { $0.itemID == item.id }))
+                }
+            } else {
+                let s = Adherence.summary(item: item, logs: logs)
+                if s.scheduled > 0 {
+                    adherenceShell(line: "Logged \(s.logged) of \(s.scheduled) scheduled days.",
+                                   days: Adherence.dayStates(item: item, logs: logs))
+                }
+            }
+        }
+    }
+
+    private func adherenceShell(line: String, days: [AdherenceDay]) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            vtLead("Adherence.", color: VT.why)
+            Text(line)
+                .font(.system(size: 15, weight: .semibold)).vtTabular().foregroundStyle(VT.ink)
+            AdherenceGrid(days: days)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(VT.sCardPad).vtCard()
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Adherence. \(line)")
     }
 
     // MARK: Timing card

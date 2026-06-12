@@ -9,6 +9,9 @@ import UniformTypeIdentifiers
 struct LabScanFlow: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
+    /// After a save, offer "Ask vita to review your plan →" (prefills chat, never
+    /// auto-sends). Onboarding passes false — chat isn't reachable mid-wizard.
+    var offersChatReview = true
     var onSaved: () -> Void = {}
 
     @State private var phase: Phase = .intro
@@ -19,11 +22,10 @@ struct LabScanFlow: View {
     @State private var dto: LabPanelDTO?
     @State private var errorText: String?
     @State private var readingHint: String?
-    @State private var readingStart: Date?
     @State private var diagText: String?
     @State private var interpretTask: Task<Void, Never>?
 
-    private enum Phase { case intro, reading, review, failed }
+    private enum Phase { case intro, reading, review, saved, failed }
 
     var body: some View {
         NavigationStack {
@@ -51,6 +53,8 @@ struct LabScanFlow: View {
                 }
             }
         }
+        // Closing or swiping the sheet away mustn't leak the in-flight request.
+        .onDisappear { interpretTask?.cancel() }
     }
 
     @ViewBuilder private var content: some View {
@@ -61,11 +65,45 @@ struct LabScanFlow: View {
             reading
         case .review:
             if let dto {
-                LabReviewView(dto: dto, scan: prepared) { onSaved(); dismiss() }
+                LabReviewView(dto: dto, scan: prepared) {
+                    onSaved()
+                    if offersChatReview { phase = .saved } else { dismiss() }
+                }
             }
+        case .saved:
+            savedView
         case .failed:
             failed
         }
+    }
+
+    /// Post-save: the panel is in; offer a one-tap plan review in chat. The tap
+    /// PREFILLS the chat input (the user still sends it) — same consent posture
+    /// as the marker chart's "Ask vita about this".
+    private var savedView: some View {
+        VStack(spacing: VT.sCardGap) {
+            Image(systemName: "checkmark.seal.fill")
+                .font(.system(size: 30)).foregroundStyle(VT.why)
+            Text("Panel saved.")
+                .font(VFont.display(20, weight: .bold, relativeTo: .title3)).foregroundStyle(VT.ink)
+            Text("Your results now ground vita's answers and plan suggestions.")
+                .font(.system(size: 14)).foregroundStyle(VT.micro)
+                .multilineTextAlignment(.center)
+            Button {
+                NotificationRouter.shared.pendingChatPrompt =
+                    LabGrounding.stackReviewPrompt(panels: LabService(context: context).panels())
+                NotificationRouter.shared.pendingTab = .chat
+                dismiss()
+            } label: {
+                Text("Ask vita to review your plan →")
+                    .font(.system(size: 16, weight: .semibold)).foregroundStyle(VT.dose)
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 6)
+            Button("Done") { dismiss() }
+                .font(.system(size: 15, weight: .semibold)).foregroundStyle(VT.micro)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity).padding(VT.sSection)
     }
 
     // MARK: Intro (consent folded in for the first scan)
@@ -131,14 +169,6 @@ struct LabScanFlow: View {
                     .font(.system(size: 14)).foregroundStyle(VT.micro)
                     .multilineTextAlignment(.center)
             }
-            if let readingStart {
-                TimelineView(.periodic(from: .now, by: 1)) { ctx in
-                    Text("\(Int(ctx.date.timeIntervalSince(readingStart)))s")
-                        .font(.system(size: 13, weight: .medium)).vtTabular().foregroundStyle(VT.micro)
-                }
-            }
-            Button("Cancel") { cancelReading() }
-                .font(.system(size: 15, weight: .semibold)).foregroundStyle(VT.dose).padding(.top, 6)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity).padding(VT.sSection)
     }
@@ -184,6 +214,15 @@ struct LabScanFlow: View {
         if settings.labConsentedAt == nil { settings.labConsentedAt = Date(); try? context.save() }
 
         let prep = LabImageEncoder.prepare(data: data, mediaTypeHint: hint)
+        // A PDF PDFKit can't even open has no readable pages: fail fast and
+        // specifically, without burning an API call on it.
+        if prep.mediaType == "application/pdf", LabImageEncoder.pdfPageCount(prep.data) == 0 {
+            errorText = "That PDF looks damaged. Try exporting it again, or use a photo."
+            prepared = nil
+            photoItem = nil
+            phase = .failed
+            return
+        }
         prepared = prep
         readingHint = Self.readingHint(for: prep)
         photoItem = nil
@@ -201,7 +240,6 @@ struct LabScanFlow: View {
 
     private func runInterpret(_ prep: (data: Data, mediaType: String)) {
         phase = .reading
-        readingStart = Date()
         diagText = nil
         interpretTask = Task {
             let start = Date()
@@ -224,11 +262,6 @@ struct LabScanFlow: View {
                 }
             }
         }
-    }
-
-    private func cancelReading() {
-        interpretTask?.cancel(); interpretTask = nil
-        errorText = nil; readingStart = nil; phase = .intro
     }
 
     private func setDiag(_ prep: (data: Data, mediaType: String), _ outcome: String, _ start: Date) {

@@ -24,4 +24,31 @@ final class CopyGuardTests: XCTestCase {
         let missing = seeds.filter { ($0.about ?? "").isEmpty }.map(\.slug)
         XCTAssertTrue(missing.isEmpty, "Missing About text for: \(missing)")
     }
+
+    /// No em dashes in ANY Swift source string (outside // comments). The catalog
+    /// guard above missed UI copy for months (an em dash shipped in Settings).
+    /// Allowlist: ClaudeSchemas.swift, whose prompt instruction quotes the banned
+    /// character and whose sanitizer defines its replacement.
+    func testNoEmDashesInSwiftSources() throws {
+        let fm = FileManager.default
+        // VitaTests/<this file> → repo root → Vita/
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("Vita")
+        guard let files = fm.enumerator(at: root, includingPropertiesForKeys: nil) else {
+            throw XCTSkip("source tree not available in this test environment")
+        }
+        var offenders: [String] = []
+        for case let url as URL in files where url.pathExtension == "swift" {
+            if url.lastPathComponent == "ClaudeSchemas.swift" { continue }
+            guard let text = try? String(contentsOf: url, encoding: .utf8) else { continue }
+            for (n, line) in text.components(separatedBy: "\n").enumerated() {
+                let code = line.components(separatedBy: "//").first ?? line
+                if code.contains("—") {
+                    offenders.append("\(url.lastPathComponent):\(n + 1)")
+                }
+            }
+        }
+        XCTAssertTrue(offenders.isEmpty, "Em dashes in code (not comments): \(offenders)")
+    }
 }

@@ -25,7 +25,15 @@ final class ChatTests: XCTestCase {
 
     private func feed(_ payloads: [String]) -> [ChatStreamEvent] {
         var parser = SSEChatParser()
-        return payloads.flatMap { parser.consume($0) }
+        return payloads.flatMap { (try? parser.consume($0)) ?? [] }
+    }
+
+    func testSSEErrorEventThrows() {
+        // A mid-stream error means a truncated reply: the stream must FAIL (the UI
+        // keeps the partial text + offers retry), never finish as if complete.
+        var parser = SSEChatParser()
+        XCTAssertThrowsError(try parser.consume(
+            #"{"type":"error","error":{"type":"overloaded_error","message":"busy"}}"#))
     }
 
     func testSSETextThenFinish() {
@@ -59,8 +67,8 @@ final class ChatTests: XCTestCase {
             #"{"type":"message_stop"}"#,
         ])
         XCTAssertEqual(events, [
-            .suggestion(action: "add", slug: "melanotan-1", reason: "x"),
-            .suggestion(action: "add", slug: "melanotan-2", reason: "y"),
+            .suggestion(action: "add", slug: "melanotan-1", reason: "x", dose: nil),
+            .suggestion(action: "add", slug: "melanotan-2", reason: "y", dose: nil),
             .finished,
         ])
     }
@@ -83,11 +91,20 @@ final class ChatTests: XCTestCase {
             #"{"type":"content_block_stop","index":1}"#,
             #"{"type":"message_stop"}"#,
         ])
-        XCTAssertEqual(events, [.suggestion(action: "add", slug: "tb-500", reason: "recovery"), .finished])
+        XCTAssertEqual(events, [.suggestion(action: "add", slug: "tb-500", reason: "recovery", dose: nil), .finished])
     }
 
     func testSSEIgnoresDoneAndJunk() {
         XCTAssertTrue(feed(["[DONE]", "", "not json", #"{"type":"ping"}"#]).isEmpty)
+    }
+
+    func testSSESuggestionCarriesSuggestedDose() {
+        let events = feed([
+            #"{"type":"content_block_start","index":0,"content_block":{"type":"tool_use","name":"suggest_stack_action","input":{}}}"#,
+            #"{"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta","partial_json":"{\"action\":\"add\",\"compound_slug\":\"bpc-157\",\"reason\":\"r\",\"suggested_dose\":250}"}}"#,
+            #"{"type":"content_block_stop","index":0}"#,
+        ])
+        XCTAssertEqual(events, [.suggestion(action: "add", slug: "bpc-157", reason: "r", dose: 250)])
     }
 
     // MARK: - Suggestion validation

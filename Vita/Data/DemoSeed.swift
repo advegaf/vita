@@ -57,11 +57,12 @@ enum DemoSeed {
                 svc.commit(d)
             }
             // Weekly GLP-1 ramp 0.25 → 0.5 → 1.0 mg, started 4 weeks ago → active 0.5, next 1.0 in 4 wks.
+            // Slot at 12:00 AM so the pin reads overdue (with its duration) at any demo hour.
             if let sema = compound("semaglutide") {
                 var d = svc.draft(for: sema)
                 d.frequency = .weekly
                 d.weekdays = [cal.component(.weekday, from: Date())]   // due today
-                d.times = [9 * 60]
+                d.times = [0]
                 d.doseUnit = .mg; d.doseAmount = 0.25
                 d.protocolStart = cal.date(byAdding: .day, value: -28, to: Date()) ?? Date()
                 d.titrationEnabled = true
@@ -105,10 +106,24 @@ enum DemoSeed {
             d.frequency = .prn
             svc.commit(d)
         }
-        // Pre-log the BPC-157 morning dose so a taken pin + DotMeter progress show.
+        // Pre-log the BPC-157 morning dose so a taken pin + DotMeter progress show,
+        // and backdate ten days of mixed history so the detail's Adherence card
+        // (M13) has a real story: mostly taken, one skipped day, two missed.
         if let bpc = svc.item(forSlug: "bpc-157") {
-            DoseLogger(context: context).log(
-                item: bpc, occurrence: DoseOccurrence(itemID: bpc.id, minutes: 8 * 60), status: .taken)
+            let cal = Calendar.current
+            let today = cal.startOfDay(for: Date())
+            bpc.addedAt = cal.date(byAdding: .day, value: -10, to: today)!
+            let logger = DoseLogger(context: context)
+            logger.log(item: bpc, occurrence: DoseOccurrence(itemID: bpc.id, minutes: 8 * 60), status: .taken)
+            for daysAgo in 1...10 {
+                guard ![3, 7].contains(daysAgo) else { continue }              // missed days
+                let day = cal.date(byAdding: .day, value: -daysAgo, to: today)!
+                let status: DoseStatus = daysAgo == 5 ? .skipped : .taken      // one skipped day
+                for minutes in [8 * 60, 21 * 60] {                             // both daily slots
+                    logger.log(item: bpc, occurrence: DoseOccurrence(itemID: bpc.id, minutes: minutes),
+                               on: day, status: status)
+                }
+            }
         }
     }
 }

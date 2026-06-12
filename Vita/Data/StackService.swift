@@ -51,6 +51,7 @@ struct StackService {
     func draft(for item: ProtocolItem) -> DoseDraft {
         var d = DoseDraft(compoundSlug: item.compoundSlug, displayName: item.displayName)
         d.editingItemID = item.id
+        d.aiGenerated = item.aiGenerated
         d.categoryRaw = item.categoryRaw
         d.rxStatusRaw = item.rxStatusRaw
         d.doseUnit = item.doseUnit
@@ -74,8 +75,10 @@ struct StackService {
     }
 
     /// Persists a draft as a new item or updates the one being edited. Dedupe on add.
+    /// `rebuild: false` defers the notification/widget side effects (batch callers
+    /// like `applyPlan` run them once at the end).
     @discardableResult
-    func commit(_ d: DoseDraft) -> ProtocolItem? {
+    func commit(_ d: DoseDraft, rebuild: Bool = true) -> ProtocolItem? {
         let item: ProtocolItem
         if let id = d.editingItemID, let existing = items().first(where: { $0.id == id }) {
             item = existing
@@ -89,9 +92,17 @@ struct StackService {
             item.sortIndex = items().count
             item.plan = activePlan()
             context.insert(item)
+            // Re-adding a compound mints a new id, which would orphan its old logs
+            // (denormalized by design). Re-link them so adherence, streaks, and
+            // "logged Nh ago" survive a remove → re-add round trip. In this branch
+            // no live item has the slug, so every matching log is an orphan.
+            let orphans = ((try? context.fetch(FetchDescriptor<DoseLog>())) ?? [])
+                .filter { $0.compoundSlug == d.compoundSlug }
+            for log in orphans { log.itemID = item.id }
         }
         item.doseUnitRaw = d.doseUnit.rawValue
         item.doseAmount = max(0, d.doseAmount)
+        item.aiGenerated = d.aiGenerated
         item.kindRaw = (d.frequency == .prn) ? "prn" : "scheduled"
 
         let rule = item.schedule ?? {
@@ -125,15 +136,94 @@ struct StackService {
             context.delete(v); item.vial = nil
         }
 
-        try? context.save()
-        NotificationManager.rebuild(context: context)
+        context.saveLogged("StackService")
+        if rebuild {
+            NotificationManager.rebuild(context: context)
+            WidgetBridge.update(context: context)
+        }
         return item
     }
 
-    func remove(_ item: ProtocolItem) {
+    func remove(_ item: ProtocolItem, rebuild: Bool = true) {
         context.delete(item)
-        try? context.save()
+        context.saveLogged("StackService")
+        if rebuild {
+            NotificationManager.rebuild(context: context)
+            WidgetBridge.update(context: context)
+        }
+    }
+
+    /// Replaces the plan with `drafts` by MERGING in place (the onboarding refine
+    /// path): an item whose compound stays gets its dose/schedule fields updated on
+    /// the SAME item (id stable, vial/cycle/titration kept, DoseLogs stay linked),
+    /// items not in the new plan are removed, new compounds are added, and on-screen
+    /// order follows the drafts. One save + one notification/widget rebuild at the
+    /// end. Never delete-all + insert-all: that re-identifies every row while Review
+    /// is rendering them (deleted-model access traps) and fires the heavy rebuild
+    /// per mutation.
+    ///
+    /// `protecting` marks items the merge may not touch (the user's own — see
+    /// `ProtocolItem.aiGenerated`): they are never updated or removed, and a draft
+    /// colliding with a protected slug is skipped (the caller surfaces it as a
+    /// suggestion instead).
+    func applyPlan(_ drafts: [DoseDraft], protecting: (ProtocolItem) -> Bool = { _ in false }) {
+        let protectedSlugs = Set(items().filter(protecting).map(\.compoundSlug))
+        let bySlug = Dictionary(drafts.map { ($0.compoundSlug, $0) },
+                                uniquingKeysWith: { a, _ in a })
+        for item in items() {
+            guard !protecting(item) else { continue }
+            if let d = bySlug[item.compoundSlug] {
+                var merged = draft(for: item)
+                merged.doseUnit = d.doseUnit
+                merged.doseAmount = d.doseAmount
+                merged.frequency = d.frequency
+                merged.weekdays = d.weekdays
+                merged.times = d.times
+                commit(merged, rebuild: false)
+            }
+            // An AI item absent from the refined plan is LEFT IN PLACE — the
+            // background swap must never delete a row the user may be looking at
+            // (device crash log: SwiftData traps when a rendered StackRow touches
+            // a deleted ScheduleRule). It stays visible, editable, and removable
+            // by the user.
+        }
+        let existing = Set(items().map(\.compoundSlug))
+        for d in drafts where !existing.contains(d.compoundSlug) && !protectedSlugs.contains(d.compoundSlug) {
+            commit(d, rebuild: false)
+        }
+        let order = Dictionary(drafts.enumerated().map { ($1.compoundSlug, $0) },
+                               uniquingKeysWith: { a, _ in a })
+        for item in items() where !protecting(item) {
+            item.sortIndex = order[item.compoundSlug] ?? item.sortIndex
+        }
+        context.saveLogged("StackService")
         NotificationManager.rebuild(context: context)
+        WidgetBridge.update(context: context)
+    }
+
+    /// A cheap, order-independent snapshot of the editable plan state. The refine
+    /// task captures one before its network call and applies its result only if it
+    /// still matches — so a dose/schedule edit (not just an add/remove) made while
+    /// Claude was thinking is never clobbered.
+    nonisolated static func fingerprint(_ items: [ProtocolItem]) -> String {
+        items.map { i in
+            let times = (i.schedule?.timeSlotsMinutes ?? []).sorted().map(String.init).joined(separator: ",")
+            let freq = i.schedule?.frequencyRaw ?? ""
+            return "\(i.compoundSlug)|\(i.doseAmount)|\(i.doseUnitRaw)|\(freq)|\(times)"
+        }
+        .sorted()
+        .joined(separator: ";")
+    }
+
+    /// Whether Claude's draft differs enough from the user's own item to surface
+    /// as a suggestion (dose off by >15%, or a different unit/cadence/times).
+    nonisolated static func suggestsChange(dose: Double, unitRaw: String, frequencyRaw: String,
+                                           times: [Int], draft d: DoseDraft) -> Bool {
+        if d.doseUnit.rawValue != unitRaw { return true }
+        if d.frequency.rawValue != frequencyRaw { return true }
+        if d.times.sorted() != times.sorted() { return true }
+        guard dose > 0 else { return d.doseAmount > 0 }
+        return abs(d.doseAmount - dose) / dose > 0.15
     }
 
     private func scheduleType(for f: Frequency) -> ScheduleType {
@@ -155,6 +245,9 @@ struct StackService {
 struct DoseDraft: Identifiable {
     var id = UUID()
     var editingItemID: UUID? = nil
+    /// Provenance carried into the item on commit (see `ProtocolItem.aiGenerated`).
+    /// The dose sheet forces this false on save: a user edit claims the item.
+    var aiGenerated: Bool = false
     var compoundSlug: String
     var displayName: String
     var categoryRaw: String = PeptideCategory.other.rawValue

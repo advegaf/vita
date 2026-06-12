@@ -29,7 +29,7 @@ struct StackView: View {
                             } label: {
                                 StackRow(item: item, compound: bySlug[item.compoundSlug])
                             }
-                            .buttonStyle(.plain)
+                            .buttonStyle(.pressableCard)
                             .contextMenu {
                                 Button(role: .destructive) {
                                     StackService(context: context).remove(item)
@@ -127,6 +127,18 @@ struct StackRow: View {
     }
 
     var body: some View {
+        // Defense-in-depth: a row whose item was just deleted (swipe/context
+        // remove, any background mutation) must render as nothing — touching a
+        // deleted model's relationships traps in SwiftData (device crash log:
+        // titrationDayStarts getter under StackRow.body).
+        if item.isDeleted {
+            EmptyView()
+        } else {
+            rowContent
+        }
+    }
+
+    private var rowContent: some View {
         HStack(spacing: 12) {
             CompoundTile(category: item.category)
             VStack(alignment: .leading, spacing: 2) {

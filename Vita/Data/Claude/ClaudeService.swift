@@ -61,13 +61,41 @@ struct ClaudeService: ClaudeServiceProviding {
 
     var labsMaxTokens = 16384         // a 5-page, ~69-marker panel needs ~6k output tokens; this is a ceiling
                                       // (the model stops at tool_use when done, so it doesn't slow completed calls)
+    /// Labs run on Sonnet: structured transcription of printed values is a
+    /// mechanical task it handles as accurately as Opus (verified live: identical
+    /// 16/16 page extraction) at ~40% of the cost — and lab vision is by far the
+    /// most expensive call in the app (a 5-page scan is many page-images).
+    var labsModel = "claude-sonnet-4-6"
 
     func interpretLabs(_ input: LabScanInput) async throws -> LabPanelDTO {
-        let system = [AnthropicClient.SystemBlock(text: ClaudeSchemas.labsSystemText(), cache: true)]
+        // No cache_control: the labs prefix is below the prompt-cache minimum (a
+        // documented no-op), and keeping the request byte-identical to the proven
+        // shape leaves zero unexplained wire differences.
+        let system = [AnthropicClient.SystemBlock(text: ClaudeSchemas.labsSystemText(), cache: false)]
         let isPDF = input.mediaType == "application/pdf"
-        // Route by text layer: a PDF with selectable text reads fastest + most accurately as a native
-        // `document` block; a scan (no text) must be rasterized to images. If a native PDF is rejected
-        // (4xx) we still fall back to rasterizing once.
+
+        // Multi-page PDFs: ONE long extraction is unreliable — the model sometimes
+        // bails after a few rows no matter the modality (verified live: the same
+        // request returns 69 values one run and 0-1 the next). So extract PER PAGE,
+        // concurrently, and merge: single-page outputs are short enough that the
+        // model completes them dependably, and the wall-clock drops to ~one page.
+        if isPDF, LabImageEncoder.pdfPageCount(input.imageData) >= 2 {
+            let pages = LabImageEncoder.imagesFromPDF(input.imageData)
+            if pages.count >= 2 {
+                let merged = try await perPage(system: system, pages: pages)
+                guard merged.values.count < 3 else { return merged }
+                // Degenerate merge → one native-document attempt as a backstop.
+                let native = try? await run(
+                    system: system,
+                    attachments: [(input.imageData.base64EncodedString(), input.mediaType)])
+                if let native, native.values.count > merged.values.count { return native }
+                return merged
+            }
+        }
+
+        // Single page (a photo, or a 1-page PDF): one request. A 1-page PDF reads
+        // natively when it has a text layer, rasterized when it's a scan; a 4xx on
+        // the native path falls back to the rasterized image.
         let rasterizeFirst = isPDF && !LabImageEncoder.pdfHasTextLayer(input.imageData)
         let primary: [(base64: String, mediaType: String)] = {
             if rasterizeFirst { let r = rasterized(input); if !r.isEmpty { return r } }
@@ -89,12 +117,66 @@ struct ClaudeService: ClaudeServiceProviding {
             }
         }
 
-        // The model occasionally bails early on a dense multi-page report (returns a
-        // near-empty list). One retry, keeping whichever attempt found more markers.
+        // Near-empty single-page result → one retry with varied input where possible.
+        // The bonus attempt may NEVER sink a good first result: a legit 1-2 marker
+        // panel whose retry errors must still return what the first read found.
         let first = try await attempt()
         guard first.values.count < 3 else { return first }
-        let second = try await attempt()
+        let second: LabPanelDTO?
+        if isPDF, !rasterizeFirst, case let imgs = rasterized(input), !imgs.isEmpty {
+            second = try? await run(system: system, attachments: imgs)
+        } else {
+            second = try? await attempt()
+        }
+        guard let second else { return first }
         return second.values.count > first.values.count ? second : first
+    }
+
+    /// One request per rasterized page. Verified live: a single page extracts its
+    /// full marker list every run — but a full fan-out of concurrent Opus vision
+    /// calls trips per-minute rate limits and silently loses pages. So: batches of
+    /// two, then one sequential second chance for any page that failed. Page
+    /// failures are tolerated (the merge uses whatever succeeded) unless every
+    /// page fails.
+    private func perPage(system: [AnthropicClient.SystemBlock], pages: [Data]) async throws -> LabPanelDTO {
+        let total = pages.count
+        var byPage: [Int: LabPanelDTO] = [:]
+        var failed: [Int] = []
+        var lastError: Error?
+
+        func request(_ i: Int) async throws -> LabPanelDTO {
+            try await run(system: system,
+                          attachments: [(pages[i].base64EncodedString(), "image/jpeg")],
+                          userText: ClaudeSchemas.labsPagePrompt(page: i + 1, of: total))
+        }
+
+        for batchStart in stride(from: 0, to: total, by: 2) {
+            let batch = Array(batchStart..<min(batchStart + 2, total))
+            await withTaskGroup(of: (Int, Result<LabPanelDTO, Error>).self) { group in
+                for i in batch {
+                    group.addTask { [self] in
+                        do { return (i, .success(try await request(i))) }
+                        catch { return (i, .failure(error)) }
+                    }
+                }
+                for await (i, result) in group {
+                    switch result {
+                    case .success(let dto): byPage[i] = dto
+                    case .failure(let e): failed.append(i); lastError = e
+                    }
+                }
+            }
+        }
+        for i in failed.sorted() {                       // rate-limit stragglers, one by one
+            if let dto = try? await request(i) { byPage[i] = dto }
+        }
+        #if DEBUG
+        NSLog("vita-labs: per-page %d/%d pages ok, values per page: %@",
+              byPage.count, total,
+              byPage.sorted { $0.key < $1.key }.map { String($0.value.values.count) }.joined(separator: ","))
+        #endif
+        guard !byPage.isEmpty else { throw lastError ?? AnthropicClient.AnthropicError.transport }
+        return LabPanelDTO.merged(byPage.sorted { $0.key < $1.key }.map(\.value))
     }
 
     private func rasterized(_ input: LabScanInput) -> [(base64: String, mediaType: String)] {
@@ -102,10 +184,12 @@ struct ClaudeService: ClaudeServiceProviding {
     }
 
     private func run(system: [AnthropicClient.SystemBlock],
-                     attachments: [(base64: String, mediaType: String)]) async throws -> LabPanelDTO {
+                     attachments: [(base64: String, mediaType: String)],
+                     userText: String = ClaudeSchemas.labsUserPrompt) async throws -> LabPanelDTO {
         let result = try await client.sendVision(
-            maxTokens: labsMaxTokens, system: system, userText: ClaudeSchemas.labsUserPrompt,
-            attachments: attachments, tool: { ClaudeSchemas.interpretLabsTool },
+            model: labsModel,
+            maxTokens: labsMaxTokens, system: system, userText: userText,
+            attachments: attachments, tool: ClaudeSchemas.interpretLabsTool,
             toolName: ClaudeSchemas.labsToolName)
         guard let data = result.toolInput else { throw AnthropicClient.AnthropicError.noToolUse }
         #if DEBUG
@@ -127,7 +211,10 @@ struct ClaudeService: ClaudeServiceProviding {
                 cache: false),
         ]
         let messages = Self.windowedMessages(input.turns)
-        return client.streamChat(maxTokens: 2048, system: system, messages: messages,
+        // 8192 is a CEILING (completed replies cost the same): adaptive thinking
+        // spends this same budget invisibly, and at 2048 a long think exhausted it
+        // before any visible text — the reply arrived empty ("silent no-reply").
+        return client.streamChat(maxTokens: 8192, system: system, messages: messages,
                                  tool: { ClaudeSchemas.suggestStackActionTool })
     }
 
@@ -195,7 +282,9 @@ extension ClaudeService {
                 d.times = []
                 d.weekdays = []
             } else {
-                let times = item.timesMinutes.filter { (0...1439).contains($0) }
+                // Dedupe at the trust boundary: repeated model times would create
+                // duplicate Today occurrences and duplicate reminders.
+                let times = Array(Set(item.timesMinutes.filter { (0...1439).contains($0) }))
                 d.times = times.isEmpty ? [DayBlock.morning.defaultMinutes] : times.sorted()
                 if d.frequency == .weekly {
                     let wds = item.weekdays.filter { (1...7).contains($0) }
@@ -294,7 +383,9 @@ struct StubClaudeService: ClaudeServiceProviding {
                     continuation.yield(.text(String(word) + " "))
                 }
                 for slug in recommend {
-                    continuation.yield(.suggestion(action: "add", slug: slug, reason: "A fit for your goal."))
+                    let dose = input.catalog.first { $0.slug == slug }.flatMap { self.midpoint($0) }
+                    continuation.yield(.suggestion(action: "add", slug: slug,
+                                                   reason: "A fit for your goal.", dose: dose))
                 }
                 continuation.yield(.finished)
                 continuation.finish()

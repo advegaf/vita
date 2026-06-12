@@ -48,13 +48,26 @@ final class SettingsActionsTests: XCTestCase {
         XCTAssertEqual(try c.fetch(FetchDescriptor<DoseLog>()).count, 0)
     }
 
-    func testResetOnboarding() {
+    func testResetOnboarding() throws {
         let c = ctx()
         let s = CatalogStore.fetchOrCreateSettings(c)
         CatalogStore.fetchOrCreateProfile(c, settings: s).onboardedAt = Date()
-        try? c.save()
+        // A stale stack + history: reset must clear the plan but keep the history.
+        var d = DoseDraft(compoundSlug: "bpc-157", displayName: "BPC-157")
+        d.doseUnit = .mcg; d.doseAmount = 250; d.frequency = .daily; d.times = [480]
+        let svc = StackService(context: c)
+        let item = svc.commit(d)!
+        DoseLogger(context: c).log(item: item,
+                                   occurrence: DoseOccurrence(itemID: item.id, minutes: 480),
+                                   status: .taken)
+        try c.save()
+
         SettingsActions(context: c).resetOnboarding()
+
         XCTAssertNil(CatalogStore.fetchOrCreateProfile(c, settings: s).onboardedAt)
+        XCTAssertEqual(try c.fetch(FetchDescriptor<ProtocolItem>()).count, 0)   // fresh Step 2
+        XCTAssertEqual(try c.fetch(FetchDescriptor<ScheduleRule>()).count, 0)   // cascade gone
+        XCTAssertEqual(try c.fetch(FetchDescriptor<DoseLog>()).count, 1)        // history kept
     }
 
     func testFullResetWipesAndReseeds() throws {

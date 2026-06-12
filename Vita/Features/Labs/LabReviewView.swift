@@ -80,7 +80,8 @@ struct LabReviewView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(v.name.isEmpty ? v.markerKey : v.name)
                     .font(.system(size: 15, weight: .semibold)).foregroundStyle(VT.ink)
-                    .lineLimit(1).minimumScaleFactor(0.8)
+                    .lineLimit(2)                                    // uniform type: wrap, never shrink
+                    .fixedSize(horizontal: false, vertical: true)
                 Text("ref \(LabValueRefText.display(refLow: v.refLow, refHigh: v.refHigh, refText: v.refText)) \(v.unit)")
                     .font(.system(size: 12)).vtTabular().foregroundStyle(VT.micro)
             }
@@ -116,6 +117,6 @@ enum LabValueRefText {
         if let t = refText, !t.isEmpty { return t }
         if let lo = refLow { return "≥ \(vtFormatNumber(lo))" }
         if let hi = refHigh { return "≤ \(vtFormatNumber(hi))" }
-        return "—"
+        return "n/a"
     }
 }

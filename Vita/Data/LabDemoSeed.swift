@@ -19,6 +19,22 @@ enum LabDemoSeed {
         let cal = Calendar.current
         let now = Date()
 
+        // Oldest panel (~6 months ago) so trended markers chart 3-point stories
+        // (glucose drifting high, LDL rising, vitamin D declining into clay).
+        svc.savePanel(LabPanelDTO(
+            panelDate: nil, sourceLabName: "LabCorp",
+            values: [
+                .init(markerKey: "glucose_fasting", name: "Glucose, Fasting", value: 92, unit: "mg/dL", refLow: 70, refHigh: 99),
+                .init(markerKey: "ldl_cholesterol", name: "LDL Cholesterol", value: 115, unit: "mg/dL", refLow: nil, refHigh: 100),
+                .init(markerKey: "vitamin_d", name: "Vitamin D, 25-OH", value: 34, unit: "ng/mL", refLow: 30, refHigh: 100),
+                .init(markerKey: "tsh", name: "TSH", value: 1.7, unit: "mIU/L", refLow: 0.4, refHigh: 4.0),
+                .init(markerKey: "testosterone_total", name: "Testosterone, Total", value: 480, unit: "ng/dL", refLow: 264, refHigh: 916),
+            ],
+            summary: "Everything sat in range except LDL. Educational only.",
+            disclaimer: "Educational, not medical advice. Discuss results with your clinician."),
+            scanData: nil, mediaType: nil,
+            at: cal.date(byAdding: .day, value: -184, to: now)!)
+
         // Older panel (~3 months ago).
         svc.savePanel(LabPanelDTO(
             panelDate: nil, sourceLabName: "LabCorp",

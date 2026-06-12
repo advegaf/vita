@@ -7,6 +7,7 @@ struct OnboardingPeptidesView: View {
     @Bindable var model: OnboardingModel
     @Environment(\.modelContext) private var context
     @Query(sort: [SortDescriptor(\ProtocolItem.sortIndex)]) private var items: [ProtocolItem]
+    @State private var searching = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -18,13 +19,24 @@ struct OnboardingPeptidesView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, VT.sSection).padding(.top, 8).padding(.bottom, 4)
 
-            NavigationStack {
-                CatalogBrowseView(showsNavigationTitle: false)
+            // Path lives on the model so the wizard chevron pops an open detail
+            // (the pushed detail hides the system back: one back button, layered).
+            NavigationStack(path: $model.peptidesPath) {
+                CatalogBrowseView(showsNavigationTitle: false,
+                                  onSearchFocusChanged: { searching = $0 })
                     .navigationDestination(for: String.self) { slug in
                         CompoundDetailLoader(slug: slug)
+                            .navigationBarBackButtonHidden(true)
                     }
             }
-            .safeAreaInset(edge: .bottom, spacing: 0) { continueBar }
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                // Out of the way while the search keyboard is up (same pattern as
+                // the Health step hiding Continue while editing).
+                if !searching {
+                    continueBar.transition(.opacity)
+                }
+            }
+            .animation(.easeInOut(duration: 0.2), value: searching)
         }
     }
 
@@ -72,6 +84,18 @@ struct GeneratingView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {
             Task {
+                #if DEBUG
+                // Screenshot hook: VITA_ONB_PICKED=<slug> simulates a user pick at
+                // Step 2 (aiGenerated stays false) to exercise the suggestion path.
+                if let slug = ProcessInfo.processInfo.environment["VITA_ONB_PICKED"] {
+                    let svc = StackService(context: context)
+                    if svc.items().isEmpty,
+                       let c = ((try? context.fetch(FetchDescriptor<CatalogCompound>())) ?? [])
+                           .first(where: { $0.slug == slug }) {
+                        svc.commit(svc.draft(for: c))
+                    }
+                }
+                #endif
                 async let minDwell: Void = dwell()
                 await build()
                 _ = await minDwell
@@ -85,14 +109,13 @@ struct GeneratingView: View {
         try? await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
     }
 
-    /// Commit a rule-based starter immediately (so Review appears without waiting on
-    /// the network), then refine it with Claude in the background and swap its plan in
-    /// if the user hasn't edited Review yet. If the user pre-picked peptides, leave the
-    /// stack alone. Final plan is Claude-built; the wait never stalls onboarding.
+    /// Commit a rule-based starter immediately when the stack is empty (so Review
+    /// appears without waiting on the network), then ALWAYS refine with Claude in
+    /// the background. The user's own items (`aiGenerated == false` — Step-2 picks
+    /// and anything edited/added by hand) are grounding for Claude and suggestion
+    /// targets, never edited; the AI freely manages only its own items.
     private func build() async {
         let svc = StackService(context: context)
-        guard svc.items().isEmpty else { return }   // user already picked peptides
-
         let goals = Array(model.selectedGoals)
         let all = (try? context.fetch(FetchDescriptor<CatalogCompound>())) ?? []
         let summaries = all.map { c in
@@ -102,22 +125,37 @@ struct GeneratingView: View {
                            route: c.primaryRoute?.label, defaultScheduleTypeRaw: c.defaultScheduleTypeRaw)
         }
 
-        // 1) Instant rule-based starter.
-        for slug in StarterSuggester.slugs(for: goals) {
-            guard let c = all.first(where: { $0.slug == slug }) else { continue }
-            svc.commit(svc.draft(for: c))
+        // 1) Instant rule-based starter (AI-owned) when the user picked nothing.
+        if svc.items().isEmpty {
+            for slug in StarterSuggester.slugs(for: goals) {
+                guard let c = all.first(where: { $0.slug == slug }) else { continue }
+                var d = svc.draft(for: c)
+                d.aiGenerated = true
+                svc.commit(d)
+            }
+            model.builtOffline = true
         }
-        model.builtOffline = true
-        let committed = Set(svc.items().map(\.compoundSlug))
 
-        // 2) Refine with Claude in the background; swap its plan in if Review is untouched.
+        // 2) Refine with Claude in the background — every run, picks or not.
+        let pickedSlugs = svc.items().filter { !$0.aiGenerated }.map(\.compoundSlug)
+        let fingerprint = StackService.fingerprint(svc.items())
         let profile = CatalogStore.fetchOrCreateProfile(context, settings: CatalogStore.fetchOrCreateSettings(context))
+        // A panel scanned at the Labs step (one step back) must shape the plan:
+        // its out-of-range markers join the grounding block.
+        let labsLine = LabGrounding.summaryLine(panels: LabService(context: context).panels())
         let input = ProtocolInput(
-            goals: goals, pickedSlugs: [], catalog: summaries,
-            profile: profileInput(profile), health: model.healthSnapshot)
+            goals: goals, pickedSlugs: pickedSlugs, catalog: summaries,
+            profile: profileInput(profile), health: model.healthSnapshot,
+            labsLine: labsLine)
+        model.refineTask?.cancel()   // a re-entered Generating step never overlaps refines
         model.refining = true
-        Task { @MainActor in
-            defer { model.refining = false }
+        model.refineSuggestions = [:]
+        model.refineTask = Task { @MainActor in
+            // A cancelled run (the user tapped "Refining with AI…" to skip, or a
+            // newer refine replaced this one) must not clobber the current state.
+            defer {
+                if !Task.isCancelled { model.refining = false; model.refineTask = nil }
+            }
             let claude = ClaudeServiceFactory.make()
             do {
                 var dto = try await claude.generateProtocol(input)
@@ -126,14 +164,31 @@ struct GeneratingView: View {
                     dto = try await claude.generateProtocol(input)        // one repair-retry
                     drafts = ClaudeService.buildDrafts(from: dto, catalog: summaries)
                 }
-                guard !drafts.isEmpty else { return }                     // keep the starter + "Built offline"
+                guard !drafts.isEmpty, !Task.isCancelled else { return }  // keep what's there
                 let s = StackService(context: context)
-                guard Set(s.items().map(\.compoundSlug)) == committed else { return }  // user edited → don't clobber
-                for item in s.items() { s.remove(item) }
-                for d in drafts { s.commit(d) }
+                // Anything the user changed while Claude was thinking wins outright
+                // (dose edits too, not just adds/removes — hence the fingerprint).
+                guard StackService.fingerprint(s.items()) == fingerprint else { return }
+                drafts = drafts.map { var d = $0; d.aiGenerated = true; return d }
+                // Claude's take on a user-owned compound becomes a tappable
+                // suggestion on its Review row, never an applied change.
+                var suggestions: [UUID: DoseDraft] = [:]
+                for item in s.items() where !item.aiGenerated {
+                    guard let d = drafts.first(where: { $0.compoundSlug == item.compoundSlug }),
+                          StackService.suggestsChange(dose: item.doseAmount,
+                                                      unitRaw: item.doseUnitRaw,
+                                                      frequencyRaw: item.schedule?.frequencyRaw ?? "",
+                                                      times: item.schedule?.timeSlotsMinutes ?? [],
+                                                      draft: d) else { continue }
+                    suggestions[item.id] = d
+                }
+                // In-place merge of the AI-owned items only: ids stay stable while
+                // Review renders, one notification/widget rebuild.
+                s.applyPlan(drafts, protecting: { !$0.aiGenerated })
+                model.refineSuggestions = suggestions
                 model.builtOffline = false
                 model.refinedByAI = true
-            } catch { /* keep the starter + the "Built offline" note */ }
+            } catch { /* keep what's there + any "Built offline" note */ }
         }
     }
 
@@ -157,6 +212,7 @@ struct ReviewView: View {
     @Query private var compounds: [CatalogCompound]
     @State private var showCatalog = false
     @State private var editDraft: DoseDraft?
+    @State private var suggestedNote: String?
 
     private var bySlug: [String: CatalogCompound] {
         Dictionary(compounds.map { ($0.slug, $0) }, uniquingKeysWith: { a, _ in a })
@@ -171,15 +227,11 @@ struct ReviewView: View {
                                      title: items.isEmpty ? "Your plan." : "Your plan: \(items.count).")
                         Text("Tap to adjust. Everything is editable later, too.")
                             .font(.system(size: 15)).foregroundStyle(VT.body).padding(.top, 2)
-                        if model.refining {
-                            HStack(spacing: 6) {
-                                ThinkingDots(label: "Refining")
-                                Text("Refining with AI…").font(.system(size: 13)).foregroundStyle(VT.micro)
-                            }.padding(.top, 2)
-                        } else if model.refinedByAI {
+                        // The refining state lives in the charcoal pill below.
+                        if model.refinedByAI {
                             Text("Refined with AI.")
                                 .font(.system(size: 13)).foregroundStyle(VT.dose).padding(.top, 2)
-                        } else if model.builtOffline {
+                        } else if model.builtOffline, !model.refining {
                             Text("Built offline. Tap any item to refine it.")
                                 .font(.system(size: 13)).foregroundStyle(VT.micro).padding(.top, 2)
                         }
@@ -192,16 +244,43 @@ struct ReviewView: View {
                             .frame(maxWidth: .infinity).padding(.top, 24)
                     } else {
                         ForEach(items) { item in
-                            Button {
-                                editDraft = StackService(context: context).draft(for: item)
-                            } label: {
-                                StackRow(item: item, compound: bySlug[item.compoundSlug])
-                            }
-                            .buttonStyle(.plain)
-                            .swipeActions {
-                                Button(role: .destructive) {
-                                    StackService(context: context).remove(item)
-                                } label: { Label("Remove", systemImage: "trash") }
+                            VStack(alignment: .leading, spacing: 4) {
+                                Button {
+                                    suggestedNote = nil
+                                    editDraft = StackService(context: context).draft(for: item)
+                                } label: {
+                                    StackRow(item: item, compound: bySlug[item.compoundSlug])
+                                }
+                                .buttonStyle(.plain)
+                                // contextMenu, NOT swipeActions: swipe actions are
+                                // List-row-only and silently dead inside a ScrollView,
+                                // which made Review's items unremovable.
+                                .contextMenu {
+                                    Button(role: .destructive) {
+                                        StackService(context: context).remove(item)
+                                    } label: { Label("Remove", systemImage: "trash") }
+                                }
+
+                                // Claude's alternative for a compound YOU configured:
+                                // surfaced, never applied. Tap to review it in the sheet.
+                                if let s = model.refineSuggestions[item.id] {
+                                    Button {
+                                        var d = StackService(context: context).draft(for: item)
+                                        d.doseUnit = s.doseUnit
+                                        d.doseAmount = s.doseAmount
+                                        d.frequency = s.frequency
+                                        d.weekdays = s.weekdays
+                                        d.times = s.times
+                                        suggestedNote = "vita suggests this for your goals."
+                                        editDraft = d
+                                    } label: {
+                                        Text("vita suggests \(vtFormatNumber(s.doseAmount)) \(s.doseUnit.label) · \(s.frequency.label) →")
+                                            .font(.system(size: 13, weight: .semibold))
+                                            .foregroundStyle(VT.dose)
+                                    }
+                                    .buttonStyle(.plain)
+                                    .padding(.leading, 4)
+                                }
                             }
                         }
                     }
@@ -219,8 +298,18 @@ struct ReviewView: View {
             }
             .scrollIndicators(.hidden)
 
-            CharcoalPillButton(title: "Start tracking", action: model.advance)
-                .padding(.horizontal, VT.sSection).padding(.bottom, 8)
+            // While Claude refines, the pill says so; tapping skips the wait
+            // (cancels the refine, keeps the starter plan) and proceeds.
+            CharcoalPillButton(title: model.refining ? "Refining with AI…" : "Start tracking",
+                               loading: model.refining) {
+                if model.refining {
+                    model.refineTask?.cancel()
+                    model.refineTask = nil
+                    model.refining = false
+                }
+                model.advance()
+            }
+            .padding(.horizontal, VT.sSection).padding(.bottom, 8)
         }
         .sheet(isPresented: $showCatalog) {
             NavigationStack {
@@ -235,8 +324,12 @@ struct ReviewView: View {
                     }
             }
         }
-        .sheet(item: $editDraft) { d in
-            DoseSetupSheet(draft: d)
+        .sheet(item: $editDraft, onDismiss: { suggestedNote = nil }) { d in
+            DoseSetupSheet(draft: d, aiSuggestedNote: suggestedNote, onCommit: {
+                // Saving (suggested or hand-edited) settles the question for
+                // that item; its suggestion line goes away.
+                if let id = d.editingItemID { model.refineSuggestions.removeValue(forKey: id) }
+            })
         }
     }
 }

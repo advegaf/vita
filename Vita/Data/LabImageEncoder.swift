@@ -39,7 +39,9 @@ enum LabImageEncoder {
     /// `thumbnail(of:for:)`, which correctly handles non-zero mediaBox origins and page
     /// rotation (the previous manual CGContext transform drew rotated/offset pages
     /// off-canvas → blank images → "no values found"). Empty if the PDF can't be opened.
-    static func imagesFromPDF(_ data: Data, maxPages: Int = 8, maxLongEdge: CGFloat = 2000) -> [Data] {
+    // maxPages 20 (was 8): real lab reports run past 8 pages, and the old cap
+    // silently dropped every marker on pages 9+ while the UI claimed a full read.
+    static func imagesFromPDF(_ data: Data, maxPages: Int = 20, maxLongEdge: CGFloat = 2000) -> [Data] {
         guard let doc = PDFDocument(data: data) else { return [] }
         var out: [Data] = []
         for i in 0..<min(doc.pageCount, maxPages) {

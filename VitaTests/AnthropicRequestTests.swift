@@ -81,4 +81,13 @@ final class AnthropicRequestTests: XCTestCase {
         let response = #"{"content":[{"type":"text","text":"no tool"}]}"#.data(using: .utf8)!
         XCTAssertThrowsError(try AnthropicClient.parse(data: response, toolName: "emit_protocol"))
     }
+
+    func testCancellationIsNeverRetried() {
+        // A skipped onboarding refine cancels its request mid-flight; the retry
+        // loop must classify that as cancellation, not a retryable transport blip.
+        XCTAssertTrue(AnthropicClient.isCancellation(CancellationError()))
+        XCTAssertTrue(AnthropicClient.isCancellation(URLError(.cancelled)))
+        XCTAssertFalse(AnthropicClient.isCancellation(URLError(.timedOut)))
+        XCTAssertFalse(AnthropicClient.isCancellation(URLError(.notConnectedToInternet)))
+    }
 }

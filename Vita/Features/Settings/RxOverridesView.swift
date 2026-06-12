@@ -20,7 +20,7 @@ struct RxOverridesView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: VT.sCardGap) {
-                Text("Toggle the ℞ badge for any compound. This only changes the label — nothing is ever blocked.")
+                Text("Toggle the ℞ badge for any compound. This only changes the label, nothing is ever blocked.")
                     .font(.system(size: 13)).foregroundStyle(VT.micro)
                 searchPill
                 LazyVStack(spacing: 8) {

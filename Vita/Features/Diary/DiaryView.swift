@@ -17,6 +17,7 @@ struct DiaryView: View {
     @State private var trendMetric: DiaryMetric = .weight
     @State private var didBackfill = false
     @State private var debugOpenLabs = false
+    @State private var debugOpenMarker: String?
 
     var body: some View {
         NavigationStack {
@@ -45,9 +46,12 @@ struct DiaryView: View {
                     showCheckIn = true
                 }
                 WeightCard(metrics: metrics) { showBodyEntry = true }
-                TrendCard(metric: $trendMetric, entries: entries, metrics: metrics, now: now)
+                TrendCard(metric: $trendMetric, entries: entries, metrics: metrics, now: now,
+                          onEmptyAction: {
+                              if trendMetric.isRating { showCheckIn = true } else { showBodyEntry = true }
+                          })
                 NavigationLink { LabsListView() } label: { LabsCard(panels: labPanels) }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.pressableCard)
             }
             .padding(VT.sSection)
             .padding(.bottom, 24)   // clear the floating Liquid Glass tab bar
@@ -55,11 +59,21 @@ struct DiaryView: View {
         .scrollIndicators(.hidden)
         .background(VT.canvas)
         .navigationDestination(isPresented: $debugOpenLabs) { LabsListView() }
+        .navigationDestination(isPresented: Binding(
+            get: { debugOpenMarker != nil },
+            set: { if !$0 { debugOpenMarker = nil } }
+        )) {
+            if let key = debugOpenMarker { MarkerTrendView(markerKey: key) }
+        }
         .task {
             #if DEBUG
             if ProcessInfo.processInfo.environment["VITA_OPEN_LABS"] == "1" {
                 try? await Task.sleep(nanoseconds: 500_000_000)
                 debugOpenLabs = true
+            }
+            if let key = ProcessInfo.processInfo.environment["VITA_OPEN_MARKER"] {
+                try? await Task.sleep(nanoseconds: 500_000_000)
+                debugOpenMarker = key
             }
             #endif
         }

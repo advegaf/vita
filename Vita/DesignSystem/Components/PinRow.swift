@@ -14,9 +14,11 @@ struct PinRow: View {
     var category: PeptideCategory = .other
     var state: DoseState = .due
     var cycleChip: String? = nil      // "wk 3/8" when this item is cycling
+    var overdueText: String? = nil    // "overdue · 2h 15m" (preformatted by the parent)
     var onTake: () -> Void = {}
     var onSkip: () -> Void = {}
     var onUndo: () -> Void = {}
+    var onEdit: (() -> Void)? = nil   // long-press → "Adjust timing" (opens the dose sheet)
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var pressed = false
@@ -51,8 +53,9 @@ struct PinRow: View {
                         .font(.system(size: 13, weight: .medium)).vtTabular()
                         .foregroundStyle(state == .overdue ? VT.overdue : VT.micro)
                     if state == .overdue {
-                        Text("overdue")
-                            .font(.system(size: 11, weight: .medium)).foregroundStyle(VT.overdue)
+                        Text(overdueText ?? "overdue")
+                            .font(.system(size: 11, weight: .medium)).vtTabular()
+                            .foregroundStyle(VT.overdue)
                     }
                 }
             }
@@ -67,6 +70,10 @@ struct PinRow: View {
                 Button { quiet(onUndo) } label: { Label("Undo", systemImage: "arrow.uturn.backward") }
             } else {
                 Button { quiet(onSkip) } label: { Label("Skip", systemImage: "minus.circle") }
+            }
+            if let onEdit {
+                Divider()
+                Button { onEdit() } label: { Label("Adjust timing", systemImage: "clock") }
             }
         }
         .animation(reduceMotion ? VMotion.reduced : VMotion.pinCommit, value: state)
@@ -145,7 +152,8 @@ struct PinRow: View {
 #Preview {
     VStack(spacing: VT.sCardGap) {
         PinRow(name: "Ipamorelin", dose: "100 mcg", time: "7:00", category: .muscleRecovery, state: .due)
-        PinRow(name: "BPC-157", dose: "250 mcg", time: "8:00", category: .muscleRecovery, state: .overdue)
+        PinRow(name: "BPC-157", dose: "250 mcg", time: "8:00", category: .muscleRecovery,
+               state: .overdue, overdueText: "overdue · 2h 15m")
         PinRow(name: "CJC-1295", dose: "100 mcg", time: "10:30", category: .muscleRecovery, state: .taken)
         PinRow(name: "Semax", dose: "300 mcg", time: "9:00", category: .cognitive, state: .skipped)
     }

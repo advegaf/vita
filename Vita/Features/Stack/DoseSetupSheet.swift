@@ -9,6 +9,7 @@ struct DoseSetupSheet: View {
     @State var draft: DoseDraft
     var rangeText: String? = nil          // "250-500 mcg" educational caption
     var about: String? = nil              // 2-3 sentence educational description
+    var aiSuggestedNote: String? = nil    // "vita suggested 250 mcg to start." (chat chips)
     var onCommit: () -> Void = {}
 
     @State private var typing = false
@@ -31,7 +32,11 @@ struct DoseSetupSheet: View {
                     if draft.frequency != .prn { timesSection }
                     advancedSection.id("advanced")
                     CharcoalPillButton(title: draft.isEditing ? "Save" : "Add to stack") {
-                        StackService(context: context).commit(draft)
+                        // A save through the sheet is a user decision: claim the
+                        // item so the AI refine may only suggest, never overwrite.
+                        var d = draft
+                        d.aiGenerated = false
+                        StackService(context: context).commit(d)
                         Haptics.commit()
                         onCommit()
                         dismiss()
@@ -196,6 +201,10 @@ struct DoseSetupSheet: View {
                 .frame(maxWidth: .infinity)
                 Spacer(minLength: 12)
                 stepButton("plus") { step(1) }
+            }
+            if let aiSuggestedNote {
+                Text(aiSuggestedNote)
+                    .font(.system(size: 13, weight: .semibold)).foregroundStyle(VT.dose)
             }
             if let rangeText {
                 Text("Educational range \(rangeText)")

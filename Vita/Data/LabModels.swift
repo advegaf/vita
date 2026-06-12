@@ -48,13 +48,13 @@ final class LabValue {
 
     var flag: LabFlag { LabFlag(rawValue: flagComputedRaw) ?? .unknown }
 
-    /// "70–99 mg/dL" / "<150" / "—" for the printed reference.
+    /// "70–99 mg/dL" / "<150" / "n/a" for the printed reference.
     var refDisplay: String {
         if let lo = refLow, let hi = refHigh { return "\(vtFormatNumber(lo))–\(vtFormatNumber(hi))" }
-        if let t = refText, !t.isEmpty { return t }
+        if let t = refText, !t.isEmpty { return ChatText.sanitize(t) }  // legacy stored text
         if let lo = refLow { return "≥ \(vtFormatNumber(lo))" }
         if let hi = refHigh { return "≤ \(vtFormatNumber(hi))" }
-        return "—"
+        return "n/a"
     }
 }
 

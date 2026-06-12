@@ -138,6 +138,10 @@ final class ProtocolItem {
     var cadenceLabel: String = ""
     var sortIndex: Int = 0
     var addedAt: Date = Date.now
+    /// Provenance: true while the item is managed by the AI (starter/refine).
+    /// Anything the user explicitly adds or edits flips to false and the refine
+    /// pass may then only SUGGEST changes, never apply them.
+    var aiGenerated: Bool = false
     var plan: ProtocolPlan?
     @Relationship(deleteRule: .cascade, inverse: \ScheduleRule.item) var schedule: ScheduleRule?
     @Relationship(deleteRule: .cascade, inverse: \Vial.item) var vial: Vial?
@@ -254,6 +258,7 @@ final class ChatMessage {
     // One entry per recommended Add/Adjust chip (parallel arrays, CloudKit-legal).
     var suggestionSlugs: [String] = []
     var suggestionActions: [String] = []
+    var suggestionDoses: [Double] = []   // parallel; <= 0 means "no dose suggested"
     init() {}
 
     var isUser: Bool { roleRaw == "user" }

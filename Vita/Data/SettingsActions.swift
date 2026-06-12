@@ -23,7 +23,7 @@ struct SettingsActions {
         if let c = (try? context.fetch(FetchDescriptor<CatalogCompound>()))?.first(where: { $0.slug == slug }) {
             c.rxStatusRaw = value
         }
-        try? context.save()
+        context.saveLogged("SettingsActions")
     }
 
     // MARK: Danger zone
@@ -35,10 +35,20 @@ struct SettingsActions {
         NotificationManager.rebuild(context: context)   // logged occurrences return as reminders
     }
 
+    /// Re-runs the wizard with a FRESH plan: the stack (plan/items, cascading
+    /// rules + vials) is cleared so Step 2 starts empty and the AI starter/refine
+    /// actually runs. Dose history, diary, labs, and chat stay — logs re-link by
+    /// compound if the same peptides are re-added (see StackService.commit).
     func resetOnboarding() {
+        try? context.delete(model: ProtocolPlan.self)
+        try? context.delete(model: ProtocolItem.self)
+        try? context.delete(model: ScheduleRule.self)
+        try? context.delete(model: Vial.self)
         let s = CatalogStore.fetchOrCreateSettings(context)
         CatalogStore.fetchOrCreateProfile(context, settings: s).onboardedAt = nil
-        try? context.save()
+        context.saveLogged("SettingsActions")
+        NotificationManager.rebuild(context: context)   // nothing scheduled → clear pending
+        WidgetBridge.update(context: context)
     }
 
     /// Wipe every model back to a fresh-install state, then reseed the catalog +
@@ -59,13 +69,13 @@ struct SettingsActions {
         try? context.delete(model: CatalogCompound.self)
         try? context.delete(model: UserProfile.self)
         try? context.delete(model: AppSettings.self)
-        try? context.save()
+        context.saveLogged("SettingsActions")
         CatalogStore.bootstrap(context)                 // reseed catalog + fresh singletons
         NotificationManager.rebuild(context: context)
     }
 
     private func deleteAll<T: PersistentModel>(_ type: T.Type) {
         try? context.delete(model: type)
-        try? context.save()
+        context.saveLogged("SettingsActions")
     }
 }

@@ -21,17 +21,20 @@ enum LabSelfTest {
         let hasText = LabImageEncoder.pdfHasTextLayer(prep.data)
         NSLog("vita-labs-selftest: start bytes=%d pages=%d hasText=%d", data.count, pages, hasText ? 1 : 0)
         let t = Date()
+        let result: String
         do {
             let dto = try await LabService(context: context).interpret(imageData: prep.data, mediaType: prep.mediaType)
-            NSLog("vita-labs-selftest: OK values=%d date=%@ lab=%@ elapsed=%.0fs",
-                  dto.values.count, dto.panelDate ?? "nil", dto.sourceLabName ?? "nil",
-                  Date().timeIntervalSince(t))
-            for v in dto.values.prefix(3) {
-                NSLog("vita-labs-selftest:   %@ = %@ %@", v.markerKey, String(v.value), v.unit)
-            }
+            result = String(format: "OK values=%d date=%@ lab=%@ elapsed=%.0fs",
+                            dto.values.count, dto.panelDate ?? "nil", dto.sourceLabName ?? "nil",
+                            Date().timeIntervalSince(t))
         } catch {
-            NSLog("vita-labs-selftest: ERROR %@ elapsed=%.0fs", String(describing: error), Date().timeIntervalSince(t))
+            result = String(format: "ERROR %@ elapsed=%.0fs",
+                            String(describing: error), Date().timeIntervalSince(t))
         }
+        NSLog("vita-labs-selftest: %@", result)
+        // Log streaming from the sim is flaky; a result file is deterministic.
+        try? result.write(to: docs.appendingPathComponent("selftest-result.txt"),
+                          atomically: true, encoding: .utf8)
     }
 }
 #endif

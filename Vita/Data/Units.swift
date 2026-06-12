@@ -6,6 +6,12 @@ enum Units {
     static let lbPerKg = 2.2046226218
     static let cmPerInch = 2.54
 
+    /// Locale-tolerant numeric input: comma-decimal keyboards type "82,5", which
+    /// `Double.init` rejects — silently dropping the user's measurement.
+    static func parseDouble(_ s: String) -> Double? {
+        Double(s.replacingOccurrences(of: ",", with: "."))
+    }
+
     static func kgToLb(_ kg: Double) -> Double { kg * lbPerKg }
     static func lbToKg(_ lb: Double) -> Double { lb / lbPerKg }
 

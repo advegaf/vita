@@ -9,8 +9,8 @@ options:
 settings:
   base:
     SWIFT_VERSION: "6.0"
-    MARKETING_VERSION: "0.1.0"
-    CURRENT_PROJECT_VERSION: "1"
+    MARKETING_VERSION: "1.0.0"
+    CURRENT_PROJECT_VERSION: "2"
     # DEVELOPMENT_TEAM is supplied per-developer via Config/Secrets.xcconfig
     # (see Config/Secrets.example.xcconfig) so no team ID lives in the repo.
     CODE_SIGN_STYLE: Automatic
@@ -23,25 +23,41 @@ targets:
     deploymentTarget: "26.0"
     sources:
       - path: Vita
+    dependencies:
+      - target: VitaWidget
+        embed: true
     configFiles:
       Debug: Config/Secrets.xcconfig
       Release: Config/Secrets.xcconfig
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.example.vita
+        # Supplied per-developer via Config/Secrets.xcconfig (VITA_BUNDLE_ID), so
+        # local Xcode builds always sign with YOUR registered App ID while the
+        # repo ships only the neutral example value. No more id flipping.
+        PRODUCT_BUNDLE_IDENTIFIER: $(VITA_BUNDLE_ID)
         CODE_SIGN_ENTITLEMENTS: Support/Vita.entitlements
         ENABLE_PREVIEWS: YES
         TARGETED_DEVICE_FAMILY: "1"
         ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
-        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
     info:
       path: Support/Info.plist
       properties:
         CFBundleDisplayName: Vita
         ANTHROPIC_API_KEY: $(ANTHROPIC_API_KEY)
+        # Portrait-only, declared in the plist itself: the INFOPLIST_KEY_ build
+        # setting is NOT merged when a source Info.plist is used (verified in the
+        # built product), so the app silently supported every orientation.
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        # HTTPS-only traffic (Anthropic API): exempt encryption — skips the
+        # per-build export-compliance question on TestFlight uploads.
+        ITSAppUsesNonExemptEncryption: false
         NSHealthShareUsageDescription: vita reads your recent sleep, HRV, heart rate, weight, and steps to ground its educational suggestions. Read-only, and you can skip it.
+        # Required by App Store Connect whenever the HealthKit capability is present
+        # (upload error ITMS-90683), even though the app never writes to Health.
+        NSHealthUpdateUsageDescription: Vita does not write any data to Apple Health. This permission is required by the HealthKit capability; all access is read-only.
         NSCameraUsageDescription: Vita uses the camera so you can photograph a lab report to read its values. Educational only.
         NSPhotoLibraryUsageDescription: Vita reads a lab-report photo you choose to extract its values. Educational only.
         UIAppFonts:
@@ -51,6 +67,30 @@ targets:
         UILaunchScreen:
           UIColorName: ""
         UIUserInterfaceStyle: Light
+
+  VitaWidget:
+    type: app-extension
+    platform: iOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: VitaWidget
+      - path: Vita/Data/WidgetSnapshot.swift   # the shared app↔widget contract
+      - path: Vita/Data/WidgetActions.swift    # the widget→app pending-log ledger
+    configFiles:
+      Debug: Config/Secrets.xcconfig
+      Release: Config/Secrets.xcconfig
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: $(VITA_BUNDLE_ID).widget
+        CODE_SIGN_ENTITLEMENTS: Support/VitaWidget.entitlements
+        SKIP_INSTALL: YES
+        TARGETED_DEVICE_FAMILY: "1"
+    info:
+      path: Support/VitaWidget-Info.plist
+      properties:
+        CFBundleDisplayName: Vita
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
 
   VitaTests:
     type: bundle.unit-test

@@ -14,6 +14,7 @@ struct TodayView: View {
 
     @State private var selectedBlock: String?
     @State private var showSettings = false
+    @State private var editDraft: DoseDraft?
 
     private var logger: DoseLogger { DoseLogger(context: context) }
     private var prnItems: [ProtocolItem] { items.filter { ($0.schedule?.frequency ?? .daily) == .prn } }
@@ -28,6 +29,7 @@ struct TodayView: View {
             #endif
         }
         .sheet(isPresented: $showSettings) { SettingsView() }
+        .sheet(item: $editDraft) { d in DoseSetupSheet(draft: d) }
         .task {
             #if DEBUG
             if ProcessInfo.processInfo.environment["VITA_OPEN_SETTINGS"] == "1" {
@@ -157,16 +159,28 @@ struct TodayView: View {
             let chip = item.schedule.flatMap {
                 $0.hasCycle ? ScheduleService.cycleStatus(for: $0, on: now)?.chipText : nil
             }
+            let state = ScheduleService.state(itemID: o.itemID, minutes: o.minutes, day: now,
+                                              logs: logs, now: now)
             PinRow(name: item.displayName,
                    dose: item.effectiveDrawUnitsText(on: now).map { "\(dose) · \($0)" } ?? dose,
                    time: o.timeText,
                    category: item.category,
-                   state: ScheduleService.state(itemID: o.itemID, minutes: o.minutes, day: now,
-                                                 logs: logs, now: now),
+                   state: state,
                    cycleChip: chip,
+                   overdueText: state == .overdue
+                       ? ScheduleService.overdueLabel(minutesLate: minutes(of: now) - o.minutes)
+                       : nil,
                    onTake: { logger.log(item: item, occurrence: o, status: .taken) },
                    onSkip: { logger.log(item: item, occurrence: o, status: .skipped) },
-                   onUndo: { logger.undo(item: item, occurrence: o) })
+                   onUndo: { logger.undo(item: item, occurrence: o) },
+                   onEdit: {
+                       // Re-resolve at action time: a context menu can outlive
+                       // its item (deleted from the Stack tab meanwhile).
+                       let svc = StackService(context: context)
+                       if let live = svc.items().first(where: { $0.id == item.id }) {
+                           editDraft = svc.draft(for: live)
+                       }
+                   })
         }
     }
 

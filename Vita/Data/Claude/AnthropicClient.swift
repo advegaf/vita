@@ -87,37 +87,46 @@ actor AnthropicClient {
         return req
     }
 
-    /// Vision request body: the user message content is an ARRAY of blocks (text +
-    /// image/document) rather than a String. Kept separate from `makeBody` (string
-    /// content) so that builder + its tests stay byte-stable. Forced tool-use; no
-    /// sampling params / no thinking (Opus-4.8-legal, like `makeBody`).
+    /// Vision request body, built with OrderedJSON so the wire bytes (especially the
+    /// tool schema's field order, which the model sees verbatim) are deterministic —
+    /// JSONSerialization's hash-ordered keys reproducibly degenerated long
+    /// extractions. Forced tool-use; no sampling params / no thinking (Opus-4.8-legal).
     static func makeVisionBody(model: String = Const.model,
                                maxTokens: Int,
                                system: [SystemBlock],
-                               userBlocks: [[String: Any]],
-                               tools: [[String: Any]],
-                               toolName: String) -> [String: Any] {
-        [
-            "model": model,
-            "max_tokens": maxTokens,
-            "system": system.map { block -> [String: Any] in
-                var b: [String: Any] = ["type": "text", "text": block.text]
-                if block.cache { b["cache_control"] = ["type": "ephemeral"] }
-                return b
-            },
-            "messages": [["role": "user", "content": userBlocks]],
-            "tools": tools,
-            "tool_choice": ["type": "tool", "name": toolName],
-        ]
+                               userBlocks: [OrderedJSON],
+                               tool: OrderedJSON,
+                               toolName: String) -> OrderedJSON {
+        .object([
+            ("model", .string(model)),
+            ("max_tokens", .int(maxTokens)),
+            ("system", .array(system.map { block in
+                var pairs: [(String, OrderedJSON)] = [("type", .string("text")), ("text", .string(block.text))]
+                if block.cache { pairs.append(("cache_control", .object([("type", .string("ephemeral"))]))) }
+                return .object(pairs)
+            })),
+            ("messages", .array([.object([
+                ("role", .string("user")),
+                ("content", .array(userBlocks)),
+            ])])),
+            ("tools", .array([tool])),
+            ("tool_choice", .object([("type", .string("tool")), ("name", .string(toolName))])),
+        ])
     }
 
     /// `{type:image, source:{type:base64, media_type, data}}` — GA on 2023-06-01.
-    static func imageBlock(base64 data: String, mediaType: String) -> [String: Any] {
-        ["type": "image", "source": ["type": "base64", "media_type": mediaType, "data": data]]
+    static func imageBlock(base64 data: String, mediaType: String) -> OrderedJSON {
+        .object([("type", .string("image")),
+                 ("source", .object([("type", .string("base64")),
+                                     ("media_type", .string(mediaType)),
+                                     ("data", .string(data))]))])
     }
     /// `{type:document, source:{type:base64, media_type:application/pdf, data}}` — GA on 2023-06-01.
-    static func documentBlock(base64 data: String, mediaType: String = "application/pdf") -> [String: Any] {
-        ["type": "document", "source": ["type": "base64", "media_type": mediaType, "data": data]]
+    static func documentBlock(base64 data: String, mediaType: String = "application/pdf") -> OrderedJSON {
+        .object([("type", .string("document")),
+                 ("source", .object([("type", .string("base64")),
+                                     ("media_type", .string(mediaType)),
+                                     ("data", .string(data))]))])
     }
 
     // MARK: - Send (non-streaming; used by protocol-gen)
@@ -153,46 +162,40 @@ actor AnthropicClient {
     }
 
     /// Non-streaming vision send (lab scan): text + one-or-more image/document blocks
-    /// + forced tool. Reuses makeRequest/sendWithRetry/parse verbatim. Attachments are
-    /// base64 (Sendable) so the heavy UIImage/encode work stays off this actor. A PDF
-    /// attachment becomes a `document` block; everything else an `image` block (so a
-    /// rasterized multi-page PDF rides the proven image path).
-    func sendVision(maxTokens: Int,
+    /// + forced tool. The body is OrderedJSON (deterministic wire bytes — see
+    /// makeVisionBody). Attachments are base64 (Sendable) so the heavy UIImage/encode
+    /// work stays off this actor. A PDF attachment becomes a `document` block;
+    /// everything else an `image` block.
+    func sendVision(model: String = Const.model,
+                    maxTokens: Int,
                     system: [SystemBlock],
                     userText: String,
                     attachments: [(base64: String, mediaType: String)],
-                    tool: @Sendable () -> [String: Any],
+                    tool: OrderedJSON,
                     toolName: String) async throws -> Result {
         guard let key = keyProvider(), !key.isEmpty else { throw AnthropicError.noKey }
-        let media: [[String: Any]] = attachments.map { a in
+        let media: [OrderedJSON] = attachments.map { a in
             a.mediaType == "application/pdf"
                 ? Self.documentBlock(base64: a.base64)
                 : Self.imageBlock(base64: a.base64, mediaType: a.mediaType)
         }
-        let userBlocks: [[String: Any]] = [["type": "text", "text": userText]] + media
-        let body = Self.makeVisionBody(maxTokens: maxTokens, system: system,
-                                       userBlocks: userBlocks, tools: [tool()], toolName: toolName)
-        let request = try Self.makeRequest(body: body, apiKey: key)
+        let userBlocks: [OrderedJSON] = [.object([("type", .string("text")), ("text", .string(userText))])] + media
+        let body = Self.makeVisionBody(model: model, maxTokens: maxTokens, system: system,
+                                       userBlocks: userBlocks, tool: tool, toolName: toolName)
+        let bodyData = body.data()
+        var request = URLRequest(url: Const.endpoint)
+        request.httpMethod = "POST"
+        request.setValue(key, forHTTPHeaderField: "x-api-key")
+        request.setValue(Const.version, forHTTPHeaderField: "anthropic-version")
+        request.setValue("application/json", forHTTPHeaderField: "content-type")
+        request.httpBody = bodyData
         #if DEBUG
         if ProcessInfo.processInfo.environment["VITA_LAB_SELFTEST"] == "1" {
             // Write the FULL request body (with base64) so it can be replayed verbatim via curl.
-            if let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first,
-               let j = try? JSONSerialization.data(withJSONObject: body) {
-                try? j.write(to: docs.appendingPathComponent("lastreq.json"))
+            if let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first {
+                try? bodyData.write(to: docs.appendingPathComponent("lastreq.json"))
             }
-            var dbg = body
-            if var msgs = dbg["messages"] as? [[String: Any]], var content = msgs[0]["content"] as? [[String: Any]] {
-                for i in content.indices {
-                    if var src = content[i]["source"] as? [String: Any], let d = src["data"] as? String {
-                        src["data"] = "<base64 \(d.count) chars>"; content[i]["source"] = src
-                    }
-                }
-                msgs[0]["content"] = content; dbg["messages"] = msgs
-            }
-            if let j = try? JSONSerialization.data(withJSONObject: dbg, options: [.sortedKeys]),
-               let s = String(data: j, encoding: .utf8) {
-                NSLog("vita-vision-req: %@", s)
-            }
+            NSLog("vita-vision-req: %d bytes, %d attachment(s)", bodyData.count, attachments.count)
         }
         #endif
         let (data, response) = try await sendWithRetry(request)
@@ -215,17 +218,30 @@ actor AnthropicClient {
     /// Minimal liveness check for Settings "Test connection": one 1-token message,
     /// no tools. true on 2xx; false on no-key / non-2xx / transport. Never throws.
     func ping() async -> Bool {
-        guard let key = keyProvider(), !key.isEmpty else { return false }
+        await pingProblem() == nil
+    }
+
+    /// nil = connected; otherwise a short human reason ("Couldn't reach" told the
+    /// user nothing — key rejected, out of credits, and offline are different fixes).
+    func pingProblem() async -> String? {
+        guard let key = keyProvider(), !key.isEmpty else { return "No key saved." }
         let body = Self.makeBody(
             maxTokens: 1,
             system: [SystemBlock(text: "You are a connection test. Reply with ok.", cache: false)],
             messages: [["role": "user", "content": "hi"]])
         do {
             let request = try Self.makeRequest(body: body, apiKey: key)
-            let (_, response) = try await sendWithRetry(request)
-            guard let http = response as? HTTPURLResponse else { return false }
-            return (200...299).contains(http.statusCode)
-        } catch { return false }
+            let (data, response) = try await sendWithRetry(request)
+            guard let http = response as? HTTPURLResponse else { return "Network problem." }
+            if (200...299).contains(http.statusCode) { return nil }
+            let bodyText = (String(data: data, encoding: .utf8) ?? "").lowercased()
+            if bodyText.contains("credit") { return "Out of credits. Top up at console.anthropic.com." }
+            switch http.statusCode {
+            case 401, 403: return "Key rejected. Check it and try again."
+            case 429, 529: return "Rate limited. Give it a moment."
+            default: return "Error \(http.statusCode)."
+            }
+        } catch { return "Network problem." }
     }
 
     private func sendWithRetry(_ request: URLRequest) async throws -> (Data, URLResponse) {
@@ -241,6 +257,9 @@ actor AnthropicClient {
                 }
                 return (data, response)
             } catch {
+                // A cancelled caller (e.g. the user skipped the onboarding refine)
+                // must surface as cancellation, never as a retryable transport blip.
+                if Self.isCancellation(error) { throw CancellationError() }
                 // Transient transport errors are retryable; 400-class never reaches here.
                 if attempt < maxRetries, (error as? URLError) != nil {
                     try await backoff(after: nil, attempt: attempt)
@@ -252,11 +271,22 @@ actor AnthropicClient {
         }
     }
 
+    /// True for task cancellation in either flavor (Swift's `CancellationError`
+    /// or URLSession's `.cancelled`) — never retried, always rethrown as
+    /// `CancellationError` so callers can tell "user skipped" from "network died".
+    nonisolated static func isCancellation(_ error: Error) -> Bool {
+        error is CancellationError || (error as? URLError)?.code == .cancelled
+    }
+
     private func backoff(after http: HTTPURLResponse?, attempt: Int) async throws {
         let retryAfter = http?.value(forHTTPHeaderField: "retry-after").flatMap(Double.init)
         let base = pow(2.0, Double(attempt))            // 1s, 2s
         let jitter = Double(attempt + 1) * 0.25         // deterministic-ish, no RNG
-        let delay = retryAfter ?? (base + jitter)
+        // The header is server input: a negative/NaN value traps in UInt64(),
+        // and a huge one would hang the call for hours. Finite, 0...30s only.
+        var delay = retryAfter ?? (base + jitter)
+        if !delay.isFinite { delay = base + jitter }
+        delay = min(max(delay, 0), 30)
         try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
     }
 
@@ -270,7 +300,9 @@ actor AnthropicClient {
         let cacheRead = (usage?["cache_read_input_tokens"] as? Int) ?? 0
         let content = root["content"] as? [[String: Any]] ?? []
         let block = content.first { ($0["type"] as? String) == "tool_use" && ($0["name"] as? String) == toolName }
-        guard let input = block?["input"] else { throw AnthropicError.noToolUse }
+        // Type-check before serializing: JSONSerialization.data raises an
+        // UNCATCHABLE NSException for a non-collection top level.
+        guard let input = block?["input"] as? [String: Any] else { throw AnthropicError.noToolUse }
         let inputData = try JSONSerialization.data(withJSONObject: input)
         return Result(toolInput: inputData, cacheReadTokens: cacheRead)
     }
@@ -311,7 +343,7 @@ actor AnthropicClient {
                     for try await line in bytes.lines {
                         guard line.hasPrefix("data:") else { continue }
                         let payload = line.dropFirst(5).trimmingCharacters(in: .whitespaces)
-                        for event in parser.consume(String(payload)) { continuation.yield(event) }
+                        for event in try parser.consume(String(payload)) { continuation.yield(event) }
                     }
                     continuation.finish()
                 } catch {
@@ -326,7 +358,7 @@ actor AnthropicClient {
 /// Events emitted while streaming a chat reply.
 enum ChatStreamEvent: Sendable, Equatable {
     case text(String)
-    case suggestion(action: String, slug: String, reason: String)
+    case suggestion(action: String, slug: String, reason: String, dose: Double?)
     case finished
 }
 
@@ -337,11 +369,21 @@ struct SSEChatParser {
     private var inToolBlock = false
     private var toolJSON = ""
 
-    mutating func consume(_ payload: String) -> [ChatStreamEvent] {
+    mutating func consume(_ payload: String) throws -> [ChatStreamEvent] {
         guard !payload.isEmpty, payload != "[DONE]",
               let data = payload.data(using: .utf8),
               let obj = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
               let type = obj["type"] as? String else { return [] }
+        // A mid-stream `error` event (overloaded etc.) means the reply is
+        // truncated: fail the stream so the UI keeps the partial text and offers
+        // retry, instead of silently saving it as a completed message.
+        if type == "error" {
+            let err = obj["error"] as? [String: Any]
+            if (err?["type"] as? String) == "overloaded_error" {
+                throw AnthropicClient.AnthropicError.overloaded(529)
+            }
+            throw AnthropicClient.AnthropicError.http(529, (err?["message"] as? String) ?? "stream error")
+        }
         switch type {
         case "content_block_start":
             if let cb = obj["content_block"] as? [String: Any],
@@ -368,7 +410,8 @@ struct SSEChatParser {
                let action = input["action"] as? String,
                let slug = input["compound_slug"] as? String {
                 return [.suggestion(action: action, slug: slug,
-                                    reason: (input["reason"] as? String) ?? "")]
+                                    reason: (input["reason"] as? String) ?? "",
+                                    dose: input["suggested_dose"] as? Double)]
             }
             return []
         case "message_stop":

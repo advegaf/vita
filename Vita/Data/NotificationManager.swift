@@ -11,6 +11,9 @@ final class NotificationRouter: NSObject, UNUserNotificationCenterDelegate {
     static let shared = NotificationRouter()
     var pendingTab: AppTab?
     var pendingDetailItemID: UUID?
+    /// Prefills the chat input (never auto-sends) — set by cross-links like the
+    /// lab marker's "Ask vita" alongside `pendingTab = .chat`.
+    var pendingChatPrompt: String?
     var container: ModelContainer?
 
     func register() {
@@ -42,14 +45,13 @@ final class NotificationRouter: NSObject, UNUserNotificationCenterDelegate {
     ) async {
         let action = response.actionIdentifier
         let userInfo = response.notification.request.content.userInfo
-        // Pull out Sendable primitives before hopping to the main actor.
+        // Resolve the Sendable occurrence (dayKey-aware) before hopping actors.
+        let occ = NotificationManager.occurrence(from: userInfo)
         let itemID = userInfo["itemID"] as? String
-        let minutes = userInfo["minutes"] as? Int
-        let dayTI = userInfo["day"] as? Double
 
         switch action {
         case "LOG_DOSE", "SKIP_DOSE":
-            await MainActor.run { handleLog(action: action, itemID: itemID, minutes: minutes, dayTI: dayTI) }
+            await MainActor.run { handleLog(action: action, occ: occ) }
         case "SNOOZE_15":
             // UNUserNotificationCenter is thread-safe; reuse the fired content, +15m.
             let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 15 * 60, repeats: false)
@@ -66,16 +68,15 @@ final class NotificationRouter: NSObject, UNUserNotificationCenterDelegate {
         }
     }
 
-    private func handleLog(action: String, itemID: String?, minutes: Int?, dayTI: Double?) {
+    private func handleLog(action: String, occ: (itemID: UUID, minutes: Int, day: Date)?) {
         guard let status = NotificationManager.status(forAction: action),
-              let idStr = itemID, let id = UUID(uuidString: idStr),
-              let m = minutes, let ti = dayTI, let container else { return }
+              let occ, let container else { return }
         let context = container.mainContext
         let items = (try? context.fetch(FetchDescriptor<ProtocolItem>())) ?? []
-        guard let item = items.first(where: { $0.id == id }) else { return }
+        guard let item = items.first(where: { $0.id == occ.itemID }) else { return }
         DoseLogger(context: context).log(
-            item: item, occurrence: DoseOccurrence(itemID: id, minutes: m),
-            on: Date(timeIntervalSince1970: ti), status: status)
+            item: item, occurrence: DoseOccurrence(itemID: occ.itemID, minutes: occ.minutes),
+            on: occ.day, status: status)
     }
 }
 
@@ -86,7 +87,9 @@ final class NotificationRouter: NSObject, UNUserNotificationCenterDelegate {
 @MainActor
 enum NotificationManager {
 
-    static let windowDays = 14
+    // 21 days (was 14): a two-week trip with the app unopened left the back half
+    // unreminded. The 60-pending cap still prefix-limits dense stacks safely.
+    static let windowDays = 21
     static let maxPending = 60          // stay under the iOS 64-pending cap
     static let categoryID = "DOSE_REMINDER"
 
@@ -104,6 +107,12 @@ enum NotificationManager {
     static func plan(for items: [ProtocolItem], logs: [DoseLog], from now: Date = Date(),
                      calendar: Calendar = .current) -> [PlannedReminder] {
         var out: [PlannedReminder] = []
+        // Indexed acted-occurrence lookups — this runs after EVERY dose log, and the
+        // log table grows forever (14 days × items × slots × a linear scan otherwise).
+        let acted = Set(logs.filter { !$0.isPRN }.map {
+            StreakService.actedKey(itemID: $0.itemID, day: $0.scheduledDayStart,
+                                   minutes: $0.scheduledMinutes, calendar: calendar)
+        })
         for item in items {
             guard let rule = item.schedule, rule.frequency != .prn else { continue }
             for dayOffset in 0..<windowDays {
@@ -115,11 +124,10 @@ enum NotificationManager {
                     guard let fire = calendar.date(bySettingHour: m / 60, minute: m % 60, second: 0, of: day),
                           fire > now else { continue }
                     // Already taken or skipped → no reminder.
-                    if logs.contains(where: {
-                        DoseLogger.matches($0, itemID: item.id, dayStart: dayStart, minutes: m, calendar: calendar)
-                    }) { continue }
+                    if acted.contains(StreakService.actedKey(itemID: item.id, day: dayStart,
+                                                             minutes: m, calendar: calendar)) { continue }
                     out.append(PlannedReminder(
-                        id: "dose-\(item.id.uuidString)-\(dayKey(dayStart, calendar))-\(m)",
+                        id: Self.reminderID(itemID: item.id, day: dayStart, minutes: m, calendar: calendar),
                         title: "Time to pin \(item.displayName)", body: reminderBody(item, on: dayStart),
                         itemID: item.id, minutes: m, fireDate: fire))
                 }
@@ -128,9 +136,27 @@ enum NotificationManager {
         return Array(out.sorted { $0.fireDate < $1.fireDate }.prefix(maxPending))
     }
 
-    private static func dayKey(_ day: Date, _ calendar: Calendar) -> Int {
+    nonisolated private static func dayKey(_ day: Date, _ calendar: Calendar) -> Int {
         let c = calendar.dateComponents([.year, .month, .day], from: day)
         return (c.year ?? 0) * 10000 + (c.month ?? 0) * 100 + (c.day ?? 0)
+    }
+
+    /// y*10000+m*100+d back to a local startOfDay. Zone-independent, unlike an
+    /// epoch of some past timezone's midnight.
+    nonisolated static func date(fromDayKey key: Int, calendar: Calendar = .current) -> Date? {
+        guard key > 0 else { return nil }
+        var c = DateComponents()
+        c.year = key / 10_000
+        c.month = (key / 100) % 100
+        c.day = key % 100
+        return calendar.date(from: c)
+    }
+
+    /// Deterministic reminder id for a dose occurrence — shared with `DoseLogger`
+    /// so logging in-app can also clear the already-DELIVERED banner.
+    nonisolated static func reminderID(itemID: UUID, day: Date, minutes: Int,
+                                       calendar: Calendar = .current) -> String {
+        "dose-\(itemID.uuidString)-\(dayKey(calendar.startOfDay(for: day), calendar))-\(minutes)"
     }
 
     private static func reminderBody(_ item: ProtocolItem, on day: Date) -> String {
@@ -204,55 +230,86 @@ enum NotificationManager {
     nonisolated static func occurrence(from userInfo: [AnyHashable: Any])
         -> (itemID: UUID, minutes: Int, day: Date)? {
         guard let idStr = userInfo["itemID"] as? String, let id = UUID(uuidString: idStr),
-              let m = userInfo["minutes"] as? Int, let ti = userInfo["day"] as? Double
-        else { return nil }
-        return (id, m, Date(timeIntervalSince1970: ti))
+              let m = userInfo["minutes"] as? Int else { return nil }
+        // The zone-independent dayKey is authoritative: an epoch stored as another
+        // timezone's midnight resolves to the WRONG local day after travel, so a
+        // lock-screen Log/Skip would write the dose to a neighboring date.
+        if let key = userInfo["dayKey"] as? Int, let day = date(fromDayKey: key) {
+            return (id, m, day)
+        }
+        guard let ti = userInfo["day"] as? Double else { return nil }
+        return (id, m, Date(timeIntervalSince1970: ti)) // legacy payloads
     }
 
     // MARK: Schedule (effectful)
 
+    /// Bumped per rebuild so a superseded in-flight rebuild aborts instead of
+    /// interleaving its remove/add with a newer one.
+    private static var rebuildGeneration = 0
+
     static func rebuild(context: ModelContext) {
         let settings = CatalogStore.fetchOrCreateSettings(context)
         let center = UNUserNotificationCenter.current()
-        center.removeAllPendingNotificationRequests()
-        guard settings.notificationsEnabled else { return }
+        guard settings.notificationsEnabled else {
+            center.removeAllPendingNotificationRequests()
+            return
+        }
 
         let items = (try? context.fetch(FetchDescriptor<ProtocolItem>())) ?? []
         let logs = (try? context.fetch(FetchDescriptor<DoseLog>())) ?? []
-        let reminders = plan(for: items, logs: logs)
-        let calendar = Calendar.current
-        for r in reminders {
-            let content = UNMutableNotificationContent()
-            content.title = r.title
-            content.body = r.body
-            content.sound = .default
-            content.interruptionLevel = .timeSensitive
-            content.categoryIdentifier = categoryID
-            content.userInfo = [
-                "itemID": r.itemID.uuidString,
-                "minutes": r.minutes,
-                "day": calendar.startOfDay(for: r.fireDate).timeIntervalSince1970,
-            ]
-            let comps = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: r.fireDate)
-            let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
-            center.add(UNNotificationRequest(identifier: r.id, content: content, trigger: trigger))
-        }
+        let allReminders = plan(for: items, logs: logs)
+        let allNotices = decisionNotices(for: items)
+        // A dense stack must not starve change notices: reserve a few slots.
+        let reserved = min(allNotices.count, 8)
+        let reminders = Array(allReminders.prefix(maxPending - reserved))
+        let notices = Array(allNotices.prefix(maxPending - reminders.count))
 
-        // Review-only change notices fill the remaining cap (reminders take priority).
-        let notices = Array(decisionNotices(for: items).prefix(max(0, maxPending - reminders.count)))
-        for n in notices {
-            let content = UNMutableNotificationContent()
-            content.title = n.title
-            content.body = n.body
-            content.interruptionLevel = .passive
-            content.categoryIdentifier = decisionCategoryID
-            content.userInfo = ["itemID": n.itemID.uuidString]
-            let comps = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: n.fireDate)
-            let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
-            center.add(UNNotificationRequest(identifier: n.id, content: content, trigger: trigger))
+        // Replace only OUR pending requests — an in-flight one-shot "Snooze 15m"
+        // copy (`snooze-*`) must survive a rebuild (any dose log or stack edit
+        // used to silently cancel it via removeAllPendingNotificationRequests).
+        rebuildGeneration += 1
+        let gen = rebuildGeneration
+        let calendar = Calendar.current
+        Task { @MainActor in
+            let pending = await center.pendingNotificationRequests()
+            guard gen == rebuildGeneration else { return }   // superseded by a newer rebuild
+            let managed = pending.map(\.identifier).filter {
+                $0.hasPrefix("dose-") || $0.hasPrefix("titr-") || $0.hasPrefix("resume-")
+            }
+            center.removePendingNotificationRequests(withIdentifiers: managed)
+
+            for r in reminders {
+                let content = UNMutableNotificationContent()
+                content.title = r.title
+                content.body = r.body
+                content.sound = .default
+                content.interruptionLevel = .timeSensitive
+                content.categoryIdentifier = categoryID
+                content.userInfo = [
+                    "itemID": r.itemID.uuidString,
+                    "minutes": r.minutes,
+                    "day": calendar.startOfDay(for: r.fireDate).timeIntervalSince1970, // legacy fallback
+                    "dayKey": dayKey(calendar.startOfDay(for: r.fireDate), calendar),  // zone-independent
+                ]
+                let comps = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: r.fireDate)
+                let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
+                try? await center.add(UNNotificationRequest(identifier: r.id, content: content, trigger: trigger))
+            }
+
+            for n in notices {
+                let content = UNMutableNotificationContent()
+                content.title = n.title
+                content.body = n.body
+                content.interruptionLevel = .passive
+                content.categoryIdentifier = decisionCategoryID
+                content.userInfo = ["itemID": n.itemID.uuidString]
+                let comps = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: n.fireDate)
+                let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
+                try? await center.add(UNNotificationRequest(identifier: n.id, content: content, trigger: trigger))
+            }
+            #if DEBUG
+            NSLog("vita-notif: scheduled %d reminders + %d notices", reminders.count, notices.count)
+            #endif
         }
-        #if DEBUG
-        NSLog("vita-notif: scheduled %d reminders + %d notices", reminders.count, notices.count)
-        #endif
     }
 }

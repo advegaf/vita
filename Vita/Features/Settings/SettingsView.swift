@@ -36,7 +36,10 @@ struct SettingsView: View {
     @State private var showKeyField = false
     @State private var keyDraft = ""
     @State private var testing = false
-    @State private var testResult: Bool? = nil
+    @State private var testResult: String? = nil
+    // Data export
+    @State private var exportURLs: [URL] = []
+    @State private var showExportShare = false
     // Danger
     @State private var pendingDanger: DangerKind?
     @State private var debugRx = false
@@ -62,6 +65,7 @@ struct SettingsView: View {
                     aiCard
                     rxCard
                     privacyCard
+                    dataCard
                     aboutCard
                     dangerCard.id("bottom")
                 }
@@ -252,9 +256,10 @@ struct SettingsView: View {
                         }.foregroundStyle(VT.dose)
                     }.buttonStyle(.plain).allowsHitTesting(!testing)
                     if let testResult {
-                        Text(testResult ? "Connected ✓" : "Couldn't reach")
+                        Text(testResult)
                             .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(testResult ? VT.why : VT.overdue)
+                            .foregroundStyle(testResult == "Connected ✓" ? VT.why : VT.overdue)
+                            .lineLimit(2).minimumScaleFactor(0.8)
                     }
                     Spacer()
                     Button("Save") { saveKey() }
@@ -298,7 +303,7 @@ struct SettingsView: View {
             consentRow("Lab-scan consent", date: settings?.labConsentedAt)
             if settings?.labConsentedAt != nil {
                 Button("Revoke lab-scan consent") {
-                    settings?.labConsentedAt = nil; try? context.save()
+                    settings?.labConsentedAt = nil; context.saveLogged("SettingsView")
                 }
                 .font(.system(size: 14, weight: .semibold)).foregroundStyle(VT.dose).buttonStyle(.plain)
             }
@@ -311,8 +316,43 @@ struct SettingsView: View {
         HStack {
             Text(label).font(.system(size: 15)).foregroundStyle(VT.body)
             Spacer()
-            Text(date.map { $0.formatted(date: .abbreviated, time: .omitted) } ?? "—")
+            Text(date.map { $0.formatted(date: .abbreviated, time: .omitted) } ?? "n/a")
                 .font(.system(size: 14)).vtTabular().foregroundStyle(VT.micro)
+        }
+    }
+
+    // MARK: Data export (M15 — losing the phone must not mean losing every log)
+
+    private var dataCard: some View {
+        card("Data.", VT.why) {
+            Text("Your records live on this device. Export a backup anytime.")
+                .font(.system(size: 13)).foregroundStyle(VT.micro)
+            Button("Export my data") { exportData() }
+                .font(.system(size: 15, weight: .semibold)).foregroundStyle(VT.dose)
+                .buttonStyle(.plain)
+            Text("Doses, diary, and lab values as JSON and CSV. Lab scan images stay on your phone.")
+                .font(.system(size: 12)).foregroundStyle(VT.micro)
+        }
+        .sheet(isPresented: $showExportShare) {
+            ActivityShareSheet(items: exportURLs)
+        }
+    }
+
+    private func exportData() {
+        let items = (try? context.fetch(FetchDescriptor<ProtocolItem>())) ?? []
+        let logs = (try? context.fetch(FetchDescriptor<DoseLog>())) ?? []
+        let entries = (try? context.fetch(FetchDescriptor<DiaryEntry>())) ?? []
+        let metrics = (try? context.fetch(FetchDescriptor<BodyMetric>())) ?? []
+        let panels = (try? context.fetch(FetchDescriptor<LabPanel>())) ?? []
+        do {
+            let json = try DataExport.json(items: items, logs: logs, entries: entries,
+                                           metrics: metrics, panels: panels, appVersion: appVersion)
+            let csv = DataExport.dosesCSV(logs: logs)
+            exportURLs = try DataExport.writeFiles(json: json, csv: csv)
+            showExportShare = true
+            Haptics.press()
+        } catch {
+            NSLog("vita-export-FAILED: %@", String(describing: error))
         }
     }
 
@@ -401,20 +441,20 @@ struct SettingsView: View {
             p.birthDate = Calendar.current.date(byAdding: .year, value: -age, to: Date())
         }
         p.biologicalSexRaw = sex.isEmpty ? nil : sex
-        if let w = Double(weightText), w > 0 {
+        if let w = Units.parseDouble(weightText), w > 0 {
             p.weightKg = weightUnit == .kg ? w : Units.lbToKg(w)
         }
         if heightUnit == .cm {
-            if let cm = Double(heightCmText), cm > 0 { p.heightCm = cm }
+            if let cm = Units.parseDouble(heightCmText), cm > 0 { p.heightCm = cm }
         } else {
             let f = Int(feetText) ?? 0, i = Int(inchesText) ?? 0
             if f + i > 0 { p.heightCm = Units.feetInchesToCm(feet: f, inches: i) }
         }
-        try? context.save()
+        context.saveLogged("SettingsView")
     }
 
     private func toggleWeightUnit() {
-        if let v = Double(weightText) {
+        if let v = Units.parseDouble(weightText) {
             weightText = weightUnit == .kg ? Units.trim(Units.kgToLb(v)) : Units.trim(Units.lbToKg(v))
         }
         storedWeightUnit = (weightUnit == .kg ? WeightUnit.lb : .kg).rawValue
@@ -422,7 +462,7 @@ struct SettingsView: View {
 
     private func toggleHeightUnit() {
         if heightUnit == .cm {
-            if let cm = Double(heightCmText) {
+            if let cm = Units.parseDouble(heightCmText) {
                 let fi = Units.cmToFeetInches(cm); feetText = String(fi.feet); inchesText = String(fi.inches)
             }
             heightUnitRaw = HeightUnit.ftIn.rawValue
@@ -449,7 +489,7 @@ struct SettingsView: View {
                             p.birthDate = Calendar.current.date(byAdding: .year, value: -a, to: Date())
                         }
                         if let s = v.biologicalSex { p.biologicalSexRaw = s }
-                        try? context.save()
+                        context.saveLogged("SettingsView")
                     }
                     loadProfile()
                     healthConnecting = false
@@ -470,7 +510,7 @@ struct SettingsView: View {
 
     private func setNotifications(_ on: Bool) {
         settings?.notificationsEnabled = on
-        try? context.save()
+        context.saveLogged("SettingsView")
         if on {
             Task {
                 _ = await NotificationService.requestPermission()
@@ -492,8 +532,8 @@ struct SettingsView: View {
         let draft = keyDraft
         Task {
             let client = AnthropicClient(keyProvider: { draft.isEmpty ? Keychain.apiKey : draft })
-            let ok = await client.ping()
-            await MainActor.run { testResult = ok; testing = false }
+            let problem = await client.pingProblem()
+            await MainActor.run { testResult = problem ?? "Connected ✓"; testing = false }
         }
     }
 
@@ -538,7 +578,7 @@ enum DangerKind: Identifiable {
         switch self {
         case .clearChat: "Deletes your entire chat history."
         case .clearLogs: "Deletes all dose history and resets your streak. Your stack stays."
-        case .resetOnboarding: "Runs the welcome wizard again. Your data stays."
+        case .resetOnboarding: "Runs the welcome wizard again with a fresh plan. Your history, diary, and labs stay."
         case .fullReset: "Deletes your stack, logs, diary, labs, and chat. This can't be undone."
         }
     }

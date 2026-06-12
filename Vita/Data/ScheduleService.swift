@@ -102,6 +102,18 @@ enum ScheduleService {
         return .due
     }
 
+    /// "overdue · 45m" / "overdue · 2h 15m" / "overdue · 2d" — lets an overdue pin
+    /// say HOW late, so the user can triage at a glance. Pure.
+    static func overdueLabel(minutesLate: Int) -> String {
+        let m = max(0, minutesLate)
+        if m < 60 { return "overdue · \(m)m" }
+        if m < 48 * 60 {
+            let h = m / 60, rem = m % 60
+            return rem == 0 ? "overdue · \(h)h" : "overdue · \(h)h \(rem)m"
+        }
+        return "overdue · \(m / (24 * 60))d"
+    }
+
     /// Human cadence label for stack rows ("Daily · 8:00 AM, 9:00 PM", "Weekly · Sun, Thu").
     static func cadenceLabel(for rule: ScheduleRule) -> String {
         if rule.frequency == .prn { return "As needed" }

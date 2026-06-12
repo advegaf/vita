@@ -32,7 +32,7 @@ struct DiaryService {
         e.sideEffectsRaw = sideEffects.map(\.rawValue)
         e.note = note
         e.loggedAt = Date()
-        try? context.save()
+        context.saveLogged("DiaryService")
         return e
     }
 
@@ -41,7 +41,7 @@ struct DiaryService {
         let m = BodyMetric()
         m.kindRaw = kind.rawValue; m.valueCanonical = valueCanonical
         m.measuredAt = when; m.sourceRaw = MetricSource.manual.rawValue
-        context.insert(m); try? context.save()
+        context.insert(m); context.saveLogged("DiaryService")
     }
 
     /// Idempotent Apple-Health weight backfill — inserts only unseen HK sample UUIDs,
@@ -56,6 +56,6 @@ struct DiaryService {
             m.sourceRaw = MetricSource.health.rawValue; m.healthUUID = s.uuid
             context.insert(m); inserted = true
         }
-        if inserted { try? context.save() }
+        if inserted { context.saveLogged("DiaryService") }
     }
 }

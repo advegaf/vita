@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import UserNotifications
 
 /// The single write path for dose logging (M4). Upserts a `DoseLog` per scheduled
 /// occurrence (so re-acting flips status, never duplicates), deletes on undo, and
@@ -40,8 +41,15 @@ struct DoseLogger {
         log.statusRaw = status.rawValue
         log.isPRN = false
         log.loggedAt = Date()
-        try? context.save()
-        NotificationManager.rebuild(context: context)   // drop this occurrence's reminder
+        context.saveLogged("DoseLogger")
+        NotificationManager.rebuild(context: context)
+        WidgetBridge.update(context: context)   // drop this occurrence's reminder
+        // An ALREADY-DELIVERED banner for this occurrence would keep stale
+        // Log/Skip actions in Notification Center (a stale Skip flips a taken
+        // dose); rebuild only clears pending ones.
+        UNUserNotificationCenter.current().removeDeliveredNotifications(
+            withIdentifiers: [NotificationManager.reminderID(itemID: item.id, day: start,
+                                                             minutes: occurrence.minutes)])
         return log
     }
 
@@ -49,14 +57,25 @@ struct DoseLogger {
     func undo(item: ProtocolItem, occurrence: DoseOccurrence, on day: Date = Date()) {
         if let log = logged(itemID: item.id, minutes: occurrence.minutes, on: day) {
             context.delete(log)
-            try? context.save()
-            NotificationManager.rebuild(context: context)   // reminder comes back
+            context.saveLogged("DoseLogger")
+            NotificationManager.rebuild(context: context)
+        WidgetBridge.update(context: context)   // reminder comes back
         }
     }
 
-    /// Log a PRN ("as needed") dose at `when`. Appends (multiple per day allowed).
+    /// Log a PRN ("as needed") dose at `when`. Appends (multiple per day allowed) —
+    /// but an accidental double-tap inside a minute returns the existing log
+    /// instead of doubling the day's count. Deduped against the most recent PRN
+    /// log regardless of calendar day (a double-tap can straddle midnight), and
+    /// only for a POSITIVE interval (a backwards clock change must never swallow
+    /// real doses).
     @discardableResult
     func logPRN(item: ProtocolItem, at when: Date = Date()) -> DoseLog {
+        if let recent = allLogs().filter({ $0.isPRN && $0.itemID == item.id })
+            .max(by: { $0.loggedAt < $1.loggedAt }) {
+            let dt = when.timeIntervalSince(recent.loggedAt)
+            if dt >= 0, dt < 60 { return recent }
+        }
         let log = DoseLog()
         stamp(log, from: item)
         log.scheduledDayStart = Calendar.current.startOfDay(for: when)
@@ -65,7 +84,8 @@ struct DoseLogger {
         log.statusRaw = DoseStatus.taken.rawValue
         log.loggedAt = when
         context.insert(log)
-        try? context.save()
+        context.saveLogged("DoseLogger")
+        WidgetBridge.update(context: context)
         return log
     }
 

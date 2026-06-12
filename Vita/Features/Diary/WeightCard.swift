@@ -12,28 +12,30 @@ struct WeightCard: View {
     private var unit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .lb }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            vtLead("Weight.", color: VT.why)
-            if let kg = DiarySeries.latest(.weight, metrics: metrics) {
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text(display(kg)).font(.vtDose).vtTabular().foregroundStyle(VT.ink)
-                        .contentTransition(.numericText())
-                    Button { weightUnitRaw = (unit == .kg ? WeightUnit.lb : .kg).rawValue } label: {
-                        Text(unit.rawValue).font(.system(size: 15, weight: .semibold)).foregroundStyle(VT.dose)
+        Button(action: onTap) {
+            VStack(alignment: .leading, spacing: 10) {
+                vtLead("Weight.", color: VT.why)
+                if let kg = DiarySeries.latest(.weight, metrics: metrics) {
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        Text(display(kg)).font(.vtDose).vtTabular().foregroundStyle(VT.ink)
+                            .contentTransition(.numericText())
+                        Button { weightUnitRaw = (unit == .kg ? WeightUnit.lb : .kg).rawValue } label: {
+                            Text(unit.rawValue).font(.system(size: 15, weight: .semibold)).foregroundStyle(VT.dose)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityHint("Tap to change unit")
+                        Spacer()
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityHint("Tap to change unit")
-                    Spacer()
+                    deltaLine
+                } else {
+                    Text("Add your weight.").font(.system(size: 15)).foregroundStyle(VT.body)
                 }
-                deltaLine
-            } else {
-                Text("Add your weight.").font(.system(size: 15)).foregroundStyle(VT.body)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(VT.sCardPad).vtCard()
+            .contentShape(Rectangle())
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(VT.sCardPad).vtCard()
-        .contentShape(Rectangle())
-        .onTapGesture { onTap() }
+        .buttonStyle(.pressableCard)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isButton)
     }

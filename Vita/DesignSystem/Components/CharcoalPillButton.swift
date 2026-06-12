@@ -4,6 +4,9 @@ import SwiftUI
 /// The only "filled" surface in the design system.
 struct CharcoalPillButton: View {
     var title: String
+    /// Shows a small white spinner before the title (e.g. "Refining with AI…").
+    /// The button stays tappable; the caller decides what a tap means mid-work.
+    var loading: Bool = false
     var action: () -> Void
 
     @State private var pressed = false
@@ -13,13 +16,20 @@ struct CharcoalPillButton: View {
             Haptics.press()
             action()
         }) {
-            Text(title)
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 17)
-                .background(VT.ink, in: Capsule())
-                .scaleEffect(pressed ? 0.98 : 1)
+            HStack(spacing: 10) {
+                if loading {
+                    ProgressView()
+                        .controlSize(.small)
+                        .tint(.white)
+                }
+                Text(title)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(.white)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 17)
+            .background(VT.ink, in: Capsule())
+            .scaleEffect(pressed ? 0.98 : 1)
         }
         .buttonStyle(.plain)
         .simultaneousGesture(
@@ -34,6 +44,7 @@ struct CharcoalPillButton: View {
 #Preview {
     VStack {
         CharcoalPillButton(title: "Log today's dose") {}
+        CharcoalPillButton(title: "Refining with AI…", loading: true) {}
         CharcoalPillButton(title: "Got it") {}
     }
     .padding(24)

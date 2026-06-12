@@ -68,13 +68,31 @@ struct ThinkingDots: View {
     }
 }
 
-/// Top bar: translucent "Vita" wordmark pill (left) + "..." overflow (right).
+/// The wordmark with the app icon's signature: "Vita" plus the period drawn as
+/// the candy-cyan dot, seated on the text baseline. Homepage and home-screen
+/// icon speak the same sentence.
+struct VitaWordmark: View {
+    var size: CGFloat = 17
+    var weight: Font.Weight = .bold
+    var relativeTo: Font.TextStyle = .headline
+    var body: some View {
+        HStack(alignment: .lastTextBaseline, spacing: size * 0.12) {
+            Text("Vita").font(VFont.display(size, weight: weight, relativeTo: relativeTo))
+                .foregroundStyle(VT.ink)
+            Circle().fill(VT.dose)
+                .frame(width: size * 0.26, height: size * 0.26)
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Vita")
+    }
+}
+
+/// Top bar: translucent "Vita." wordmark pill (left) + "..." overflow (right).
 struct TopBarPill: View {
     var onMenu: () -> Void = {}
     var body: some View {
         HStack {
-            Text("Vita").font(VFont.display(17, weight: .bold, relativeTo: .headline))
-                .foregroundStyle(VT.ink)
+            VitaWordmark()
                 .padding(.horizontal, 14).padding(.vertical, 8)
                 .background(.regularMaterial, in: Capsule())
 

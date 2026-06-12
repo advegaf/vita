@@ -22,10 +22,14 @@
 	<string>1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
-	<key>NSHealthShareUsageDescription</key>
-	<string>vita reads your recent sleep, HRV, heart rate, weight, and steps to ground its educational suggestions. Read-only, and you can skip it.</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>NSCameraUsageDescription</key>
 	<string>Vita uses the camera so you can photograph a lab report to read its values. Educational only.</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>vita reads your recent sleep, HRV, heart rate, weight, and steps to ground its educational suggestions. Read-only, and you can skip it.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Vita does not write any data to Apple Health. This permission is required by the HealthKit capability; all access is read-only.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Vita reads a lab-report photo you choose to extract its values. Educational only.</string>
 	<key>UIAppFonts</key>
@@ -39,6 +43,10 @@
 		<key>UIColorName</key>
 		<string></string>
 	</dict>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
 	<key>UIUserInterfaceStyle</key>
 	<string>Light</string>
 </dict>

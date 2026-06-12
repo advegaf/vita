@@ -24,6 +24,7 @@ struct VitaApp: App {
         container = c
         NotificationRouter.shared.container = c
         NotificationRouter.shared.register()
+        ChatSession.shared.container = c   // streams outlive the Chat tab
     }
 
     var body: some Scene {
@@ -33,7 +34,13 @@ struct VitaApp: App {
         .modelContainer(container)
         .onChange(of: scenePhase) { _, phase in
             if phase == .active {
+                // Widget-tapped doses become real DoseLogs BEFORE the reminder
+                // rebuild and snapshot rewrite see the day's truth.
+                WidgetBridge.reconcilePendingLogs(context: container.mainContext)
                 NotificationManager.rebuild(context: container.mainContext)
+            }
+            if phase == .active || phase == .background {
+                WidgetBridge.update(context: container.mainContext)
             }
         }
     }

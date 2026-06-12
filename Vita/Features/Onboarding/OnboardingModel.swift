@@ -20,10 +20,21 @@ final class OnboardingModel {
     /// Set when protocol generation fell back to the rule-based starter (no key /
     /// network / valid output) so Review can show a calm "Built offline" note.
     var builtOffline = false
-    /// Claude is refining the starter in the background (Review shows "Refining with AI…").
+    /// Claude is refining the starter in the background (Review's charcoal pill
+    /// shows "Refining with AI…"; tapping it cancels and proceeds with the starter).
     var refining = false
+    /// The in-flight refine task, so Review's pill (and a re-entered Generating
+    /// step) can cancel it. Cleared when the task finishes.
+    var refineTask: Task<Void, Never>?
     /// Claude's plan replaced the starter (Review shows "Refined with AI.").
     var refinedByAI = false
+    /// Refine suggestions for the USER'S OWN items (never auto-applied): itemID →
+    /// Claude's draft. Review renders a tappable "vita suggests …" line per entry.
+    var refineSuggestions: [UUID: DoseDraft] = [:]
+    /// Step 2's pushed-detail navigation path (compound slugs). Lives here so
+    /// `back()` can pop an open detail instead of leaving the step — the wizard
+    /// chevron is the ONLY back button (the pushed detail hides the system one).
+    var peptidesPath: [String] = []
 
     init() {
         #if DEBUG
@@ -39,6 +50,12 @@ final class OnboardingModel {
             case "notifications": step = .notifications
             default: break
             }
+        }
+        // Render Step 2 with a pushed compound detail, e.g. VITA_ONB_DETAIL=bpc-157.
+        if let slug = ProcessInfo.processInfo.environment["VITA_ONB_DETAIL"] {
+            step = .peptides
+            selectedGoals = [.fatLoss, .recoveryHealing]
+            peptidesPath = [slug]
         }
         #endif
     }
@@ -57,6 +74,18 @@ final class OnboardingModel {
     }
 
     func back() {
+        // Layered: with a peptide detail open on Step 2, back closes the detail.
+        if step == .peptides, !peptidesPath.isEmpty {
+            peptidesPath.removeLast()
+            return
+        }
+        // Generating auto-advances, so backing into it would just bounce the user
+        // straight back to Review. Skip over it; going FORWARD through it again
+        // (Health → Continue) legitimately re-runs the refine.
+        if step == .review {
+            withAnimation(.easeInOut(duration: 0.25)) { step = .health }
+            return
+        }
         if let prev = OnboardingStep(rawValue: step.rawValue - 1) {
             withAnimation(.easeInOut(duration: 0.25)) { step = prev }
         }

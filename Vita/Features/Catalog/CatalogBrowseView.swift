@@ -5,29 +5,47 @@ struct CatalogBrowseView: View {
     /// When false (e.g. inside onboarding, where the step already has a big
     /// headline), the redundant "Catalog" nav title is dropped.
     var showsNavigationTitle: Bool = true
+    /// Lets a host react to the search keyboard (onboarding hides its Continue
+    /// bar while searching). Same defaulted-callback convention as `onSaved`.
+    var onSearchFocusChanged: (Bool) -> Void = { _ in }
 
     @Environment(\.modelContext) private var context
     @Query(sort: \CatalogCompound.name) private var compounds: [CatalogCompound]
     @State private var search = ""
+    @FocusState private var searchFocused: Bool
 
     var body: some View {
-        ScrollView {
-            LazyVStack(alignment: .leading, spacing: VT.sSection) {
-                searchField
-                if grouped.isEmpty {
-                    noResults
-                } else {
-                    ForEach(grouped, id: \.0) { cat, items in
-                        section(cat, items)
+        ZStack {
+            // Full-screen cream, exactly like Chat: the keyboard's rounded bevels
+            // reveal canvas, never the white system background.
+            VT.canvas.ignoresSafeArea()
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: VT.sSection) {
+                    searchField
+                    if grouped.isEmpty {
+                        noResults
+                    } else {
+                        ForEach(grouped, id: \.0) { cat, items in
+                            section(cat, items)
+                        }
                     }
                 }
+                .padding(VT.sSection)
             }
-            .padding(VT.sSection)
+            .scrollIndicators(.hidden)
+            .scrollDismissesKeyboard(.interactively)
+            .dismissesKeyboardOnTap()
         }
-        .scrollIndicators(.hidden)
-        .scrollDismissesKeyboard(.interactively)
-        .dismissesKeyboardOnTap()
-        .background(VT.canvas)
+        .onChange(of: searchFocused) { _, focused in onSearchFocusChanged(focused) }
+        #if DEBUG
+        // Screenshot hook: VITA_CATALOG_FOCUS=1 raises the search keyboard.
+        .task {
+            if ProcessInfo.processInfo.environment["VITA_CATALOG_FOCUS"] == "1" {
+                try? await Task.sleep(nanoseconds: 600_000_000)
+                searchFocused = true
+            }
+        }
+        #endif
         .navigationTitle(showsNavigationTitle ? "Catalog" : "")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(showsNavigationTitle ? .automatic : .hidden, for: .navigationBar)
@@ -41,6 +59,7 @@ struct CatalogBrowseView: View {
             TextField("Search peptides", text: $search)
                 .foregroundStyle(VT.ink)
                 .autocorrectionDisabled()
+                .focused($searchFocused)
             if !search.isEmpty {
                 Button { search = "" } label: {
                     Image(systemName: "xmark.circle.fill").foregroundStyle(VT.micro)

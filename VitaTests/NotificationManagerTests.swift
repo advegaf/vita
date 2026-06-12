@@ -116,6 +116,21 @@ final class NotificationManagerTests: XCTestCase {
         XCTAssertNil(NotificationManager.occurrence(from: ["minutes": 480]))
     }
 
+    func testOccurrencePrefersZoneIndependentDayKey() {
+        // After a timezone change, the epoch (some past zone's midnight) resolves
+        // to the WRONG local day — the dayKey components must win.
+        let id = UUID()
+        let cal = Calendar.current
+        let c = cal.dateComponents([.year, .month, .day], from: today)
+        let key = (c.year ?? 0) * 10_000 + (c.month ?? 0) * 100 + (c.day ?? 0)
+        let misleadingEpoch = today.addingTimeInterval(-10 * 3600).timeIntervalSince1970 // "yesterday" in epoch terms
+        let occ = NotificationManager.occurrence(from:
+            ["itemID": id.uuidString, "minutes": 480, "day": misleadingEpoch, "dayKey": key])
+        XCTAssertEqual(occ?.day, today)                       // dayKey wins over the epoch
+        XCTAssertEqual(NotificationManager.date(fromDayKey: key), today)
+        XCTAssertNil(NotificationManager.date(fromDayKey: 0))
+    }
+
     // MARK: - M9 change notices + titrated reminder bodies
 
     func testTitrationStepUpNoticeDayBefore() {

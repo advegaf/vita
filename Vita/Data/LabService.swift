@@ -59,7 +59,7 @@ struct LabService {
             context.insert(lv)
             lv.panel = panel                                   // inverse only AFTER both inserted
         }
-        try? context.save()
+        context.saveLogged("LabService")
         return panel
     }
 

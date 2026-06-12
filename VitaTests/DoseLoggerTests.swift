@@ -56,14 +56,44 @@ final class DoseLoggerTests: XCTestCase {
         let ctx = makeContext()
         let item = makeItem(ctx, slug: "pt-141")
         let logger = DoseLogger(context: ctx)
+        let noon = Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: Date())!
 
-        logger.logPRN(item: item)
-        logger.logPRN(item: item)                                 // PRN logs append (multiple/day)
+        logger.logPRN(item: item, at: noon)
+        logger.logPRN(item: item, at: noon.addingTimeInterval(3600)) // PRN logs append (multiple/day)
 
         let all = try ctx.fetch(FetchDescriptor<DoseLog>())
         XCTAssertEqual(all.count, 2)
         XCTAssertTrue(all.allSatisfy { $0.isPRN })
-        XCTAssertNotNil(logger.lastPRN(itemID: item.id))
+        XCTAssertNotNil(logger.lastPRN(itemID: item.id, on: noon))
+    }
+
+    func testPRNDoubleTapDoesNotDuplicate() throws {
+        let ctx = makeContext()
+        let item = makeItem(ctx, slug: "pt-141")
+        let logger = DoseLogger(context: ctx)
+        let noon = Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: Date())!
+
+        let first = logger.logPRN(item: item, at: noon)
+        let second = logger.logPRN(item: item, at: noon.addingTimeInterval(2))  // accidental double-tap
+        XCTAssertEqual(first.id, second.id)                       // same log returned, nothing inserted
+        XCTAssertEqual(try ctx.fetch(FetchDescriptor<DoseLog>()).count, 1)
+
+        // A minute later is a deliberate re-log and appends.
+        logger.logPRN(item: item, at: noon.addingTimeInterval(61))
+        XCTAssertEqual(try ctx.fetch(FetchDescriptor<DoseLog>()).count, 2)
+    }
+
+    func testPRNDoubleTapAcrossMidnightDoesNotDuplicate() throws {
+        let ctx = makeContext()
+        let item = makeItem(ctx, slug: "pt-141")
+        let logger = DoseLogger(context: ctx)
+        let cal = Calendar.current
+        let lateNight = cal.date(bySettingHour: 23, minute: 59, second: 50,
+                                 of: cal.startOfDay(for: Date()))!
+
+        logger.logPRN(item: item, at: lateNight)
+        logger.logPRN(item: item, at: lateNight.addingTimeInterval(15))   // 00:00:05 next day
+        XCTAssertEqual(try ctx.fetch(FetchDescriptor<DoseLog>()).count, 1)  // still one dose
     }
 
     func testMatchPredicate() {

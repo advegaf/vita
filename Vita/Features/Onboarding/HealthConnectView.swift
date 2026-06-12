@@ -152,7 +152,7 @@ struct HealthConnectView: View {
     }
 
     private func toggleWeightUnit() {
-        if let v = Double(weightText) {
+        if let v = Units.parseDouble(weightText) {
             weightText = weightUnit == .kg ? Units.trim(Units.kgToLb(v)) : Units.trim(Units.lbToKg(v))
         }
         weightUnitRaw = (weightUnit == .kg ? WeightUnit.lb : .kg).rawValue
@@ -160,7 +160,7 @@ struct HealthConnectView: View {
 
     private func toggleHeightUnit() {
         if heightUnit == .cm {
-            if let cm = Double(heightCmText) {
+            if let cm = Units.parseDouble(heightCmText) {
                 let fi = Units.cmToFeetInches(cm)
                 feetText = String(fi.feet); inchesText = String(fi.inches)
             }
@@ -224,11 +224,11 @@ struct HealthConnectView: View {
             profile.birthDate = Calendar.current.date(byAdding: .year, value: -age, to: Date())
         }
         profile.biologicalSexRaw = sex.isEmpty ? nil : sex
-        if let w = Double(weightText), w > 0 {
+        if let w = Units.parseDouble(weightText), w > 0 {
             profile.weightKg = weightUnit == .kg ? w : Units.lbToKg(w)
         }
         if heightUnit == .cm {
-            if let cm = Double(heightCmText), cm > 0 { profile.heightCm = cm }
+            if let cm = Units.parseDouble(heightCmText), cm > 0 { profile.heightCm = cm }
         } else {
             let f = Int(feetText) ?? 0, i = Int(inchesText) ?? 0
             if f + i > 0 { profile.heightCm = Units.feetInchesToCm(feet: f, inches: i) }

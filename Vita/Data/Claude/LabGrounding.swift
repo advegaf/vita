@@ -14,4 +14,14 @@ enum LabGrounding {
         }
         return "Recent labs, out of printed range: " + bits.joined(separator: ", ") + "."
     }
+
+    /// The prefilled chat ask after saving a panel in-app ("Ask vita to review
+    /// your plan →"). The user sees and sends it themselves; chat's per-send
+    /// grounding carries the full stack + labs context alongside it.
+    static func stackReviewPrompt(panels: [LabPanel]) -> String {
+        if let line = summaryLine(panels: panels) {
+            return line + " Review my current stack against these results. Anything to add, adjust, or watch?"
+        }
+        return "I just imported new lab results and everything is in range. Anything in my current stack worth revisiting?"
+    }
 }

@@ -232,6 +232,16 @@ final class ScheduleServiceTests: XCTestCase {
         XCTAssertFalse(ScheduleService.isResumeDay(cyc, on: day(8)))  // day7 on → day8 on
     }
 
+    func testOverdueLabelRounding() {
+        XCTAssertEqual(ScheduleService.overdueLabel(minutesLate: 45), "overdue · 45m")
+        XCTAssertEqual(ScheduleService.overdueLabel(minutesLate: 59), "overdue · 59m")
+        XCTAssertEqual(ScheduleService.overdueLabel(minutesLate: 60), "overdue · 1h")
+        XCTAssertEqual(ScheduleService.overdueLabel(minutesLate: 135), "overdue · 2h 15m")
+        XCTAssertEqual(ScheduleService.overdueLabel(minutesLate: 47 * 60 + 59), "overdue · 47h 59m")
+        XCTAssertEqual(ScheduleService.overdueLabel(minutesLate: 48 * 60), "overdue · 2d")
+        XCTAssertEqual(ScheduleService.overdueLabel(minutesLate: -5), "overdue · 0m")
+    }
+
     func testTitrationLadder() {
         let it = titratingItem(starts: [7, 28, 56], doses: [0.25, 0.5, 1.0], base: 0.1, start: cycleStart)
         let ladder = ScheduleService.titrationLadder(for: it, on: day(30))

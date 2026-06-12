@@ -49,7 +49,7 @@ struct BodyEntrySheet: View {
     private var entriesCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             field("Weight", text: $weightText, unit: weightUnit.rawValue) {
-                if let v = Double(weightText) {
+                if let v = Units.parseDouble(weightText) {
                     weightText = Units.trim(weightUnit == .kg ? Units.kgToLb(v) : Units.lbToKg(v))
                 }
                 weightUnitRaw = (weightUnit == .kg ? WeightUnit.lb : .kg).rawValue
@@ -64,8 +64,8 @@ struct BodyEntrySheet: View {
     private func toggleMeasure() {
         let toInches = measureUnit == .cm
         func conv(_ v: Double) -> Double { toInches ? Units.cmToInches(v) : Units.inchesToCm(v) }
-        if let w = Double(waistText) { waistText = Units.trim(conv(w)) }
-        if let a = Double(armText) { armText = Units.trim(conv(a)) }
+        if let w = Units.parseDouble(waistText) { waistText = Units.trim(conv(w)) }
+        if let a = Units.parseDouble(armText) { armText = Units.trim(conv(a)) }
         measureUnitRaw = (measureUnit == .cm ? MeasurementUnit.inch : .cm).rawValue
     }
 
@@ -88,13 +88,13 @@ struct BodyEntrySheet: View {
 
     private func save() {
         let diary = DiaryService(context: context)
-        if let w = Double(weightText), w > 0 {
+        if let w = Units.parseDouble(weightText), w > 0 {
             diary.addBodyMetric(.weight, valueCanonical: weightUnit == .kg ? w : Units.lbToKg(w))
         }
-        if let wa = Double(waistText), wa > 0 {
+        if let wa = Units.parseDouble(waistText), wa > 0 {
             diary.addBodyMetric(.waist, valueCanonical: measureUnit == .cm ? wa : Units.inchesToCm(wa))
         }
-        if let a = Double(armText), a > 0 {
+        if let a = Units.parseDouble(armText), a > 0 {
             diary.addBodyMetric(.arm, valueCanonical: measureUnit == .cm ? a : Units.inchesToCm(a))
         }
         Haptics.commit()

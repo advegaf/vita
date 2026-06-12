@@ -33,9 +33,23 @@ struct LabPanelDTO: Codable, Equatable, Sendable {
         // wrap each element in a never-throwing shim and keep the ones that parse.
         let rows = (try? c.decode([LenientValue].self, forKey: .values)) ?? []
         values = rows.compactMap(\.value)
-        summary = (try? c.decode(String.self, forKey: .summary)) ?? ""
-        disclaimer = (try? c.decode(String.self, forKey: .disclaimer))
-            ?? "Educational, not medical advice. Discuss results with your clinician."
+        summary = Self.stripMarkup((try? c.decode(String.self, forKey: .summary)) ?? "")
+        disclaimer = Self.stripMarkup((try? c.decode(String.self, forKey: .disclaimer))
+            ?? "Educational, not medical advice. Discuss results with your clinician.")
+    }
+
+    /// Belt-and-braces: degenerate constrained generation was observed leaking raw
+    /// tool-call markup (`<parameter …>` fragments) INTO string field values. Strip
+    /// tag-LIKE tokens only (a letter or / after `<`) — lab strings legitimately
+    /// contain numeric comparisons like "<150" or ">7.13", which must survive.
+    static func stripMarkup(_ s: String) -> String {
+        // Em/en dashes are banned app-wide; the model leaks them into summaries
+        // and names despite the prompt, so sanitize at this same choke point
+        // (every decoded string field already flows through here).
+        let dashFree = ChatText.sanitize(s)
+        guard dashFree.contains("<") else { return dashFree }
+        return dashFree.replacingOccurrences(of: "</?[a-zA-Z][^>]*>", with: "", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     /// Decodes a `Value` but never throws — a bad element becomes nil (skipped) instead
@@ -43,6 +57,27 @@ struct LabPanelDTO: Codable, Equatable, Sendable {
     private struct LenientValue: Decodable {
         let value: Value?
         init(from decoder: Decoder) throws { value = try? Value(from: decoder) }
+    }
+
+    /// Merges per-page extractions into one panel: values concatenated in page order
+    /// and deduped by marker_key (first occurrence wins — repeated table headers on
+    /// later pages must not overwrite), metadata from the first page that has it.
+    static func merged(_ pages: [LabPanelDTO]) -> LabPanelDTO {
+        var seen = Set<String>()
+        var values: [Value] = []
+        for page in pages {
+            for v in page.values {
+                if v.markerKey.isEmpty { values.append(v); continue }
+                if seen.insert(v.markerKey).inserted { values.append(v) }
+            }
+        }
+        return LabPanelDTO(
+            panelDate: pages.compactMap(\.panelDate).first,
+            sourceLabName: pages.compactMap(\.sourceLabName).first,
+            values: values,
+            summary: pages.map(\.summary).first { !$0.isEmpty } ?? "",
+            disclaimer: pages.map(\.disclaimer).first { !$0.isEmpty }
+                ?? "Educational, not medical advice. Discuss results with your clinician.")
     }
 
     struct Value: Codable, Equatable, Sendable {
@@ -73,13 +108,13 @@ struct LabPanelDTO: Codable, Equatable, Sendable {
 
         init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
-            markerKey = (try? c.decode(String.self, forKey: .markerKey)) ?? ""
-            name = (try? c.decode(String.self, forKey: .name)) ?? ""
+            markerKey = LabPanelDTO.stripMarkup((try? c.decode(String.self, forKey: .markerKey)) ?? "")
+            name = LabPanelDTO.stripMarkup((try? c.decode(String.self, forKey: .name)) ?? "")
             value = (try? c.decode(Double.self, forKey: .value)) ?? 0
-            unit = (try? c.decode(String.self, forKey: .unit)) ?? ""
+            unit = LabPanelDTO.stripMarkup((try? c.decode(String.self, forKey: .unit)) ?? "")
             refLow = try? c.decodeIfPresent(Double.self, forKey: .refLow)
             refHigh = try? c.decodeIfPresent(Double.self, forKey: .refHigh)
-            refText = try? c.decodeIfPresent(String.self, forKey: .refText)
+            refText = (try? c.decodeIfPresent(String.self, forKey: .refText)).map(LabPanelDTO.stripMarkup)
             flagRaw = try? c.decodeIfPresent(String.self, forKey: .flagRaw)
         }
     }

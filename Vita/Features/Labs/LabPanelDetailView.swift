@@ -51,17 +51,37 @@ struct LabPanelDetailView: View {
     private var summaryCard: some View {
         VStack(alignment: .leading, spacing: 8) {
             vtLead("What stands out.", color: VT.dose)
-            Text(panel.summary).font(.system(size: 15)).foregroundStyle(VT.body).lineSpacing(3)
+            // Sanitized at display too: panels saved before the decode-time
+            // sanitizer keep their stored text.
+            Text(ChatText.sanitize(panel.summary))
+                .font(.system(size: 15)).foregroundStyle(VT.body).lineSpacing(3)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(VT.sCardPad).vtCard()
     }
 
+    // Rows push the marker's over-time trend (M11). The detail always lives inside
+    // DiaryView's NavigationStack today; any future sheet presenter must supply one.
     private var valuesCard: some View {
         let values = panel.orderedValues
         return VStack(spacing: 0) {
             ForEach(values.indices, id: \.self) { i in
-                valueRow(values[i])
+                if values[i].markerKey.isEmpty {
+                    valueRow(values[i])             // unkeyed row: nothing to trend
+                } else {
+                    NavigationLink {
+                        MarkerTrendView(markerKey: values[i].markerKey,
+                                        markerName: values[i].name)
+                    } label: {
+                        HStack(spacing: 8) {
+                            valueRow(values[i])
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 13, weight: .semibold)).foregroundStyle(VT.micro)
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                }
                 if i < values.count - 1 { Rectangle().fill(VT.hairline).frame(height: 1) }
             }
         }
@@ -75,7 +95,8 @@ struct LabPanelDetailView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(v.name.isEmpty ? v.markerKey : v.name)
                     .font(.system(size: 15, weight: .semibold)).foregroundStyle(VT.ink)
-                    .lineLimit(1).minimumScaleFactor(0.8)
+                    .lineLimit(2)                                    // uniform type: wrap, never shrink
+                    .fixedSize(horizontal: false, vertical: true)
                 Text("ref \(v.refDisplay) \(v.unit)")
                     .font(.system(size: 12)).vtTabular().foregroundStyle(VT.micro)
             }

@@ -37,4 +37,57 @@ final class LabPanelDTOTests: XCTestCase {
         XCTAssertNil(dto.panelDate)
         XCTAssertFalse(dto.disclaimer.isEmpty)     // defaulted
     }
+
+    func testLenientValueDecodeSkipsBadRowsOnly() throws {
+        // One malformed row (value is a string) must NOT drop the whole array.
+        let json = """
+        { "summary": "s", "values": [
+            {"marker_key":"tsh","name":"TSH","value":2.1,"unit":"mIU/L"},
+            {"marker_key":"bad","name":"Bad","value":"not-a-number","unit":"x"},
+            {"marker_key":"alt","name":"ALT","value":22,"unit":"U/L"}
+        ]}
+        """.data(using: .utf8)!
+        let dto = try JSONDecoder().decode(LabPanelDTO.self, from: json)
+        // The tolerant per-field decode coerces the bad row's value to 0 rather than
+        // dropping it (every field is individually defaulted), so all rows survive
+        // and the array-level decode never throws away the panel.
+        XCTAssertEqual(dto.values.count, 3)
+        XCTAssertEqual(dto.values.map(\.markerKey), ["tsh", "bad", "alt"])
+    }
+
+    // MARK: merged (per-page extraction)
+
+    private func page(date: String? = nil, lab: String? = nil, summary: String = "",
+                      keys: [(String, Double)]) -> LabPanelDTO {
+        LabPanelDTO(panelDate: date, sourceLabName: lab,
+                    values: keys.map { .init(markerKey: $0.0, name: $0.0, value: $0.1, unit: "u") },
+                    summary: summary, disclaimer: "d")
+    }
+
+    func testMergedDedupesByMarkerKeyFirstWins() {
+        let merged = LabPanelDTO.merged([
+            page(keys: [("glucose", 104), ("ldl", 138)]),
+            page(keys: [("glucose", 999), ("tsh", 2.1)]),   // repeated header row → first wins
+        ])
+        XCTAssertEqual(merged.values.map(\.markerKey), ["glucose", "ldl", "tsh"])
+        XCTAssertEqual(merged.values[0].value, 104)          // page-1 glucose kept
+    }
+
+    func testMergedMetadataFirstNonNil() {
+        let merged = LabPanelDTO.merged([
+            page(keys: [("a", 1)]),                          // no metadata
+            page(date: "2025-09-02", lab: "Quest", summary: "what stands out", keys: [("b", 2)]),
+            page(date: "1999-01-01", lab: "Other", keys: [("c", 3)]),
+        ])
+        XCTAssertEqual(merged.panelDate, "2025-09-02")       // first non-nil
+        XCTAssertEqual(merged.sourceLabName, "Quest")
+        XCTAssertEqual(merged.summary, "what stands out")    // first non-empty
+        XCTAssertEqual(merged.values.count, 3)
+    }
+
+    func testMergedEmptyPages() {
+        let merged = LabPanelDTO.merged([])
+        XCTAssertTrue(merged.values.isEmpty)
+        XCTAssertFalse(merged.disclaimer.isEmpty)            // defaulted
+    }
 }

@@ -45,9 +45,11 @@ enum DiarySeries {
     }
 
     /// 7-day (or N-day) averages of the four ratings, ignoring unset (0) values.
+    /// A "7-day" window is today + the 6 prior days: `-(days - 1)` from today's
+    /// start, not `-days` (which silently averaged an 8th day in).
     static func recentAverages(entries: [DiaryEntry], days: Int, asOf now: Date,
                                calendar: Calendar = .current) -> [DiaryMetric: Double] {
-        let cutoff = calendar.date(byAdding: .day, value: -days,
+        let cutoff = calendar.date(byAdding: .day, value: -(days - 1),
                                    to: calendar.startOfDay(for: now)) ?? now
         let recent = entries.filter { $0.dayStart >= cutoff }
         var out: [DiaryMetric: Double] = [:]
@@ -61,7 +63,7 @@ enum DiarySeries {
     /// Current weight + signed delta (current − earliest) over the window (canonical kg).
     static func weightTrend(metrics: [BodyMetric], days: Int, asOf now: Date,
                             calendar: Calendar = .current) -> (currentKg: Double?, deltaKg: Double?) {
-        let cutoff = calendar.date(byAdding: .day, value: -days,
+        let cutoff = calendar.date(byAdding: .day, value: -(days - 1),
                                    to: calendar.startOfDay(for: now)) ?? now
         let weights = metrics.filter { $0.kind == .weight && $0.measuredAt >= cutoff }
             .sorted { $0.measuredAt < $1.measuredAt }

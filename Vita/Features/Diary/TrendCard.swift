@@ -12,6 +12,8 @@ struct TrendCard: View {
     let entries: [DiaryEntry]
     let metrics: [BodyMetric]
     var now: Date = Date()
+    /// Empty states act, not dead-end: opens the check-in / measurement sheet.
+    var onEmptyAction: (() -> Void)? = nil
 
     @State private var selectedDay: Date?
     @State private var lastScrubDay: Date?
@@ -80,10 +82,19 @@ struct TrendCard: View {
     @ViewBuilder
     private func chart(_ pts: [Point]) -> some View {
         if pts.isEmpty {
-            Text("Your trend fills in as you check in.")
-                .font(.system(size: 14)).foregroundStyle(VT.micro)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: .infinity).frame(height: 170)
+            VStack(spacing: 10) {
+                Text("Your trend fills in as you check in.")
+                    .font(.system(size: 14)).foregroundStyle(VT.micro)
+                    .multilineTextAlignment(.center)
+                if let onEmptyAction {
+                    Button(metric.isRating ? "Check in now →" : "Add a measurement →") {
+                        onEmptyAction()
+                    }
+                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(metric.accent)
+                    .buttonStyle(.plain)
+                }
+            }
+            .frame(maxWidth: .infinity).frame(height: 170)
         } else {
             VStack(spacing: 8) {
                 Chart {

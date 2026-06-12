@@ -15,7 +15,7 @@ struct CheckInCard: View {
         Button(action: onTap) {
             if let e = entry, e.isLogged { summary(e) } else { prompt }
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.pressableCard)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(.isButton)
     }

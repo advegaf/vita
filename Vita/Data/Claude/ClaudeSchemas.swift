@@ -52,44 +52,57 @@ enum ClaudeSchemas {
     static let labsToolName = "interpret_labs"
     static let labsUserPrompt = "Read ALL pages of the attached lab report and extract EVERY marker value using the interpret_labs tool. Do not stop early; a full panel often has dozens of markers."
 
+    /// Per-page extraction prompt (multi-page PDFs are read one page at a time and
+    /// merged — a single long extraction is where the model bails early).
+    static func labsPagePrompt(page: Int, of total: Int) -> String {
+        "This is page \(page) of \(total) of one lab report. Extract EVERY marker value printed on THIS page using the interpret_labs tool. Do not stop early. If this page has no marker rows (cover sheets, notes), return an empty values array."
+    }
+
     /// `interpret_labs` — strict JSON, additionalProperties:false (mirrors emit_protocol).
     /// The app recomputes flags from value vs range; the model's flag_raw is verbatim only.
-    static var interpretLabsTool: [String: Any] {
-        [
-            "name": labsToolName,
-            "strict": true,
-            "description": "Read this lab report image or PDF and extract exactly the marker values printed on the page. Educational reading only; never diagnose or prescribe.",
-            "input_schema": [
-                "type": "object",
-                "additionalProperties": false,
-                "required": ["panel_date", "source_lab_name", "values", "summary", "disclaimer"],
-                "properties": [
-                    "panel_date": ["type": ["string", "null"], "description": "Collection/report date as printed, ISO-8601 (YYYY-MM-DD) if determinable, else null."],
-                    "source_lab_name": ["type": ["string", "null"], "description": "Lab/provider name printed on the report, else null."],
-                    "values": [
-                        "type": "array",
-                        "description": "One entry per marker row on the page.",
-                        "items": [
-                            "type": "object",
-                            "additionalProperties": false,
-                            "required": ["marker_key", "name", "value", "unit", "ref_low", "ref_high", "ref_text", "flag_raw"],
-                            "properties": [
-                                "marker_key": ["type": "string", "description": "Normalized snake_case key, e.g. glucose_fasting, hdl_cholesterol, tsh, testosterone_total."],
-                                "name": ["type": "string", "description": "Marker name exactly as printed."],
-                                "value": ["type": "number", "description": "Numeric result as printed."],
-                                "unit": ["type": "string", "description": "Unit as printed, e.g. mg/dL, mmol/L, ng/dL."],
-                                "ref_low": ["type": ["number", "null"], "description": "Reference range low bound, else null."],
-                                "ref_high": ["type": ["number", "null"], "description": "Reference range high bound, else null."],
-                                "ref_text": ["type": ["string", "null"], "description": "Reference range text when not a simple low-high (e.g. '<150', 'Negative'), else null."],
-                                "flag_raw": ["type": ["string", "null"], "description": "Any H/L/abnormal flag printed verbatim, else null. The app recomputes the flag from value vs range."],
-                            ],
-                        ],
-                    ],
-                    "summary": ["type": "string", "description": "2-3 sentence plain-language 'what stands out', educational, no diagnosis."],
-                    "disclaimer": ["type": "string", "description": "One-line educational, not-medical-advice statement."],
-                ],
-            ],
-        ]
+    /// Built with OrderedJSON: the schema's FIELD ORDER reaches the model verbatim, and a
+    /// hash-scrambled order was observed (live, reproducibly) to degenerate long
+    /// extractions into markup-leaking near-empty outputs.
+    static var interpretLabsTool: OrderedJSON {
+        func typed(_ types: [String], _ desc: String) -> OrderedJSON {
+            .object([("type", .array(types.map { .string($0) })), ("description", .string(desc))])
+        }
+        let valueItem: OrderedJSON = .object([
+            ("type", .string("object")),
+            ("additionalProperties", .bool(false)),
+            ("required", .array(["marker_key", "name", "value", "unit", "ref_low", "ref_high", "ref_text", "flag_raw"].map { .string($0) })),
+            ("properties", .object([
+                ("marker_key", .object([("type", .string("string")), ("description", .string("Normalized snake_case key, e.g. glucose_fasting, hdl_cholesterol, tsh, testosterone_total."))])),
+                ("name", .object([("type", .string("string")), ("description", .string("Marker name exactly as printed."))])),
+                ("value", .object([("type", .string("number")), ("description", .string("Numeric result as printed."))])),
+                ("unit", .object([("type", .string("string")), ("description", .string("Unit as printed, e.g. mg/dL, mmol/L, ng/dL."))])),
+                ("ref_low", typed(["number", "null"], "Reference range low bound, else null.")),
+                ("ref_high", typed(["number", "null"], "Reference range high bound, else null.")),
+                ("ref_text", typed(["string", "null"], "Reference range text when not a simple low-high (e.g. '<150', 'Negative'), else null.")),
+                ("flag_raw", typed(["string", "null"], "Any H/L/abnormal flag printed verbatim, else null. The app recomputes the flag from value vs range.")),
+            ])),
+        ])
+        return .object([
+            ("name", .string(labsToolName)),
+            ("strict", .bool(true)),
+            ("description", .string("Read this lab report image or PDF and extract exactly the marker values printed on the page. Educational reading only; never diagnose or prescribe.")),
+            ("input_schema", .object([
+                ("type", .string("object")),
+                ("additionalProperties", .bool(false)),
+                ("required", .array(["panel_date", "source_lab_name", "values", "summary", "disclaimer"].map { .string($0) })),
+                ("properties", .object([
+                    ("panel_date", typed(["string", "null"], "Collection/report date as printed, ISO-8601 (YYYY-MM-DD) if determinable, else null.")),
+                    ("source_lab_name", typed(["string", "null"], "Lab/provider name printed on the report, else null.")),
+                    ("values", .object([
+                        ("type", .string("array")),
+                        ("description", .string("One entry per marker row on the page.")),
+                        ("items", valueItem),
+                    ])),
+                    ("summary", .object([("type", .string("string")), ("description", .string("2-3 sentence plain-language 'what stands out', educational, no diagnosis."))])),
+                    ("disclaimer", .object([("type", .string("string")), ("description", .string("One-line educational, not-medical-advice statement."))])),
+                ])),
+            ])),
+        ])
     }
 
     /// Cached labs system prefix. NOTE: this is well under the ~4096-token Opus cache
@@ -129,6 +142,7 @@ enum ClaudeSchemas {
                     "action": ["type": "string", "enum": ["add", "adjust"]],
                     "compound_slug": ["type": "string", "description": "A slug from the catalog."],
                     "reason": ["type": "string", "description": "Short, educational reason for the suggestion."],
+                    "suggested_dose": ["type": "number", "description": "Optional educational starting dose in the compound's catalog unit (e.g. 250 for mcg compounds). Omit when unsure; the app clamps it into the catalog range."],
                 ],
             ],
         ]
@@ -172,7 +186,7 @@ enum ClaudeSchemas {
         if let labsLine { s += "Labs: " + labsLine + "\n" }
         s += "Current stack:\n"
         if stackLines.isEmpty {
-            s += "- (empty — nothing tracked yet)\n"
+            s += "- (empty, nothing tracked yet)\n"
         } else {
             for line in stackLines { s += "- \(line)\n" }
         }
@@ -197,13 +211,16 @@ enum ClaudeSchemas {
         - Use no imperatives ("inject", "you must"); frame everything as educational suggestions.
         - The `disclaimer` field is required: a one-line "Educational, not medical advice. Discuss with your clinician." statement.
 
-        CATALOG (slug — name — category — status — educational range — route):
+        CATALOG (slug | name | category | status | educational range | route):
         """
         for c in catalog.sorted(by: { $0.slug < $1.slug }) {
             let range = c.rangeText ?? "n/a"
             let rx = c.rxStatusRaw == "rx" ? "℞ prescription" : (c.rxStatusRaw == "ambiguous" ? "status unclear" : "research")
             let route = c.route ?? "subcutaneous"
-            s += "\n- \(c.slug) — \(c.name) — \(c.categoryTitle) — \(rx) — \(range) — \(route)"
+            // " | " separators, NOT em dashes: a dash-heavy listing primes the
+            // model's style and the em dashes leak into its lab summaries and
+            // rationales (the chat listing learned this in M4.6).
+            s += "\n- \(c.slug) | \(c.name) | \(c.categoryTitle) | \(rx) | \(range) | \(route)"
         }
         return s
     }

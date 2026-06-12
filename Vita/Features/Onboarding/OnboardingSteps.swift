@@ -59,8 +59,7 @@ struct WelcomeView: View {
     var body: some View {
         VStack(spacing: VT.sSection) {
             Spacer()
-            Text("Vita").font(VFont.display(40, weight: .heavy, relativeTo: .largeTitle))
-                .foregroundStyle(VT.ink)
+            VitaWordmark(size: 40, weight: .heavy, relativeTo: .largeTitle)
             VStack(spacing: 8) {
                 Text("Track your peptides.\nLearn as you go.")
                     .font(VFont.display(24, weight: .bold, relativeTo: .title))
@@ -137,6 +136,7 @@ struct GoalsView: View {
 struct LabsPlaceholderView: View {
     @Bindable var model: OnboardingModel
     @State private var showScan = false
+    @State private var saved = false
 
     var body: some View {
         StepScaffold(eyebrow: "Step 3", title: "Import your labs?",
@@ -144,21 +144,36 @@ struct LabsPlaceholderView: View {
                      continueTitle: "Continue", canContinue: true,
                      onContinue: model.advance, onSkip: model.advance) {
             VStack(alignment: .leading, spacing: 12) {
-                Image(systemName: "doc.text.viewfinder")
-                    .font(.system(size: 34)).foregroundStyle(VT.dose)
-                Text("Take a photo or import a PDF of recent labs. Vita reads the values for you to review before anything is saved.")
+                // Mirrors the Apple Health step's connected state, then moves on.
+                Image(systemName: saved ? "checkmark.seal.fill" : "doc.text.viewfinder")
+                    .font(.system(size: 34)).foregroundStyle(saved ? VT.why : VT.dose)
+                Text(saved
+                     ? "Labs imported."
+                     : "Take a photo or import a PDF of recent labs. Vita reads the values for you to review before anything is saved.")
                     .font(.system(size: 16)).foregroundStyle(VT.body).lineSpacing(3)
-                Button { showScan = true } label: {
-                    Text("Scan labs →").font(.system(size: 16, weight: .semibold)).foregroundStyle(VT.dose)
+                if !saved {
+                    Button { showScan = true } label: {
+                        Text("Scan labs →").font(.system(size: 16, weight: .semibold)).foregroundStyle(VT.dose)
+                    }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(.plain)
                 Text("Educational, not medical advice.")
                     .font(.system(size: 12)).foregroundStyle(VT.micro)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(VT.sCardPad).vtCard()
         }
-        .sheet(isPresented: $showScan) { LabScanFlow() }
+        .sheet(isPresented: $showScan) {
+            LabScanFlow(offersChatReview: false, onSaved: {
+                withAnimation(.easeInOut(duration: 0.2)) { saved = true }
+                Task { @MainActor in
+                    try? await Task.sleep(nanoseconds: 900_000_000)
+                    // Don't double-advance if Continue was tapped during the beat.
+                    guard model.step == .labs else { return }
+                    model.advance()
+                }
+            })
+        }
     }
 }
 

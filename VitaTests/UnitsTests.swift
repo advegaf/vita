@@ -38,4 +38,11 @@ final class UnitsTests: XCTestCase {
         XCTAssertEqual(Units.trim(78), "78")
         XCTAssertEqual(Units.trim(172.4), "172.4")
     }
+
+    func testParseDoubleAcceptsCommaDecimals() {
+        XCTAssertEqual(Units.parseDouble("82.5"), 82.5)
+        XCTAssertEqual(Units.parseDouble("82,5"), 82.5)   // comma-decimal keyboards
+        XCTAssertNil(Units.parseDouble("abc"))
+        XCTAssertNil(Units.parseDouble(""))
+    }
 }
