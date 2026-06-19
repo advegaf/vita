@@ -352,13 +352,13 @@ struct DoseSetupSheet: View {
     private var advancedSummary: String? {
         var bits: [String] = []
         if draft.cycleEnabled, draft.cycleOnValue > 0, draft.cycleOffValue > 0 {
-            bits.append("Cycle · \(draft.cycleOnValue) on / \(draft.cycleOffValue) off")
+            bits.append("Cycling \(draft.cycleOnValue) on / \(draft.cycleOffValue) off")
         }
         if draft.titrationEnabled, !draft.titrationSteps.isEmpty {
             let n = draft.titrationSteps.count
-            bits.append("Titration · \(n) step\(n == 1 ? "" : "s")")
+            bits.append("Titrating \(n) step\(n == 1 ? "" : "s")")
         }
-        return bits.isEmpty ? nil : bits.joined(separator: " · ")
+        return bits.isEmpty ? nil : bits.joined(separator: ", ")
     }
 
     private var advancedSection: some View {

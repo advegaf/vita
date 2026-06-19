@@ -112,9 +112,9 @@ struct StackRow: View {
 
     private var stackRowSubtitle: String {
         let active = item.effectiveDoseText(on: .now)
-        let dose = item.effectiveDrawUnitsText(on: .now).map { "\(active) · \($0)" } ?? active
+        let dose = item.effectiveDrawUnitsText(on: .now).map { "\(active) (\($0))" } ?? active
         let cadence = item.cadenceLabel.isEmpty ? "tap to set" : item.cadenceLabel
-        return "\(dose) · \(cadence)"
+        return "\(dose), \(cadence)"
     }
 
     private var cycleChipText: String? {

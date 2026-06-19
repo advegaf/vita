@@ -63,7 +63,7 @@ struct MarkerTrendView: View {
                 (Text("\(vtFormatNumber(latest.value)) \(latest.unit)")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(latest.isOutOfRange ? VT.overdue : VT.ink)
-                 + Text("  ·  \(latest.flag.label)  ·  \(latest.date.formatted(.dateTime.month(.abbreviated).day().year()))")
+                 + Text(", \(latest.flag.label), \(latest.date.formatted(.dateTime.month(.abbreviated).day().year()))")
                     .font(.system(size: 14))
                     .foregroundColor(VT.body))
                 .monospacedDigit()
@@ -230,6 +230,6 @@ struct MarkerTrendView: View {
     private func calloutText(_ pts: [LabTrendPoint]) -> (text: String, flagged: Bool)? {
         guard let t = selectedPoint(pts) ?? pts.last else { return nil }
         let date = t.date.formatted(.dateTime.month(.abbreviated).day())
-        return ("\(date) · \(vtFormatNumber(t.value)) \(t.unit)", t.isOutOfRange)
+        return ("\(date), \(vtFormatNumber(t.value)) \(t.unit)", t.isOutOfRange)
     }
 }

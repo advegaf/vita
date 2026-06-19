@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Cycle progress for the detail Dose card: "On · week 3 of 8" + a thin bar +
-/// "N days left", or "Resting · N days left". Resting reads quiet (micro), never
+/// Cycle progress for the detail Dose card: "Week 3 of 8" + a thin bar +
+/// "N days left", or "Resting". Resting reads quiet (micro), never
 /// alarming; on reads cyan (dose/protocol context). Never a ring (the design
 /// forbids progress rings). Driven by `ScheduleService.CycleStatus`; no SwiftData.
 struct CycleRibbon: View {
@@ -16,7 +16,7 @@ struct CycleRibbon: View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
                 Circle().fill(tint).frame(width: 6, height: 6)
-                Text(resting ? "Resting" : "On · \(unitWord) \(status.indexInUnit) of \(status.totalUnits)")
+                Text(resting ? "Resting" : "\(unitWord.capitalized) \(status.indexInUnit) of \(status.totalUnits)")
                     .font(.system(size: 13, weight: .semibold)).foregroundStyle(VT.ink)
                 Spacer()
                 Text("\(status.daysLeftInPhase) day\(status.daysLeftInPhase == 1 ? "" : "s") left")
@@ -47,6 +47,10 @@ struct CycleChip: View {
         Text(text)
             .font(.system(size: 11, weight: .semibold)).vtTabular()
             .foregroundStyle(resting ? VT.micro : VT.dose)
+            // Never wrap "wk 12/52" to two lines: demand intrinsic width so the
+            // sibling subtitle compresses instead of the chip.
+            .lineLimit(1)
+            .fixedSize(horizontal: true, vertical: false)
             .padding(.horizontal, 7).padding(.vertical, 3)
             .background((resting ? VT.micro : VT.dose).opacity(0.12), in: Capsule())
             .accessibilityLabel(resting ? "Resting" : "Cycle \(text)")

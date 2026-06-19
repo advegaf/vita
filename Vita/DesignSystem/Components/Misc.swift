@@ -32,7 +32,7 @@ struct DotMeter: View {
                         .frame(width: 7, height: 7)
                 }
             }
-            Text(note.map { "\(filled) of \(total) logged · \($0)" } ?? "\(filled) of \(total) logged")
+            Text(note.map { "\(filled) of \(total) logged, \($0)" } ?? "\(filled) of \(total) logged")
                 .font(.system(size: 13, weight: .medium)).vtTabular()
                 .foregroundStyle(VT.micro)
         }

@@ -35,7 +35,12 @@ struct RootTabView: View {
             get: { router.pendingDetailItemID != nil },
             set: { if !$0 { router.pendingDetailItemID = nil } }
         )) {
-            if let id = router.pendingDetailItemID, let item = items.first(where: { $0.id == id }) {
+            // Only present for a LIVE item: a reminder for a since-removed (or
+            // mid-delete, faulted) item must never reach CompoundDetailView, whose
+            // dose card reads item.schedule and would trap in SwiftData (the M26
+            // titrationDayStarts crash). If it can't resolve, clear the pending id.
+            if let id = router.pendingDetailItemID,
+               let item = items.first(where: { $0.id == id }), !item.isDeleted {
                 NavigationStack {
                     CompoundDetailView(compound: detailCompound(item), item: item)
                         .toolbar {
@@ -47,6 +52,8 @@ struct RootTabView: View {
                 }
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
+            } else {
+                Color.clear.onAppear { router.pendingDetailItemID = nil }
             }
         }
     }

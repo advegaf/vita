@@ -102,33 +102,33 @@ enum ScheduleService {
         return .due
     }
 
-    /// "overdue · 45m" / "overdue · 2h 15m" / "overdue · 2d" — lets an overdue pin
-    /// say HOW late, so the user can triage at a glance. Pure.
+    /// "45m late" / "2h 15m late" / "2d late" — lets an overdue pin say HOW late,
+    /// so the user can triage at a glance. Pure.
     static func overdueLabel(minutesLate: Int) -> String {
         let m = max(0, minutesLate)
-        if m < 60 { return "overdue · \(m)m" }
+        if m < 60 { return "\(m)m late" }
         if m < 48 * 60 {
             let h = m / 60, rem = m % 60
-            return rem == 0 ? "overdue · \(h)h" : "overdue · \(h)h \(rem)m"
+            return rem == 0 ? "\(h)h late" : "\(h)h \(rem)m late"
         }
-        return "overdue · \(m / (24 * 60))d"
+        return "\(m / (24 * 60))d late"
     }
 
-    /// Human cadence label for stack rows ("Daily · 8:00 AM, 9:00 PM", "Weekly · Sun, Thu").
+    /// Human cadence label for stack rows ("Daily at 8:00 AM, 9:00 PM", "Weekly on Sun, Thu").
     static func cadenceLabel(for rule: ScheduleRule) -> String {
         if rule.frequency == .prn { return "As needed" }
         let times = rule.timeSlotsMinutes.sorted()
             .map { DoseOccurrence(itemID: rule.id, minutes: $0).timeText }
             .joined(separator: ", ")
         switch rule.frequency {
-        case .daily: return times.isEmpty ? "Daily" : "Daily · \(times)"
-        case .eod:   return times.isEmpty ? "Every other day" : "Every other day · \(times)"
+        case .daily: return times.isEmpty ? "Daily" : "Daily at \(times)"
+        case .eod:   return times.isEmpty ? "Every other day" : "Every other day at \(times)"
         case .weekly:
             let names = ["", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
             let days = rule.weekdays.sorted().compactMap { (1...7).contains($0) ? names[$0] : nil }
                 .joined(separator: ", ")
-            let base = days.isEmpty ? "Weekly" : "Weekly · \(days)"
-            return times.isEmpty ? base : "\(base) · \(times)"
+            let base = days.isEmpty ? "Weekly" : "Weekly on \(days)"
+            return times.isEmpty ? base : "\(base) at \(times)"
         case .prn: return "As needed"
         }
     }

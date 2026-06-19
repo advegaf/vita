@@ -46,10 +46,10 @@ final class CatalogCompound {
         return lo == hi ? "\(vtFormatNumber(lo)) \(u)" : "\(vtFormatNumber(lo))–\(vtFormatNumber(hi)) \(u)"
     }
 
-    /// "GLP-1 agonist · subcutaneous" — true of the substance, no plan context.
+    /// "GLP-1 agonist, subcutaneous" — true of the substance, no plan context.
     var subtitle: String {
         let bits = [subcategory, primaryRoute?.label].compactMap { $0 }.filter { !$0.isEmpty }
-        return bits.joined(separator: " · ")
+        return bits.joined(separator: ", ")
     }
 
     /// Smart monogram for the placeholder tile (BPC, TB, GHK, CJC, MOTS, PT, NAD… else 2 letters).

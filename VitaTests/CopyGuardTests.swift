@@ -51,4 +51,29 @@ final class CopyGuardTests: XCTestCase {
         }
         XCTAssertTrue(offenders.isEmpty, "Em dashes in code (not comments): \(offenders)")
     }
+
+    /// No spaced middle-dot "·" SEPARATOR in any Swift source string (outside //
+    /// comments). The user banned it as a separator app-wide. The unspaced unit
+    /// glyph "ft·in" is a compound unit, not a separator, so scanning for the
+    /// spaced form " · " naturally allows it.
+    func testNoMiddleDotSeparators() throws {
+        let fm = FileManager.default
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("Vita")
+        guard let files = fm.enumerator(at: root, includingPropertiesForKeys: nil) else {
+            throw XCTSkip("source tree not available in this test environment")
+        }
+        var offenders: [String] = []
+        for case let url as URL in files where url.pathExtension == "swift" {
+            guard let text = try? String(contentsOf: url, encoding: .utf8) else { continue }
+            for (n, line) in text.components(separatedBy: "\n").enumerated() {
+                let code = line.components(separatedBy: "//").first ?? line
+                if code.contains(" · ") {       // space U+00B7 space = a separator
+                    offenders.append("\(url.lastPathComponent):\(n + 1)")
+                }
+            }
+        }
+        XCTAssertTrue(offenders.isEmpty, "Middle-dot separators in code: \(offenders)")
+    }
 }

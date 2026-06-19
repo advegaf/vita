@@ -91,11 +91,11 @@ struct FocusCard: View {
 #Preview {
     ScrollView {
         VStack(spacing: VT.sCardGap) {
-            FocusCard(peptide: "Semaglutide", doseLine: "Draw to 20 units · 0.25 mg",
+            FocusCard(peptide: "Semaglutide", doseLine: "0.25 mg (Draw to 20 units)",
                       due: Date().addingTimeInterval(3600 * 3 + 1200))
             DoseCard(doseValue: "Draw to 20 units",
-                     doseSub: "0.25 mg · subcutaneous",
-                     protocolLine: "**5 days on, 2 off** · week **3 of 8**")
+                     doseSub: "0.25 mg, subcutaneous",
+                     protocolLine: "**5 days on, 2 off**, week **3 of 8**")
             InfoCard(lead: "Timing.", leadColor: VT.timing,
                      text: "Mornings, on an **empty stomach**. At least **30 min** before food.")
             InfoCard(lead: "Why.", leadColor: VT.why,

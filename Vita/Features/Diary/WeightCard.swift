@@ -51,7 +51,7 @@ struct WeightCard: View {
             HStack(spacing: 5) {
                 Image(systemName: flat ? "minus" : (deltaKg > 0 ? "arrow.up.right" : "arrow.down.right"))
                     .font(.system(size: 12, weight: .bold))
-                Text(flat ? "Steady · 30 days" : "\(Units.trim(abs(d))) \(unit.rawValue) · 30 days")
+                Text(flat ? "Steady over 30 days" : "\(Units.trim(abs(d))) \(unit.rawValue) over 30 days")
                     .font(.system(size: 13, weight: .medium)).vtTabular()
             }
             .foregroundStyle(VT.micro)

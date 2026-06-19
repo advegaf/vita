@@ -192,8 +192,8 @@ struct TrendCard: View {
         let t = selectedPoint(pts) ?? pts.last
         guard let t else { return nil }
         let date = t.day.formatted(.dateTime.month(.abbreviated).day())
-        if metric.isRating { return "\(date) · \(Int(t.value.rounded()))/10" }
-        return "\(date) · \(Units.trim(t.value)) \(unitLabel)"
+        if metric.isRating { return "\(date), \(Int(t.value.rounded()))/10" }
+        return "\(date), \(Units.trim(t.value)) \(unitLabel)"
     }
 
     private var unitLabel: String {

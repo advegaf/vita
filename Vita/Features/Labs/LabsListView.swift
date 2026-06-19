@@ -107,10 +107,10 @@ struct LabsListView: View {
     private func row(_ panel: LabPanel) -> some View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
-                Text([panel.sourceLabName, dateText(panel)].compactMap { $0 }.joined(separator: " · "))
+                Text([panel.sourceLabName, dateText(panel)].compactMap { $0 }.joined(separator: ", "))
                     .font(.system(size: 16, weight: .semibold)).foregroundStyle(VT.ink).lineLimit(1)
                 Text(panel.flaggedCount > 0
-                     ? "\(panel.flaggedCount) out of range · \((panel.values ?? []).count) values"
+                     ? "\(panel.flaggedCount) of \((panel.values ?? []).count) out of range"
                      : "\((panel.values ?? []).count) values, all in range")
                     .font(.system(size: 13)).foregroundStyle(VT.body)
             }

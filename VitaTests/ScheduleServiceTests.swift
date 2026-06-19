@@ -92,13 +92,13 @@ final class ScheduleServiceTests: XCTestCase {
         let r = ScheduleRule()
         r.frequencyRaw = Frequency.daily.rawValue
         r.timeSlotsMinutes = [8 * 60, 21 * 60]
-        XCTAssertEqual(ScheduleService.cadenceLabel(for: r), "Daily · 8:00 AM, 9:00 PM")
+        XCTAssertEqual(ScheduleService.cadenceLabel(for: r), "Daily at 8:00 AM, 9:00 PM")
 
         let w = ScheduleRule()
         w.frequencyRaw = Frequency.weekly.rawValue
         w.weekdays = [1, 5]              // Sun, Thu
         w.timeSlotsMinutes = [9 * 60]
-        XCTAssertEqual(ScheduleService.cadenceLabel(for: w), "Weekly · Sun, Thu · 9:00 AM")
+        XCTAssertEqual(ScheduleService.cadenceLabel(for: w), "Weekly on Sun, Thu at 9:00 AM")
     }
 
     // MARK: - M9 cycles + titration
@@ -233,13 +233,13 @@ final class ScheduleServiceTests: XCTestCase {
     }
 
     func testOverdueLabelRounding() {
-        XCTAssertEqual(ScheduleService.overdueLabel(minutesLate: 45), "overdue · 45m")
-        XCTAssertEqual(ScheduleService.overdueLabel(minutesLate: 59), "overdue · 59m")
-        XCTAssertEqual(ScheduleService.overdueLabel(minutesLate: 60), "overdue · 1h")
-        XCTAssertEqual(ScheduleService.overdueLabel(minutesLate: 135), "overdue · 2h 15m")
-        XCTAssertEqual(ScheduleService.overdueLabel(minutesLate: 47 * 60 + 59), "overdue · 47h 59m")
-        XCTAssertEqual(ScheduleService.overdueLabel(minutesLate: 48 * 60), "overdue · 2d")
-        XCTAssertEqual(ScheduleService.overdueLabel(minutesLate: -5), "overdue · 0m")
+        XCTAssertEqual(ScheduleService.overdueLabel(minutesLate: 45), "45m late")
+        XCTAssertEqual(ScheduleService.overdueLabel(minutesLate: 59), "59m late")
+        XCTAssertEqual(ScheduleService.overdueLabel(minutesLate: 60), "1h late")
+        XCTAssertEqual(ScheduleService.overdueLabel(minutesLate: 135), "2h 15m late")
+        XCTAssertEqual(ScheduleService.overdueLabel(minutesLate: 47 * 60 + 59), "47h 59m late")
+        XCTAssertEqual(ScheduleService.overdueLabel(minutesLate: 48 * 60), "2d late")
+        XCTAssertEqual(ScheduleService.overdueLabel(minutesLate: -5), "0m late")
     }
 
     func testTitrationLadder() {

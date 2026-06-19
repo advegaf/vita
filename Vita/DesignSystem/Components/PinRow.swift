@@ -2,6 +2,19 @@ import SwiftUI
 
 enum DoseState: Equatable { case due, overdue, taken, skipped }
 
+/// A checkmark as a single stroked path, so `.trim(from:0,to:p)` draws it on
+/// (the SF Symbol can't trim). Two segments: down to the vertex, up to the tip.
+struct Checkmark: Shape {
+    func path(in rect: CGRect) -> Path {
+        var p = Path()
+        let w = rect.width, h = rect.height
+        p.move(to: CGPoint(x: 0.16 * w, y: 0.53 * h))
+        p.addLine(to: CGPoint(x: 0.42 * w, y: 0.75 * h))
+        p.addLine(to: CGPoint(x: 0.84 * w, y: 0.28 * h))
+        return p
+    }
+}
+
 /// A dose "pin" in a time block, driven by external `state` (M4: derived from the
 /// persistent log). Taking keeps the sacred north-star ritual: the ring fills the
 /// accent, a checkmark stroke-draws, success haptic, the row settles to "done".
@@ -22,7 +35,7 @@ struct PinRow: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var pressed = false
-    @State private var bump = false
+    @State private var checkProgress: CGFloat = 0   // 0→1 draws the checkmark on
 
     private var isTaken: Bool { state == .taken }
     private var isSkipped: Bool { state == .skipped }
@@ -78,19 +91,30 @@ struct PinRow: View {
         }
         .animation(reduceMotion ? VMotion.reduced : VMotion.pinCommit, value: state)
         .onChange(of: state) { _, newValue in
-            if newValue == .taken { triggerBump() }
+            // One smooth fill: the ring blooms (opacity+scale, pinCommit) and the
+            // check draws itself on in the same beat. No second bounce, no pop.
+            if newValue == .taken {
+                if reduceMotion { checkProgress = 1 }
+                else { withAnimation(.easeOut(duration: 0.4)) { checkProgress = 1 } }
+            } else {
+                checkProgress = 0
+            }
         }
+        .onAppear { checkProgress = isTaken ? 1 : 0 }
     }
 
     private var knob: some View {
         Button(action: knobTap) {
             ZStack {
                 Circle().stroke(ringColor, lineWidth: 2).opacity(isActed ? 0 : 1)
-                Circle().fill(isSkipped ? VT.micro.opacity(0.35) : VT.why).opacity(isActed ? 1 : 0)
+                Circle().fill(isSkipped ? VT.micro.opacity(0.35) : VT.why)
+                    .opacity(isActed ? 1 : 0)
+                    .scaleEffect(isTaken ? 1 : (isSkipped ? 1 : 0.7))   // fill blooms in
                 if isTaken {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 13, weight: .bold)).foregroundStyle(.white)
-                        .transition(.scale.combined(with: .opacity))
+                    Checkmark()
+                        .trim(from: 0, to: checkProgress)
+                        .stroke(.white, style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
+                        .frame(width: 15, height: 15)
                 } else if isSkipped {
                     Image(systemName: "minus")
                         .font(.system(size: 13, weight: .bold)).foregroundStyle(VT.body)
@@ -98,7 +122,7 @@ struct PinRow: View {
                 }
             }
             .frame(width: 30, height: 30)
-            .scaleEffect(pressed ? 0.9 : (bump ? 1.12 : 1))
+            .scaleEffect(pressed ? 0.94 : 1)
         }
         .buttonStyle(.plain)
         .simultaneousGesture(
@@ -106,7 +130,7 @@ struct PinRow: View {
                 .onChanged { _ in if !isActed { pressed = true } }
                 .onEnded { _ in pressed = false }
         )
-        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: pressed)
+        .animation(.spring(response: 0.28, dampingFraction: 0.82), value: pressed)
         .accessibilityLabel("\(name), \(dose), \(accessibilityState)")
     }
 
@@ -114,7 +138,7 @@ struct PinRow: View {
         if isActed {
             quiet(onUndo)                 // tap a taken/skipped knob → quiet undo
         } else {
-            Haptics.commit()              // sacred take: success haptic + ring/stroke ride state→.taken
+            Haptics.commit()              // sacred take: success haptic, ring blooms + check draws on
             onTake()
         }
     }
@@ -122,13 +146,6 @@ struct PinRow: View {
     private func quiet(_ action: () -> Void) {
         Haptics.press()                   // soft only — the ritual stays exclusive to taking
         action()
-    }
-
-    private func triggerBump() {
-        bump = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { bump = false }
-        }
     }
 
     private var ringColor: Color {
@@ -153,7 +170,7 @@ struct PinRow: View {
     VStack(spacing: VT.sCardGap) {
         PinRow(name: "Ipamorelin", dose: "100 mcg", time: "7:00", category: .muscleRecovery, state: .due)
         PinRow(name: "BPC-157", dose: "250 mcg", time: "8:00", category: .muscleRecovery,
-               state: .overdue, overdueText: "overdue · 2h 15m")
+               state: .overdue, overdueText: "2h 15m late")
         PinRow(name: "CJC-1295", dose: "100 mcg", time: "10:30", category: .muscleRecovery, state: .taken)
         PinRow(name: "Semax", dose: "300 mcg", time: "9:00", category: .cognitive, state: .skipped)
     }

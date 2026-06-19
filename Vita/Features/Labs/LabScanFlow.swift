@@ -269,7 +269,7 @@ struct LabScanFlow: View {
         let pdf = prep.mediaType == "application/pdf"
         diagText = "pdf=\(pdf) pages=\(pdf ? LabImageEncoder.pdfPageCount(prep.data) : 0)"
             + " text=\(pdf ? LabImageEncoder.pdfHasTextLayer(prep.data) : false)"
-            + " · \(outcome) · \(Int(Date().timeIntervalSince(start)))s"
+            + ", \(outcome), \(Int(Date().timeIntervalSince(start)))s"
         #endif
     }
 

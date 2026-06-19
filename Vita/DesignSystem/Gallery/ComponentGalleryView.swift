@@ -14,8 +14,8 @@ struct ComponentGalleryView: View {
                 }
                 section("Cards") {
                     DoseCard(doseValue: "Draw to 20 units",
-                             doseSub: "0.25 mg · subcutaneous",
-                             protocolLine: "**5 days on, 2 off** · week **3 of 8**")
+                             doseSub: "0.25 mg, subcutaneous",
+                             protocolLine: "**5 days on, 2 off**, week **3 of 8**")
                     InfoCard(lead: "Timing.", leadColor: VT.timing,
                              text: "Mornings, **empty stomach**, **30 min** before food.")
                     InfoCard(lead: "Why.", leadColor: VT.why,

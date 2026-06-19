@@ -19,6 +19,28 @@ struct CompoundDetailView: View {
     private var isStackMode: Bool { item != nil }
 
     var body: some View {
+        // Defense (matches StackRow's M26 guard): if the stack item was deleted
+        // while this sheet is up, touching any of its relationships (doseCard's
+        // effectiveDoseText → activeDose → titrationDayStarts) traps in SwiftData.
+        if let item, item.isDeleted {
+            removedPlaceholder
+        } else {
+            content
+        }
+    }
+
+    private var removedPlaceholder: some View {
+        VStack(spacing: 10) {
+            Text("No longer in your stack.")
+                .font(.system(size: 17, weight: .semibold)).foregroundStyle(VT.ink)
+            Text("This item was removed.")
+                .font(.system(size: 14)).foregroundStyle(VT.micro)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(VT.canvas)
+    }
+
+    private var content: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: VT.sCardGap) {
                 header

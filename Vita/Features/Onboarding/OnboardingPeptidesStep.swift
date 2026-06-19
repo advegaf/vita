@@ -274,7 +274,7 @@ struct ReviewView: View {
                                         suggestedNote = "vita suggests this for your goals."
                                         editDraft = d
                                     } label: {
-                                        Text("vita suggests \(vtFormatNumber(s.doseAmount)) \(s.doseUnit.label) · \(s.frequency.label) →")
+                                        Text("vita suggests \(vtFormatNumber(s.doseAmount)) \(s.doseUnit.label), \(s.frequency.label) →")
                                             .font(.system(size: 13, weight: .semibold))
                                             .foregroundStyle(VT.dose)
                                     }

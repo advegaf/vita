@@ -161,7 +161,7 @@ enum NotificationManager {
 
     private static func reminderBody(_ item: ProtocolItem, on day: Date) -> String {
         let dose = item.effectiveDoseText(on: day)
-        if let units = item.effectiveDrawUnitsText(on: day) { return "\(dose) · \(units)" }
+        if let units = item.effectiveDrawUnitsText(on: day) { return "\(dose) (\(units))" }
         return dose
     }
 

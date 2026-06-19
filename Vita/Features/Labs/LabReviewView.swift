@@ -44,7 +44,7 @@ struct LabReviewView: View {
                 Spacer()
                 Text("\(rows.count) values").font(.system(size: 13)).foregroundStyle(VT.micro)
             }
-            Text([dto.sourceLabName, displayDate].compactMap { $0 }.joined(separator: " · "))
+            Text([dto.sourceLabName, displayDate].compactMap { $0 }.joined(separator: ", "))
                 .font(.system(size: 15)).foregroundStyle(VT.body)
         }
         .frame(maxWidth: .infinity, alignment: .leading)

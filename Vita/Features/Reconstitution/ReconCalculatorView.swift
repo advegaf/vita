@@ -88,7 +88,7 @@ struct ReconCalculatorView: View {
                 Text("\(vtFormatUnits(result.roundedUnits)) units")
                     .font(.vtDose).vtTabular().foregroundStyle(VT.ink)
                     .contentTransition(.numericText())
-                Text("\(vtFormatNumber(result.concentrationMgPerMl)) mg/mL · \(syringe.label)")
+                Text("\(vtFormatNumber(result.concentrationMgPerMl)) mg/mL (\(syringe.label))")
                     .font(.system(size: 14, weight: .semibold)).vtTabular().foregroundStyle(VT.dose)
             }
             ForEach(warningLines, id: \.self) { line in

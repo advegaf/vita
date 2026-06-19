@@ -121,7 +121,7 @@ struct TodayView: View {
     private func doseLine(_ item: ProtocolItem?, now: Date) -> String {
         guard let item else { return "" }
         let dose = item.effectiveDoseText(on: now)
-        return item.effectiveDrawUnitsText(on: now).map { "\(dose) · \($0)" } ?? dose
+        return item.effectiveDrawUnitsText(on: now).map { "\(dose) (\($0))" } ?? dose
     }
 
     // MARK: Block pins (filtered to the selected block)
@@ -144,7 +144,7 @@ struct TodayView: View {
             Text(text)
                 .font(.system(size: 17, weight: .semibold)).foregroundStyle(VT.ink)
             if let (b, n) = peek {
-                Text("Next: \(b.title.lowercased()) · \(n) to pin")
+                Text("Next: \(b.title.lowercased()), \(n) to pin")
                     .font(.system(size: 14)).foregroundStyle(VT.micro)
             }
         }
@@ -162,7 +162,7 @@ struct TodayView: View {
             let state = ScheduleService.state(itemID: o.itemID, minutes: o.minutes, day: now,
                                               logs: logs, now: now)
             PinRow(name: item.displayName,
-                   dose: item.effectiveDrawUnitsText(on: now).map { "\(dose) · \($0)" } ?? dose,
+                   dose: item.effectiveDrawUnitsText(on: now).map { "\(dose) (\($0))" } ?? dose,
                    time: o.timeText,
                    category: item.category,
                    state: state,
