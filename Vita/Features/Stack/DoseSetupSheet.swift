@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 /// Captures dose · frequency · time(s) when adding a peptide, and reopens to edit.
 /// Finalizes a `DoseDraft` through `StackService.commit`.
@@ -18,6 +19,11 @@ struct DoseSetupSheet: View {
     @State private var advancedExpanded = false
     @State private var detent: PresentationDetent = .medium
     @FocusState private var doseFocused: Bool
+
+    // Vial size picker: the compound's catalog vial sizes drive chips; "Custom" reveals the stepper.
+    @State private var catalog: CatalogCompound?
+    @State private var customSize = false
+    private var vialSizes: [Double] { catalog?.availableVialSizesMg ?? [] }
 
     var body: some View {
         ScrollViewReader { proxy in
@@ -46,6 +52,7 @@ struct DoseSetupSheet: View {
                 .padding(VT.sSection)
             }
             .onAppear {
+                loadCatalog()
                 #if DEBUG
                 if ProcessInfo.processInfo.environment["VITA_DOSESHEET_ADVANCED"] == "1" {
                     detent = .large
@@ -92,7 +99,7 @@ struct DoseSetupSheet: View {
             }
 
             if draft.hasVial {
-                vialField("Vial", value: $draft.vialMg, suffix: "mg", step: 1)
+                vialSizePicker
                 vialField("Bac. water", value: $draft.waterMl, suffix: "mL", step: 0.5)
                 HStack(spacing: 8) {
                     ForEach(SyringeType.allCases, id: \.self) { s in
@@ -107,17 +114,26 @@ struct DoseSetupSheet: View {
                     Text("Enter vial size and water to see units.")
                         .font(.system(size: 13)).foregroundStyle(VT.micro)
                 }
+                if draft.doseUnit == .iu {
+                    Text("IU uses an approximate 3 IU per mg (HGH-class). Check your source.")
+                        .font(.system(size: 12)).foregroundStyle(VT.micro)
+                }
+                if let note = catalog?.reconNote, !note.isEmpty {
+                    Text(note).font(.system(size: 12)).foregroundStyle(VT.micro)
+                }
                 Button { showCalculator = true } label: {
                     Text("Open calculator →")
                         .font(.system(size: 15, weight: .semibold)).foregroundStyle(VT.dose)
                 }
                 .buttonStyle(.plain).padding(.top, 2)
+                .frame(minHeight: 44).contentShape(Rectangle())
             } else {
                 Button {
                     withAnimation {
                         draft.hasVial = true
-                        if draft.vialMg == 0 { draft.vialMg = 5 }
-                        if draft.waterMl == 0 { draft.waterMl = 2 }
+                        if draft.vialMg == 0 { draft.vialMg = catalog?.defaultVialSizeMg ?? vialSizes.first ?? 5 }
+                        if draft.waterMl == 0 { draft.waterMl = catalog?.recommendedWaterMl ?? 2 }
+                        customSize = !vialSizes.contains(draft.vialMg)
                     }
                     Haptics.press()
                 } label: {
@@ -127,13 +143,48 @@ struct DoseSetupSheet: View {
                     }
                     .font(.system(size: 15, weight: .semibold)).foregroundStyle(VT.dose)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.plain).frame(minHeight: 44).contentShape(Rectangle())
                 Text("Track doses as syringe units (e.g. 10u) instead of mg.")
                     .font(.system(size: 13)).foregroundStyle(VT.micro)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(VT.sCardPad).vtCard()
+    }
+
+    /// Vial size: chips over the compound's catalog sizes plus a Custom stepper. For a
+    /// vial that already exists, the size is fixed here (changing it resets the supply
+    /// clock, so that lives behind "Start a new vial" on the compound screen).
+    @ViewBuilder
+    private var vialSizePicker: some View {
+        if draft.hasExistingVial {
+            HStack {
+                Text("Vial").font(.system(size: 15)).foregroundStyle(VT.body)
+                Spacer()
+                Text("\(vtFormatNumber(draft.vialMg)) mg")
+                    .font(.system(size: 16, weight: .semibold)).vtTabular().foregroundStyle(VT.ink)
+            }
+            Text("To change vial size, start a new vial from the compound screen.")
+                .font(.system(size: 12)).foregroundStyle(VT.micro)
+        } else {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Vial").font(.system(size: 15)).foregroundStyle(VT.body)
+                FlowLayout(spacing: 8) {
+                    ForEach(vialSizes, id: \.self) { mg in
+                        PillToggle(title: "\(vtFormatNumber(mg)) mg",
+                                   isOn: !customSize && draft.vialMg == mg, fillsWidth: false) {
+                            draft.vialMg = mg; customSize = false; Haptics.press()
+                        }
+                    }
+                    PillToggle(title: "Custom", isOn: customSize, fillsWidth: false) {
+                        customSize = true; Haptics.press()
+                    }
+                }
+                if customSize || vialSizes.isEmpty {
+                    vialField("Size", value: $draft.vialMg, suffix: "mg", step: 1)
+                }
+            }
+        }
     }
 
     private func vialField(_ label: String, value: Binding<Double>, suffix: String, step: Double) -> some View {
@@ -213,6 +264,15 @@ struct DoseSetupSheet: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(VT.sCardPad).vtCard()
+    }
+
+    private func loadCatalog() {
+        let slug = draft.compoundSlug
+        var fd = FetchDescriptor<CatalogCompound>(predicate: #Predicate { $0.slug == slug })
+        fd.fetchLimit = 1
+        catalog = try? context.fetch(fd).first
+        // A stored custom size (not one of the catalog chips) opens in Custom mode.
+        customSize = draft.hasVial && !vialSizes.contains(draft.vialMg)
     }
 
     private func beginTyping() {

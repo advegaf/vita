@@ -48,6 +48,44 @@ final class StackServiceTests: XCTestCase {
         XCTAssertEqual(d2.titrationSteps.map(\.dose), [0.25, 0.5])
     }
 
+    func testCommitVialSetsBUDAndKeepsReconOnEdit() {
+        let c = ctx()
+        let svc = StackService(context: c)
+        var d = baseDraft()
+        d.hasVial = true; d.vialMg = 5; d.waterMl = 2; d.budDays = 28
+        let item = svc.commit(d)!
+        let recon = item.vial!.reconstitutedAt
+        XCTAssertEqual(item.vial!.budDays, 28)
+        XCTAssertEqual(item.vial!.concentrationMgPerMl, 2.5, accuracy: 1e-9)
+
+        // Editing water/syringe must NOT reset the supply clock.
+        var edit = svc.draft(for: item)
+        edit.waterMl = 3
+        _ = svc.commit(edit)
+        XCTAssertEqual(item.vial!.reconstitutedAt, recon)             // unchanged
+        XCTAssertEqual(item.vial!.concentrationMgPerMl, 5.0 / 3, accuracy: 1e-9)
+    }
+
+    func testStartNewVialResetsReconSameRow() {
+        let c = ctx()
+        let svc = StackService(context: c)
+        var d = baseDraft()
+        d.hasVial = true; d.vialMg = 5; d.waterMl = 2
+        let item = svc.commit(d)!
+        let firstVialID = item.vial!.id
+        let oldRecon = item.vial!.reconstitutedAt
+
+        // Backdate so a reset is observable, then start a fresh 10 mg vial.
+        item.vial!.reconstitutedAt = Date(timeIntervalSinceNow: -100_000)
+        svc.startNewVial(for: item, vialMg: 10, waterMl: 2, syringe: .u100)
+
+        XCTAssertEqual(item.vial!.id, firstVialID)                    // same Vial row
+        XCTAssertEqual(item.vial!.vialMg, 10)
+        XCTAssertEqual(item.vial!.concentrationMgPerMl, 5.0, accuracy: 1e-9)
+        XCTAssertGreaterThan(item.vial!.reconstitutedAt, oldRecon)    // clock reset to now
+        XCTAssertNil(item.vial!.legacyNudgeDismissedAt)
+    }
+
     func testReAddRelinksDoseHistory() throws {
         let c = ctx()
         let svc = StackService(context: c)

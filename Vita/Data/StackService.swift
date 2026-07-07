@@ -69,7 +69,8 @@ struct StackService {
             d.titrationSteps = r.titrationSteps.map { TitrationStepDraft(weekN: $0.dayStart / 7 + 1, dose: $0.dose) }
         }
         if let v = item.vial {
-            d.hasVial = true; d.vialMg = v.vialMg; d.waterMl = v.waterMl; d.syringe = v.syringe
+            d.hasVial = true; d.hasExistingVial = true
+            d.vialMg = v.vialMg; d.waterMl = v.waterMl; d.syringe = v.syringe; d.budDays = v.budDays
         }
         return d
     }
@@ -124,13 +125,20 @@ struct StackService {
         rule.titrationDayStarts = tsteps.map { ($0.weekN - 1) * 7 }
         rule.titrationDoses = tsteps.map { $0.dose }
 
-        // Vial (create / update / clear).
+        // Vial (create / update / clear). A NEW vial takes its default
+        // `reconstitutedAt = now`; editing an existing vial NEVER resets it (that's
+        // what `startNewVial` is for), so derived supply stays truthful. Size changes
+        // on an existing vial are routed through `startNewVial` by the setup sheet,
+        // so `d.vialMg` here only creates or corrects water/syringe/BUD in place.
         if d.hasVial, d.vialMg > 0, d.waterMl > 0 {
-            let v = item.vial ?? { let nv = Vial(); item.vial = nv; return nv }()
+            let v: Vial
+            if let existing = item.vial { v = existing }
+            else { let nv = Vial(); context.insert(nv); nv.item = item; item.vial = nv; v = nv }
             v.compoundSlug = d.compoundSlug
             v.vialMg = d.vialMg
             v.waterMl = d.waterMl
             v.syringeRaw = d.syringe.rawValue
+            v.budDays = d.budDays
             v.concentrationMgPerMl = ReconstitutionCalculator.concentration(vialMg: d.vialMg, waterMl: d.waterMl)
         } else if let v = item.vial {
             context.delete(v); item.vial = nil
@@ -142,6 +150,28 @@ struct StackService {
             WidgetBridge.update(context: context)
         }
         return item
+    }
+
+    /// Replaces the active vial's contents with a freshly reconstituted one: same
+    /// `Vial` row, new size/water/syringe/BUD, and `reconstitutedAt` reset to now so
+    /// derived consumption restarts from zero. This is the ONLY path that resets the
+    /// supply clock (editing via the setup sheet never does).
+    func startNewVial(for item: ProtocolItem, vialMg: Double, waterMl: Double,
+                      syringe: SyringeType, budDays: Int = VialEngine.defaultBUDDays) {
+        let v: Vial
+        if let existing = item.vial { v = existing }
+        else { let nv = Vial(); context.insert(nv); nv.item = item; item.vial = nv; v = nv }
+        v.compoundSlug = item.compoundSlug
+        v.vialMg = vialMg
+        v.waterMl = waterMl
+        v.syringeRaw = syringe.rawValue
+        v.budDays = budDays
+        v.concentrationMgPerMl = ReconstitutionCalculator.concentration(vialMg: vialMg, waterMl: waterMl)
+        v.reconstitutedAt = .now
+        v.legacyNudgeDismissedAt = nil
+        context.saveLogged("StackService.startNewVial")
+        NotificationManager.rebuild(context: context)
+        WidgetBridge.update(context: context)
     }
 
     func remove(_ item: ProtocolItem, rebuild: Bool = true) {
@@ -260,9 +290,14 @@ struct DoseDraft: Identifiable {
 
     // Optional vial for syringe-unit tracking.
     var hasVial: Bool = false
+    /// True when the item being edited already has a reconstituted vial. The setup
+    /// sheet uses this to fix the size (changing it routes through `startNewVial`,
+    /// which resets the supply clock) rather than mutating it in place.
+    var hasExistingVial: Bool = false
     var vialMg: Double = 0
     var waterMl: Double = 0
     var syringe: SyringeType = .u100
+    var budDays: Int = VialEngine.defaultBUDDays
 
     // Advanced (M9): cycle envelope + titration ladder. Collapsed by default in the sheet.
     var protocolStart: Date = .now
@@ -278,10 +313,11 @@ struct DoseDraft: Identifiable {
     var cycleOnDays: Int { cycleOnValue * cycleUnit.perStep }
     var cycleOffDays: Int { cycleOffValue * cycleUnit.perStep }
 
-    /// Live "draw to X units" for the current dose + vial draft, or nil.
+    /// Live "draw to X units" for the current dose + vial draft, or nil. Routes
+    /// through `VialEngine.doseMg`, so IU items draw too (HGH-class approximation).
     var drawUnitsText: String? {
         guard hasVial, vialMg > 0, waterMl > 0,
-              let doseMg = doseUnit.toMg(doseAmount), doseMg > 0 else { return nil }
+              let doseMg = VialEngine.doseMg(doseAmount, unit: doseUnit), doseMg > 0 else { return nil }
         let u = ReconstitutionCalculator.units(doseMg: doseMg, vialMg: vialMg,
                                                waterMl: waterMl, syringe: syringe)
         guard u > 0 else { return nil }

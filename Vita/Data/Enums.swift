@@ -58,12 +58,15 @@ enum RxStatus: String, Codable, Sendable { case rx, nonRx, ambiguous }
 enum DoseUnit: String, Codable, Sendable {
     case mcg, mg, iu
     var label: String { self == .iu ? "IU" : rawValue }
-    /// Converts an amount in this unit to milligrams. IU has no fixed mg ratio
-    /// (peptide-specific), so unit tracking is offered only for mcg/mg.
+    /// Converts an amount in this unit to milligrams. IU has no fixed mg ratio, so it
+    /// returns nil here; `VialEngine.doseMg` handles IU via the compound's `iuPerMg`
+    /// (or the HGH-class approximation) for unit tracking.
     func toMg(_ amount: Double) -> Double? {
         switch self { case .mcg: amount / 1000; case .mg: amount; case .iu: nil }
     }
-    var supportsUnitTracking: Bool { self != .iu }
+    /// All units can now be tracked as syringe units (IU via an approximate ratio,
+    /// shown with a caption). Kept as a named flag for call-site readability.
+    var supportsUnitTracking: Bool { true }
 }
 
 enum ScheduleType: String, Codable, Sendable {
