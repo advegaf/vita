@@ -109,6 +109,76 @@ final class DoseLoggerTests: XCTestCase {
         XCTAssertFalse(DoseLogger.matches(log, itemID: log.itemID, dayStart: day, minutes: 480))
     }
 
+    // MARK: - M37 numeric stamping
+
+    func testStampWritesNumericDoseAndUnit() throws {
+        let ctx = makeContext()
+        let item = makeItem(ctx)                      // 250 mcg
+        let logger = DoseLogger(context: ctx)
+        logger.log(item: item, occurrence: occ(item, 480), status: .taken)
+        let log = try XCTUnwrap(try ctx.fetch(FetchDescriptor<DoseLog>()).first)
+        XCTAssertEqual(log.doseAmount, 250)
+        XCTAssertEqual(log.doseUnitRaw, "mcg")
+        XCTAssertEqual(log.doseUnit, .mcg)
+    }
+
+    /// Regression: `stamp` previously wrote the base doseText, ignoring titration.
+    /// On a step day it must record the stepped (effective) dose numerically and in text.
+    func testStampUsesTitratedDoseOnStepDay() throws {
+        let ctx = makeContext()
+        let item = makeItem(ctx)                      // base 250 mcg
+        let cal = Calendar.current
+        let rule = ScheduleRule()
+        rule.frequencyRaw = Frequency.daily.rawValue
+        rule.timeSlotsMinutes = [480]
+        rule.anchorDate = cal.date(byAdding: .day, value: -8, to: Date())!   // week 2
+        rule.titrationDayStarts = [0, 7]
+        rule.titrationDoses = [250, 500]
+        rule.item = item; ctx.insert(rule); item.schedule = rule
+
+        let logger = DoseLogger(context: ctx)
+        logger.log(item: item, occurrence: occ(item, 480), status: .taken)
+        let log = try XCTUnwrap(try ctx.fetch(FetchDescriptor<DoseLog>()).first)
+        XCTAssertEqual(log.doseAmount, 500)                    // stepped dose, not base 250
+        XCTAssertTrue(log.doseText.contains("500"))
+    }
+
+    func testUndoRestoresDerivedConsumption() throws {
+        let ctx = makeContext()
+        let item = makeItem(ctx)
+        let logger = DoseLogger(context: ctx)
+        let recon = Calendar.current.date(byAdding: .day, value: -1, to: Date())!
+
+        logger.log(item: item, occurrence: occ(item, 480), status: .taken)
+        var logs = try ctx.fetch(FetchDescriptor<DoseLog>())
+        XCTAssertEqual(VialEngine.consumedMg(logs: logs, slug: "bpc-157", since: recon), 0.25, accuracy: 1e-9)
+
+        logger.undo(item: item, occurrence: occ(item, 480))
+        logs = try ctx.fetch(FetchDescriptor<DoseLog>())
+        XCTAssertEqual(VialEngine.consumedMg(logs: logs, slug: "bpc-157", since: recon), 0, accuracy: 1e-9)
+    }
+
+    /// The widget logs through a pending ledger that the app reconciles via
+    /// `DoseLogger.log`, so widget taps get the numeric stamp for free.
+    func testWidgetReconcileStampsNumericDose() throws {
+        let ctx = makeContext()
+        let item = makeItem(ctx)
+        let tmp = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tmp) }
+
+        let dayKey = WidgetSnapshot.dayKey(for: Date())
+        WidgetActions.append(.init(itemID: item.id, dayKey: dayKey, minutes: 480, loggedAt: Date()),
+                             directory: tmp)
+        WidgetBridge.reconcilePendingLogs(context: ctx, directory: tmp)
+
+        let log = try XCTUnwrap(try ctx.fetch(FetchDescriptor<DoseLog>()).first)
+        XCTAssertEqual(log.doseAmount, 250)
+        XCTAssertEqual(log.doseUnitRaw, "mcg")
+        XCTAssertTrue(WidgetActions.read(directory: tmp).isEmpty)   // ledger cleared
+    }
+
     func testStateDerivation() {
         let ctx = makeContext()
         let item = makeItem(ctx)

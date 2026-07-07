@@ -25,6 +25,10 @@ final class CatalogCompound {
     var defaultVialSizeMg: Double?
     var recommendedWaterMl: Double?
     var reconNote: String?
+    /// IU↔mg ratio for HGH-class compounds dosed in IU (e.g. somatropin ≈ 3 IU/mg).
+    /// nil for everything dosed in mcg/mg; `VialEngine.doseMg` falls back to
+    /// `ReconstitutionCalculator.iuPerMg` (3.0) plus an on-screen approximation caption.
+    var iuPerMg: Double?
     var routesRaw: [String] = []
     var mechanismBlurb: String?
     var about: String?            // 2-3 sentence educational description
@@ -177,8 +181,10 @@ final class ProtocolItem {
     var doseText: String { "\(vtFormatNumber(doseAmount)) \(doseUnit.label)" }
 
     /// "draw 10u" when a vial is set up and the dose converts to mg. Nil otherwise.
+    /// Routes through `VialEngine.doseMg` (the single mg-conversion source), so IU
+    /// items also draw, using the HGH-class approximation.
     var drawUnitsText: String? {
-        guard let vial, let doseMg = doseUnit.toMg(doseAmount), doseMg > 0 else { return nil }
+        guard let vial, let doseMg = VialEngine.doseMg(doseAmount, unit: doseUnit), doseMg > 0 else { return nil }
         let u = ReconstitutionCalculator.units(doseMg: doseMg, vialMg: vial.vialMg,
                                                waterMl: vial.waterMl, syringe: vial.syringe)
         guard u > 0 else { return nil }
@@ -194,7 +200,8 @@ final class ProtocolItem {
         "\(vtFormatNumber(effectiveDose(on: date, calendar: calendar))) \(doseUnit.label)"
     }
     func effectiveDrawUnitsText(on date: Date, calendar: Calendar = .current) -> String? {
-        guard let vial, let doseMg = doseUnit.toMg(effectiveDose(on: date, calendar: calendar)),
+        guard let vial,
+              let doseMg = VialEngine.doseMg(effectiveDose(on: date, calendar: calendar), unit: doseUnit),
               doseMg > 0 else { return nil }
         let u = ReconstitutionCalculator.units(doseMg: doseMg, vialMg: vial.vialMg,
                                                waterMl: vial.waterMl, syringe: vial.syringe)
@@ -212,6 +219,12 @@ final class Vial {
     var syringeRaw: String = SyringeType.u100.rawValue
     var concentrationMgPerMl: Double = 0
     var reconstitutedAt: Date = Date.now
+    /// Beyond-use awareness (educational). Day-count since reconstitution the UI
+    /// calls out; 28 is a common reference for refrigerated reconstituted peptides.
+    var budDays: Int = 28
+    /// Set once the user dismisses the "legacy vial" adoption nudge (a vial that
+    /// predates numeric dose stamping shows full-remaining until a new vial starts).
+    var legacyNudgeDismissedAt: Date?
     var item: ProtocolItem?
     init() {}
 
@@ -299,6 +312,13 @@ final class DoseLog {
     var compoundSlug: String = ""
     var displayName: String = ""
     var doseText: String = ""
+    /// Numeric dose stamped at log time (M37), titration-aware, so supply math
+    /// survives later dose/titration edits. SENTINEL: `doseAmount == 0` means an
+    /// unstamped legacy log (created before M37) — it contributes 0 mg to vial
+    /// consumption by construction. A real logged dose is always > 0. This sentinel
+    /// is load-bearing; a versioned V2 schema is required before CloudKit ships.
+    var doseAmount: Double = 0
+    var doseUnitRaw: String = ""
     var categoryRaw: String = PeptideCategory.other.rawValue
     var scheduledDayStart: Date = Date.now    // startOfDay of the scheduled day
     var scheduledMinutes: Int = 0             // slot, minutes-from-midnight
@@ -309,4 +329,6 @@ final class DoseLog {
 
     var status: DoseStatus { DoseStatus(rawValue: statusRaw) ?? .taken }
     var category: PeptideCategory { PeptideCategory(rawValue: categoryRaw) ?? .other }
+    /// nil for legacy logs (empty `doseUnitRaw`); a stamped unit otherwise.
+    var doseUnit: DoseUnit? { doseUnitRaw.isEmpty ? nil : DoseUnit(rawValue: doseUnitRaw) }
 }

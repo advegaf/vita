@@ -35,7 +35,7 @@ struct DoseLogger {
         let log = logged(itemID: item.id, minutes: occurrence.minutes, on: day) ?? {
             let l = DoseLog(); context.insert(l); return l
         }()
-        stamp(log, from: item)
+        stamp(log, from: item, on: day)
         log.scheduledDayStart = start
         log.scheduledMinutes = occurrence.minutes
         log.statusRaw = status.rawValue
@@ -77,7 +77,7 @@ struct DoseLogger {
             if dt >= 0, dt < 60 { return recent }
         }
         let log = DoseLog()
-        stamp(log, from: item)
+        stamp(log, from: item, on: when)
         log.scheduledDayStart = Calendar.current.startOfDay(for: when)
         log.scheduledMinutes = -1
         log.isPRN = true
@@ -98,11 +98,17 @@ struct DoseLogger {
             .max { $0.loggedAt < $1.loggedAt }
     }
 
-    private func stamp(_ log: DoseLog, from item: ProtocolItem) {
+    /// Stamps identity + the titration-aware dose for `day` onto a log. The numeric
+    /// `doseAmount`/`doseUnitRaw` (M37) let vial consumption survive later dose edits;
+    /// `doseText` also uses the effective (titration-aware) dose, fixing an earlier
+    /// bug where the stamped text ignored titration steps.
+    private func stamp(_ log: DoseLog, from item: ProtocolItem, on day: Date) {
         log.itemID = item.id
         log.compoundSlug = item.compoundSlug
         log.displayName = item.displayName
-        log.doseText = item.doseText
+        log.doseAmount = item.effectiveDose(on: day)
+        log.doseUnitRaw = item.doseUnitRaw
+        log.doseText = item.effectiveDoseText(on: day)
         log.categoryRaw = item.categoryRaw
     }
 }
