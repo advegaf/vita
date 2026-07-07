@@ -177,13 +177,15 @@ enum ClaudeSchemas {
     /// Uncached chat block 2: this user's goals, profile, Health, and live stack.
     static func chatGroundingText(goals: [GoalKind], profile: ProfileInput,
                                   health: HealthSnapshot?, stackLines: [String],
-                                  diaryLine: String? = nil, labsLine: String? = nil) -> String {
+                                  diaryLine: String? = nil, labsLine: String? = nil,
+                                  vitalsLine: String? = nil) -> String {
         var s = "USER CONTEXT\n"
         s += "Goals: " + (goals.isEmpty ? "none stated" : goals.map(\.label).joined(separator: ", ")) + "\n"
         s += "Profile: " + profile.summary + "\n"
         s += "Apple Health: " + (health?.summaryLine ?? "not connected") + "\n"
         if let diaryLine { s += "Diary: " + diaryLine + "\n" }
         if let labsLine { s += "Labs: " + labsLine + "\n" }
+        if let vitalsLine { s += "Vitals trend: " + vitalsLine + "\n" }
         s += "Current stack:\n"
         if stackLines.isEmpty {
             s += "- (empty, nothing tracked yet)\n"

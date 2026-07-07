@@ -26,6 +26,7 @@ struct ChatView: View {
     // moment the user browsed another tab).
     @State private var session = ChatSession.shared
     @State private var health: HealthSnapshot?
+    @State private var vitalsLine: String?
     @State private var editDraft: DoseDraft?
     @State private var suggestedNote: String?
     @FocusState private var inputFocused: Bool
@@ -60,6 +61,10 @@ struct ChatView: View {
             // onboarding must reach the very next message, not the next relaunch.
             if HealthKitService.isAvailable {
                 health = await HealthKitService.shared.snapshot()
+            }
+            let vp = VitalsService.make()
+            if vp.isAvailable {
+                vitalsLine = VitalsInsightEngine.groundingLine(await vp.series(days: 60))
             }
             #if DEBUG
             if ProcessInfo.processInfo.environment["VITA_CHAT_DEMO"] == "1", messages.isEmpty {
@@ -343,7 +348,7 @@ struct ChatView: View {
         let labsLine = LabGrounding.summaryLine(panels: LabService(context: context).panels())
         let chatInput = ChatInput(turns: turns, catalog: summaries(), goals: goals,
                                   stackLines: stackLines(), profile: profileInput(), health: health,
-                                  diaryLine: diaryLine, labsLine: labsLine)
+                                  diaryLine: diaryLine, labsLine: labsLine, vitalsLine: vitalsLine)
         session.send(chatInput)
     }
 

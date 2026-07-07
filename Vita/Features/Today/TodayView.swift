@@ -19,6 +19,19 @@ struct TodayView: View {
     private var logger: DoseLogger { DoseLogger(context: context) }
     private var prnItems: [ProtocolItem] { items.filter { ($0.schedule?.frequency ?? .daily) == .prn } }
 
+    /// Value-type snapshots for vitals correlation. A schedule's `anchorDate` defaults
+    /// to the add time, so it counts as a real protocol start only when it clearly
+    /// differs (the user set it); otherwise the insight copy hedges to "since you added".
+    private var vitalsWindows: [CompoundWindow] {
+        items.map { item in
+            let added = item.addedAt
+            let realStart: Date? = item.schedule.flatMap { r in
+                abs(r.anchorDate.timeIntervalSince(added)) > 86_400 ? r.anchorDate : nil
+            }
+            return CompoundWindow(name: item.displayName, startDate: realStart, addedDate: added)
+        }
+    }
+
     /// A single quiet line when any vial is running low (nil otherwise). Taps into Stack.
     private var lowVialLine: String? {
         let low = items.filter { item in
@@ -123,6 +136,8 @@ struct TodayView: View {
                     }
 
                     if !prnItems.isEmpty { asNeededCard(now: now) }
+
+                    VitalsCard(windows: vitalsWindows)
                 }
             }
             .padding(VT.sSection)

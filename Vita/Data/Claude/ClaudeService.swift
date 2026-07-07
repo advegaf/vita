@@ -26,6 +26,7 @@ struct ChatInput: Sendable, Equatable {
     var health: HealthSnapshot?
     var diaryLine: String? = nil    // recent check-in averages + weight trend (M8a)
     var labsLine: String? = nil     // latest panel out-of-range flags (M8b)
+    var vitalsLine: String? = nil   // HRV/resting-HR/sleep recent vs 30-day baseline (M38)
 }
 
 /// Live protocol generation via forced tool-use on Opus 4.8.
@@ -207,7 +208,8 @@ struct ClaudeService: ClaudeServiceProviding {
             AnthropicClient.SystemBlock(
                 text: ClaudeSchemas.chatGroundingText(goals: input.goals, profile: input.profile,
                                                       health: input.health, stackLines: input.stackLines,
-                                                      diaryLine: input.diaryLine, labsLine: input.labsLine),
+                                                      diaryLine: input.diaryLine, labsLine: input.labsLine,
+                                                      vitalsLine: input.vitalsLine),
                 cache: false),
         ]
         let messages = Self.windowedMessages(input.turns)
