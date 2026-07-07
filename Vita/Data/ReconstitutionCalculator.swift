@@ -11,6 +11,7 @@ enum ReconWarning: String, Sendable {
     case belowResolution   // < 1 unit: hard to measure accurately
     case doseExceedsVial   // dose larger than the whole vial
     case zeroInput         // missing/zero vial or water
+    case zeroDose          // missing/zero dose
 }
 
 struct ReconResult: Sendable {
@@ -32,12 +33,19 @@ enum ReconstitutionCalculator {
     }
 
     /// `doseMg` is the dose expressed in milligrams (callers convert mcg → mg first).
-    static func result(doseMg: Double, vialMg: Double, waterMl: Double,
+    static func result(doseMg rawDoseMg: Double, vialMg: Double, waterMl: Double,
                        syringe: SyringeType) -> ReconResult {
+        // Defensive floor: a negative dose can never produce a valid (or negative) draw.
+        let doseMg = max(0, rawDoseMg)
         var warnings: [ReconWarning] = []
         guard vialMg > 0, waterMl > 0 else {
             return ReconResult(concentrationMgPerMl: 0, volumeMl: 0,
                                exactUnits: 0, roundedUnits: 0, warnings: [.zeroInput])
+        }
+        guard doseMg > 0 else {
+            let conc = vialMg / waterMl
+            return ReconResult(concentrationMgPerMl: conc, volumeMl: 0,
+                               exactUnits: 0, roundedUnits: 0, warnings: [.zeroDose])
         }
         let conc = vialMg / waterMl                  // mg per mL
         let volumeMl = doseMg / conc                 // mL to draw

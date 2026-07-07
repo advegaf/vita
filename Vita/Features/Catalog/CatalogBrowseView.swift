@@ -129,15 +129,14 @@ struct CatalogRowView: View {
                         Text(compound.name)
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundStyle(VT.ink)
-                            .lineLimit(1).minimumScaleFactor(0.85)
+                            .lineLimit(2)   // wrap; no .fixedSize (would widen the row → h-scroll)
                         if !compound.subtitle.isEmpty {
                             Text(compound.subtitle)
                                 .font(.system(size: 13)).foregroundStyle(VT.body)
                                 .lineLimit(2)
-                                .fixedSize(horizontal: false, vertical: true)
                         }
                     }
-                    Spacer(minLength: 4)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .contentShape(Rectangle())
                 .accessibilityElement(children: .combine)

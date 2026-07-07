@@ -102,10 +102,10 @@ struct LabPanelDetailView: View {
             }
             Spacer()
             VStack(alignment: .trailing, spacing: 2) {
-                Text("\(vtFormatNumber(v.value)) \(v.unit)")
+                Text(v.valueDisplay)
                     .font(.system(size: 16, weight: .semibold)).vtTabular()
                     .foregroundStyle(v.flag.isOutOfRange ? VT.overdue : VT.ink)
-                if let delta, abs(delta) > 0.0001 {
+                if v.qualitativeText == nil, let delta, abs(delta) > 0.0001 {
                     HStack(spacing: 3) {
                         Image(systemName: delta > 0 ? "arrow.up.right" : "arrow.down.right")
                             .font(.system(size: 10, weight: .bold))

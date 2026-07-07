@@ -276,6 +276,9 @@ extension ClaudeService {
             d.rxStatusRaw = c.rxStatusRaw
             d.doseUnit = c.doseUnit                                  // trust catalog unit
             d.doseAmount = clamp(item.doseAmount, c.typicalDoseLow, c.typicalDoseHigh)
+            // A non-positive dose is a model error (e.g. 0 emitted for a compound with
+            // no bounds to lift it). Drop it rather than commit a nonsensical 0-dose item.
+            guard d.doseAmount > 0 else { continue }
             d.frequency = Frequency(rawValue: item.frequency) ?? .daily
 
             if d.frequency == .prn {

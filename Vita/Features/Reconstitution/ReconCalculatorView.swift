@@ -35,6 +35,7 @@ struct ReconCalculatorView: View {
     }
     private var blocksSave: Bool {
         result.warnings.contains(.doseExceedsVial) || result.warnings.contains(.zeroInput)
+            || result.warnings.contains(.zeroDose)
     }
 
     var body: some View {
@@ -84,6 +85,9 @@ struct ReconCalculatorView: View {
             if result.warnings.contains(.zeroInput) {
                 Text("Enter vial size and water.")
                     .font(.vtDose).vtTabular().foregroundStyle(VT.micro)
+            } else if result.warnings.contains(.zeroDose) {
+                Text("Enter a dose.")
+                    .font(.vtDose).vtTabular().foregroundStyle(VT.micro)
             } else {
                 Text("\(vtFormatUnits(result.roundedUnits)) units")
                     .font(.vtDose).vtTabular().foregroundStyle(VT.ink)
@@ -106,7 +110,7 @@ struct ReconCalculatorView: View {
             switch $0 {
             case .doseExceedsVial: "Dose is larger than the whole vial. Check your numbers."
             case .belowResolution: "Under 1 unit, hard to measure accurately."
-            case .zeroInput: nil
+            case .zeroInput, .zeroDose: nil
             }
         }
     }
@@ -136,8 +140,11 @@ struct ReconCalculatorView: View {
                 vtLead("Dose.", color: VT.dose)
                 Spacer()
                 Button {
+                    // Convert the displayed value so the PHYSICAL dose is preserved
+                    // (mg ↔ IU is a true unit switch, not a reinterpret).
+                    dose = useIU ? ReconstitutionCalculator.mgFromIU(dose)
+                                 : ReconstitutionCalculator.iuFromMg(dose)
                     withAnimation { useIU.toggle() }
-                    // Convert the displayed amount so the underlying mg stays put.
                     Haptics.press()
                 } label: {
                     Text(useIU ? "IU" : "mg")

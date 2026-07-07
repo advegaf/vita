@@ -89,6 +89,11 @@ struct LabPanelDTO: Codable, Equatable, Sendable {
         var refHigh: Double?
         var refText: String?
         var flagRaw: String?
+        /// False when the model returned a qualitative result ("Negative") or null
+        /// instead of a number. Such a value must never be flagged numerically.
+        var hasNumericValue: Bool
+        /// The raw qualitative token ("Negative"/"Positive"/…), shown in place of "0".
+        var qualitative: String?
 
         enum CodingKeys: String, CodingKey {
             case markerKey = "marker_key"
@@ -101,16 +106,26 @@ struct LabPanelDTO: Codable, Equatable, Sendable {
 
         init(markerKey: String, name: String, value: Double, unit: String,
              refLow: Double? = nil, refHigh: Double? = nil,
-             refText: String? = nil, flagRaw: String? = nil) {
+             refText: String? = nil, flagRaw: String? = nil,
+             hasNumericValue: Bool = true, qualitative: String? = nil) {
             self.markerKey = markerKey; self.name = name; self.value = value; self.unit = unit
             self.refLow = refLow; self.refHigh = refHigh; self.refText = refText; self.flagRaw = flagRaw
+            self.hasNumericValue = hasNumericValue; self.qualitative = qualitative
         }
 
         init(from decoder: Decoder) throws {
             let c = try decoder.container(keyedBy: CodingKeys.self)
             markerKey = LabPanelDTO.stripMarkup((try? c.decode(String.self, forKey: .markerKey)) ?? "")
             name = LabPanelDTO.stripMarkup((try? c.decode(String.self, forKey: .name)) ?? "")
-            value = (try? c.decode(Double.self, forKey: .value)) ?? 0
+            // A numeric value is the normal case. A qualitative result ("Negative") or
+            // null decodes to 0 but is marked non-numeric so it is never flagged LOW.
+            if let n = try? c.decode(Double.self, forKey: .value) {
+                value = n; hasNumericValue = true; qualitative = nil
+            } else {
+                value = 0; hasNumericValue = false
+                let raw = (try? c.decode(String.self, forKey: .value)).map(LabPanelDTO.stripMarkup) ?? ""
+                qualitative = raw.isEmpty ? nil : raw
+            }
             unit = LabPanelDTO.stripMarkup((try? c.decode(String.self, forKey: .unit)) ?? "")
             refLow = try? c.decodeIfPresent(Double.self, forKey: .refLow)
             refHigh = try? c.decodeIfPresent(Double.self, forKey: .refHigh)

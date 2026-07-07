@@ -58,7 +58,7 @@ struct MarkerTrendView: View {
             Text("MARKER").font(.system(size: 12, weight: .medium)).tracking(0.4)
                 .textCase(.uppercase).foregroundStyle(VT.micro)
             Text("\(displayName).").vtHeadlineStyle()
-                .lineLimit(2)   // fixed display size; tail-truncates past two lines
+                .lineLimit(3).fixedSize(horizontal: false, vertical: true)   // wrap, never "…"
             if let latest {
                 (Text("\(vtFormatNumber(latest.value)) \(latest.unit)")
                     .font(.system(size: 15, weight: .semibold))

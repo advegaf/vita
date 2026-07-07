@@ -17,6 +17,8 @@ struct RootTabView: View {
                 label: { coloredLabel("Diary", "chart.xyaxis.line", VT.timing) }
             Tab(value: AppTab.chat) { ChatView() }
                 label: { coloredLabel("Chat", "bubble.left.and.text.bubble.right", VT.dose) }
+            Tab(value: AppTab.shop) { ShopView() }
+                label: { coloredLabel("Shop", "bag", VT.catPink) }
         }
         .tint(VT.ink)
         .onChange(of: router.pendingTab) { _, tab in

@@ -74,6 +74,38 @@ final class LabServiceTests: XCTestCase {
         XCTAssertNil(LabService.deltaVsPrevious(markerKey: "tsh", panel: recent, allPanels: all))
     }
 
+    func testQualitativeValueIsUnknownNotLow() throws {
+        let ctx = makeContext()
+        let svc = LabService(context: ctx)
+        // A qualitative result ("Negative") decodes value=0 but must NOT flag LOW
+        // against a positive ref-low; the word is preserved for display.
+        var dto = LabPanelDTO(panelDate: "2026-05-20", sourceLabName: "Lab",
+                              values: [.init(markerKey: "hiv_ab", name: "HIV Antibody", value: 0, unit: "",
+                                             refLow: 0.5, refHigh: nil,
+                                             hasNumericValue: false, qualitative: "Negative")],
+                              summary: "s", disclaimer: "Educational, not medical advice.")
+        dto.values[0].flagRaw = "N"
+        svc.savePanel(dto, scanData: nil, mediaType: nil)
+
+        let value = try ctx.fetch(FetchDescriptor<LabValue>()).first { $0.markerKey == "hiv_ab" }!
+        XCTAssertEqual(value.flag, .unknown)               // not .low despite 0 < 0.5
+        XCTAssertEqual(value.qualitativeText, "Negative")
+        XCTAssertEqual(value.valueDisplay, "Negative")     // shows the word, not "0"
+    }
+
+    func testQualitativeDecodesFromJSON() throws {
+        // The DTO marks a non-numeric "value" as qualitative end-to-end.
+        let json = """
+        {"panel_date":null,"source_lab_name":null,"summary":"s","disclaimer":"d",
+         "values":[{"marker_key":"hiv_ab","name":"HIV Antibody","value":"Negative","unit":"","ref_low":0.5}]}
+        """.data(using: .utf8)!
+        let dto = try JSONDecoder().decode(LabPanelDTO.self, from: json)
+        XCTAssertEqual(dto.values.count, 1)
+        XCTAssertFalse(dto.values[0].hasNumericValue)
+        XCTAssertEqual(dto.values[0].qualitative, "Negative")
+        XCTAssertEqual(dto.values[0].value, 0)
+    }
+
     func testPanelsNewestFirst() {
         let ctx = makeContext()
         let svc = LabService(context: ctx)

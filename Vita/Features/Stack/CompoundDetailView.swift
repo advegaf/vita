@@ -165,7 +165,8 @@ struct CompoundDetailView: View {
     }
 
     private var protocolLine: String {
-        if let item, !item.cadenceLabel.isEmpty { return item.cadenceLabel }
+        // Live (not stored item.cadenceLabel — pre-M31 items kept the old dot format).
+        if let item, let rule = item.schedule { return ScheduleService.cadenceLabel(for: rule) }
         return compound.defaultCadenceLabel.map { "Typically \($0)." } ?? "Set when added to your stack."
     }
 

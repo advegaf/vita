@@ -51,6 +51,35 @@ final class ReconstitutionCalculatorTests: XCTestCase {
         XCTAssertEqual(r.roundedUnits, 0)
     }
 
+    func testZeroDose() {
+        // Valid vial, no dose → a calm prompt state, not "0 units" with a real draw.
+        let r = ReconstitutionCalculator.result(doseMg: 0, vialMg: 5, waterMl: 2, syringe: .u100)
+        XCTAssertTrue(r.warnings.contains(.zeroDose))
+        XCTAssertFalse(r.warnings.contains(.zeroInput))
+        XCTAssertEqual(r.roundedUnits, 0)
+        XCTAssertEqual(r.concentrationMgPerMl, 2.5, accuracy: 1e-9)
+    }
+
+    func testNegativeDoseClamps() {
+        // A negative dose can never produce a negative (or any) draw.
+        let r = ReconstitutionCalculator.result(doseMg: -3, vialMg: 5, waterMl: 2, syringe: .u100)
+        XCTAssertEqual(r.roundedUnits, 0)
+        XCTAssertTrue(r.warnings.contains(.zeroDose))
+    }
+
+    /// Mirrors the view's mg ↔ IU toggle: converting the displayed value preserves
+    /// the PHYSICAL dose, so the computed draw is identical before and after a toggle.
+    func testIUToggleConservesPhysicalDose() {
+        let mg = 5.0
+        let before = ReconstitutionCalculator.result(doseMg: mg, vialMg: 15, waterMl: 3, syringe: .u100)
+        // Toggle mg → IU: the displayed number becomes iuFromMg(mg); the math reads it back as mg.
+        let displayedIU = ReconstitutionCalculator.iuFromMg(mg)
+        let afterDoseMg = ReconstitutionCalculator.mgFromIU(displayedIU)
+        let after = ReconstitutionCalculator.result(doseMg: afterDoseMg, vialMg: 15, waterMl: 3, syringe: .u100)
+        XCTAssertEqual(before.roundedUnits, after.roundedUnits, accuracy: 1e-9)
+        XCTAssertEqual(afterDoseMg, mg, accuracy: 1e-9)
+    }
+
     func testMcgConversion() {
         // 250 mcg = 0.25 mg → same as the worked example.
         let mg = DoseUnit.mcg.toMg(250)

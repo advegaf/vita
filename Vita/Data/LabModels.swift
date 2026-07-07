@@ -43,10 +43,18 @@ final class LabValue {
     var refText: String?
     var flagRaw: String?                                    // verbatim printed flag (display/debug only)
     var flagComputedRaw: String = LabFlag.unknown.rawValue  // app-computed flag = source of truth
+    /// Set when the result was qualitative ("Negative"/"Positive"); shown in place of the number.
+    var qualitativeText: String?
     var panel: LabPanel?
     init() {}
 
     var flag: LabFlag { LabFlag(rawValue: flagComputedRaw) ?? .unknown }
+
+    /// The reading to display: the qualitative word when present, else the number + unit.
+    var valueDisplay: String {
+        if let q = qualitativeText, !q.isEmpty { return q }
+        return "\(vtFormatNumber(value)) \(unit)".trimmingCharacters(in: .whitespaces)
+    }
 
     /// "70–99 mg/dL" / "<150" / "n/a" for the printed reference.
     var refDisplay: String {

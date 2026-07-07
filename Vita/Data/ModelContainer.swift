@@ -8,7 +8,8 @@ enum VitaSchemaV1: VersionedSchema {
          ProtocolPlan.self, ProtocolItem.self, ScheduleRule.self, Vial.self,
          ChatMessage.self, DoseLog.self,
          DiaryEntry.self, BodyMetric.self,
-         LabPanel.self, LabValue.self]
+         LabPanel.self, LabValue.self,
+         ShopCartItem.self]
     }
 }
 

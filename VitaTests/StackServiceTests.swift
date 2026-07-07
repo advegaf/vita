@@ -218,6 +218,16 @@ final class StackServiceTests: XCTestCase {
         XCTAssertFalse(item.aiGenerated)
     }
 
+    func testCommitNormalizesTimeOrder() {
+        // The dose sheet no longer sorts times live (index-drift risk); commit is the
+        // single place that normalizes, so an out-of-order draft persists sorted.
+        let svc = StackService(context: ctx())
+        var d = baseDraft()
+        d.times = [21 * 60, 8 * 60, 13 * 60]                  // 9pm, 8am, 1pm
+        let item = svc.commit(d)!
+        XCTAssertEqual(item.schedule?.timeSlotsMinutes, [480, 780, 1260])
+    }
+
     func testToggleOffClearsCycleTitration() {
         let svc = StackService(context: ctx())
         var d = baseDraft()

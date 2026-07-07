@@ -108,7 +108,8 @@ struct LabsListView: View {
         HStack(spacing: 12) {
             VStack(alignment: .leading, spacing: 3) {
                 Text([panel.sourceLabName, dateText(panel)].compactMap { $0 }.joined(separator: ", "))
-                    .font(.system(size: 16, weight: .semibold)).foregroundStyle(VT.ink).lineLimit(1)
+                    .font(.system(size: 16, weight: .semibold)).foregroundStyle(VT.ink)
+                    .lineLimit(2).fixedSize(horizontal: false, vertical: true)   // wrap, never "…"
                 Text(panel.flaggedCount > 0
                      ? "\(panel.flaggedCount) of \((panel.values ?? []).count) out of range"
                      : "\((panel.values ?? []).count) values, all in range")

@@ -55,7 +55,14 @@ struct LabService {
             lv.value = v.value; lv.unit = v.unit
             lv.refLow = v.refLow; lv.refHigh = v.refHigh; lv.refText = v.refText
             lv.flagRaw = v.flagRaw
-            lv.flagComputedRaw = Self.computeFlag(value: v.value, refLow: v.refLow, refHigh: v.refHigh).rawValue
+            // A qualitative result ("Negative") has no number to flag — keep the word,
+            // mark the flag unknown, and never compare it against a numeric range.
+            if v.hasNumericValue {
+                lv.flagComputedRaw = Self.computeFlag(value: v.value, refLow: v.refLow, refHigh: v.refHigh).rawValue
+            } else {
+                lv.qualitativeText = v.qualitative
+                lv.flagComputedRaw = LabFlag.unknown.rawValue
+            }
             context.insert(lv)
             lv.panel = panel                                   // inverse only AFTER both inserted
         }

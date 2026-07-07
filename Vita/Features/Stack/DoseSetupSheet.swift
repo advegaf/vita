@@ -297,8 +297,11 @@ struct DoseSetupSheet: View {
 
     private func timeRow(_ i: Int) -> some View {
         let binding = Binding<Date>(
+            // Write the edited slot in place only. Sorting here while the ForEach uses
+            // index identity (id: \.self) could reorder the array under the bound index
+            // and corrupt a different slot; times are normalized (sorted) at commit.
             get: { dateFromMinutes(draft.times[i]) },
-            set: { draft.times[i] = minutesFrom($0); draft.times.sort() }
+            set: { draft.times[i] = minutesFrom($0) }
         )
         return HStack {
             Image(systemName: blockIcon(DayBlock.from(minutes: draft.times[i])))
@@ -349,16 +352,14 @@ struct DoseSetupSheet: View {
     private var doseInc: Double { switch draft.doseUnit { case .mcg: 50; case .mg: 0.25; case .iu: 0.5 } }
     private var hairline: some View { Rectangle().fill(VT.hairline).frame(height: 1).padding(.vertical, 2) }
 
+    /// Compact, always-fits-one-line summary for the collapsed disclosure header
+    /// (the full numbers show when expanded) so it never truncates with "…".
     private var advancedSummary: String? {
         var bits: [String] = []
-        if draft.cycleEnabled, draft.cycleOnValue > 0, draft.cycleOffValue > 0 {
-            bits.append("Cycling \(draft.cycleOnValue) on / \(draft.cycleOffValue) off")
-        }
-        if draft.titrationEnabled, !draft.titrationSteps.isEmpty {
-            let n = draft.titrationSteps.count
-            bits.append("Titrating \(n) step\(n == 1 ? "" : "s")")
-        }
-        return bits.isEmpty ? nil : bits.joined(separator: ", ")
+        if draft.cycleEnabled, draft.cycleOnValue > 0, draft.cycleOffValue > 0 { bits.append("Cycling") }
+        if draft.titrationEnabled, !draft.titrationSteps.isEmpty { bits.append("titrating") }
+        guard !bits.isEmpty else { return nil }
+        return bits.joined(separator: ", ").prefix(1).uppercased() + bits.joined(separator: ", ").dropFirst()
     }
 
     private var advancedSection: some View {

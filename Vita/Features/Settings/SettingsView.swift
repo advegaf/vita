@@ -255,17 +255,20 @@ struct SettingsView: View {
                             Text("Test connection").font(.system(size: 14, weight: .semibold))
                         }.foregroundStyle(VT.dose)
                     }.buttonStyle(.plain).allowsHitTesting(!testing)
-                    if let testResult {
-                        Text(testResult)
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(testResult == "Connected ✓" ? VT.why : VT.overdue)
-                            .lineLimit(2).minimumScaleFactor(0.8)
-                    }
                     Spacer()
                     Button("Save") { saveKey() }
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundStyle(keyDraft.isEmpty ? VT.micro : VT.dose)
                         .buttonStyle(.plain).allowsHitTesting(!keyDraft.isEmpty)
+                }
+                // Result on its OWN full-width line so long messages (e.g. "Out of
+                // credits. Top up at console.anthropic.com.") never truncate.
+                if let testResult {
+                    Text(testResult)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(testResult == "Connected ✓" ? VT.why : VT.overdue)
+                        .lineLimit(3).fixedSize(horizontal: false, vertical: true)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
             if hasKey && !showKeyField {

@@ -52,12 +52,12 @@ struct RxOverridesView: View {
             CompoundTile(category: c.category, size: 34)
             VStack(alignment: .leading, spacing: 2) {
                 Text(c.name).font(.system(size: 16, weight: .semibold)).foregroundStyle(VT.ink)
-                    .lineLimit(1).minimumScaleFactor(0.85)
+                    .lineLimit(2)   // wrap; no .fixedSize (would widen the row → h-scroll)
                 if !c.subtitle.isEmpty {
-                    Text(c.subtitle).font(.system(size: 12)).foregroundStyle(VT.micro).lineLimit(1)
+                    Text(c.subtitle).font(.system(size: 12)).foregroundStyle(VT.micro).lineLimit(2)
                 }
             }
-            Spacer(minLength: 8)
+            .frame(maxWidth: .infinity, alignment: .leading)
             PillToggle(title: "℞", isOn: c.rxStatus == .rx, fillsWidth: false) {
                 SettingsActions(context: context).setRxOverride(slug: c.slug, isRx: c.rxStatus != .rx)
             }

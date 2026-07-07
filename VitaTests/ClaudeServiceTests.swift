@@ -13,6 +13,11 @@ final class ClaudeServiceTests: XCTestCase {
                        rxStatusRaw: "rx", doseUnitRaw: "mg",
                        typicalDoseLow: 0.25, typicalDoseHigh: 2.0, route: "subcutaneous",
                        defaultScheduleTypeRaw: "weekly"),
+        // No dose bounds → nothing to lift a 0 the model might emit.
+        CatalogSummary(slug: "nad-plus", name: "NAD+", categoryRaw: "longevity",
+                       rxStatusRaw: "nonRx", doseUnitRaw: "mg",
+                       typicalDoseLow: nil, typicalDoseHigh: nil, route: "subcutaneous",
+                       defaultScheduleTypeRaw: "daily"),
     ]
 
     // MARK: - DTO decode
@@ -114,6 +119,17 @@ final class ClaudeServiceTests: XCTestCase {
     func testEmptyDTOProducesNoDrafts() {
         let dto = ProtocolDTO(disclaimer: "x", items: [])
         XCTAssertTrue(ClaudeService.buildDrafts(from: dto, catalog: catalog).isEmpty)
+    }
+
+    func testDropsZeroDoseWhenNoBoundsToLiftIt() {
+        // NAD+ has no bounds, so a model-emitted 0 stays 0 → dropped, not committed.
+        // A valid item alongside it still survives.
+        let dto = ProtocolDTO(disclaimer: "x", items: [
+            .init(compoundSlug: "nad-plus", doseAmount: 0, doseUnit: "mg", frequency: "daily", timesMinutes: [480]),
+            .init(compoundSlug: "bpc-157", doseAmount: 300, doseUnit: "mcg", frequency: "daily", timesMinutes: [480]),
+        ])
+        let drafts = ClaudeService.buildDrafts(from: dto, catalog: catalog)
+        XCTAssertEqual(drafts.map(\.compoundSlug), ["bpc-157"])
     }
 
     // MARK: - Stub service

@@ -74,7 +74,10 @@ struct LabReviewView: View {
 
     private func valueRow(_ i: Int) -> some View {
         let v = rows[i]
-        let flag = LabService.computeFlag(value: v.value, refLow: v.refLow, refHigh: v.refHigh)
+        // Qualitative ("Negative") rows aren't numeric: muted dot, word shown read-only.
+        let flag = v.hasNumericValue
+            ? LabService.computeFlag(value: v.value, refLow: v.refLow, refHigh: v.refHigh)
+            : LabFlag.unknown
         return HStack(spacing: 12) {
             Circle().fill(flag.color).frame(width: 7, height: 7)
             VStack(alignment: .leading, spacing: 2) {
@@ -86,12 +89,17 @@ struct LabReviewView: View {
                     .font(.system(size: 12)).vtTabular().foregroundStyle(VT.micro)
             }
             Spacer()
-            TextField("", value: $rows[i].value, format: .number)
-                .keyboardType(.decimalPad).focused($editing)
-                .multilineTextAlignment(.trailing)
-                .font(.system(size: 17, weight: .semibold)).vtTabular().foregroundStyle(VT.ink)
-                .frame(width: 76)
-            Text(v.unit).font(.system(size: 13)).foregroundStyle(VT.micro).frame(minWidth: 36, alignment: .leading)
+            if v.hasNumericValue {
+                TextField("", value: $rows[i].value, format: .number)
+                    .keyboardType(.decimalPad).focused($editing)
+                    .multilineTextAlignment(.trailing)
+                    .font(.system(size: 17, weight: .semibold)).vtTabular().foregroundStyle(VT.ink)
+                    .frame(width: 76)
+                Text(v.unit).font(.system(size: 13)).foregroundStyle(VT.micro).frame(minWidth: 36, alignment: .leading)
+            } else {
+                Text(v.qualitative ?? "n/a")
+                    .font(.system(size: 17, weight: .semibold)).foregroundStyle(VT.ink)
+            }
         }
         .padding(.vertical, 12)
     }

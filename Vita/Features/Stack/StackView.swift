@@ -113,7 +113,9 @@ struct StackRow: View {
     private var stackRowSubtitle: String {
         let active = item.effectiveDoseText(on: .now)
         let dose = item.effectiveDrawUnitsText(on: .now).map { "\(active) (\($0))" } ?? active
-        let cadence = item.cadenceLabel.isEmpty ? "tap to set" : item.cadenceLabel
+        // Compute LIVE, not the stored item.cadenceLabel — items committed before
+        // the M31 separator fix kept the old "Weekly · Fri · 7:30 AM" dot format.
+        let cadence = item.schedule.map { ScheduleService.cadenceLabel(for: $0) } ?? "tap to set"
         return "\(dose), \(cadence)"
     }
 
@@ -141,17 +143,22 @@ struct StackRow: View {
     private var rowContent: some View {
         HStack(spacing: 12) {
             CompoundTile(category: item.category)
-            VStack(alignment: .leading, spacing: 2) {
+            // Fills the real available width and wraps WITHIN it — no .fixedSize
+            // (which made the row wider than the screen → sideways "canvas" scroll).
+            VStack(alignment: .leading, spacing: 3) {
                 Text(item.displayName)
                     .font(.system(size: 16, weight: .semibold)).foregroundStyle(VT.ink)
-                    .lineLimit(1).minimumScaleFactor(0.85)
+                    .lineLimit(2)
                 Text(stackRowSubtitle)
                     .font(.system(size: 13)).vtTabular().foregroundStyle(VT.body)
                     .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
+                // Cycle chip as a badge BELOW the subtitle (like Today): keeps its
+                // fixed width out of the main row so the row never overflows.
+                if let chip = cycleChipText {
+                    CycleChip(text: chip, resting: isResting).padding(.top, 1)
+                }
             }
-            Spacer(minLength: 4)
-            if let chip = cycleChipText { CycleChip(text: chip, resting: isResting) }
+            .frame(maxWidth: .infinity, alignment: .leading)
             if item.rxStatus == .rx {
                 RxBadge()
             }

@@ -20,6 +20,11 @@ struct VitaApp: App {
         if ProcessInfo.processInfo.environment["VITA_LABS_DEMO"] == "1" {
             LabDemoSeed.populate(c.mainContext)
         }
+        if let v = ProcessInfo.processInfo.environment["VITA_SHOP_APPROVED"] {
+            let s = CatalogStore.fetchOrCreateSettings(c.mainContext)
+            s.shopApproval = (v == "pending") ? .pending : .approved
+            c.mainContext.saveLogged("ShopDemo")
+        }
         #endif
         container = c
         NotificationRouter.shared.container = c
