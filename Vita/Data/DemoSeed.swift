@@ -29,6 +29,45 @@ enum DemoSeed {
             return
         }
 
+        // Vial-lifecycle demo (M37): one vial running low, one past its beyond-use day.
+        if ProcessInfo.processInfo.environment["VITA_VIAL_DEMO"] == "1" {
+            let cal = Calendar.current
+            let today = cal.startOfDay(for: Date())
+            let logger = DoseLogger(context: context)
+            // Running low: 5 mg vial (20 doses), reconstituted 22 days ago, 18 taken → ~2 left.
+            if let bpc = compound("bpc-157") {
+                var d = svc.draft(for: bpc)
+                d.frequency = .daily; d.times = [8 * 60]
+                d.doseUnit = .mcg; d.doseAmount = 250
+                d.hasVial = true; d.vialMg = 5; d.waterMl = 2; d.syringe = .u100
+                svc.commit(d)
+                if let item = svc.item(forSlug: "bpc-157"), let vial = item.vial {
+                    vial.reconstitutedAt = cal.date(byAdding: .day, value: -22, to: today)!
+                    item.addedAt = vial.reconstitutedAt
+                    for daysAgo in 1...18 {
+                        let day = cal.date(byAdding: .day, value: -daysAgo, to: today)!
+                        logger.log(item: item, occurrence: DoseOccurrence(itemID: item.id, minutes: 8 * 60),
+                                   on: day, status: .taken)
+                    }
+                }
+            }
+            // Past beyond-use: 10 mg vial reconstituted 31 days ago (BUD 28), barely used.
+            if let tb = compound("tb-500") {
+                var d = svc.draft(for: tb)
+                d.frequency = .daily; d.times = [9 * 60]
+                d.doseUnit = .mg; d.doseAmount = 0.5
+                d.hasVial = true; d.vialMg = 10; d.waterMl = 2; d.syringe = .u100
+                svc.commit(d)
+                if let item = svc.item(forSlug: "tb-500"), let vial = item.vial {
+                    vial.reconstitutedAt = cal.date(byAdding: .day, value: -31, to: today)!
+                    item.addedAt = vial.reconstitutedAt
+                }
+            }
+            context.saveLogged("VialDemo")
+            NotificationManager.rebuild(context: context)
+            return
+        }
+
         // Cycles + titration demo (M9): a cycled daily peptide + a titrating GLP-1 ramp.
         if ProcessInfo.processInfo.environment["VITA_CYCLE_DEMO"] == "1" {
             let cal = Calendar.current

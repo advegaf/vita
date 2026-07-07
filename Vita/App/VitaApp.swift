@@ -11,7 +11,8 @@ struct VitaApp: App {
         CatalogStore.bootstrap(c.mainContext) // idempotent first-launch seed
         KeychainSeeder.seedIfNeeded()         // copy embedded key (if any) into Keychain once
         #if DEBUG
-        if ProcessInfo.processInfo.environment["VITA_DEMO_STACK"] == "1" {
+        if ProcessInfo.processInfo.environment["VITA_DEMO_STACK"] == "1"
+            || ProcessInfo.processInfo.environment["VITA_VIAL_DEMO"] == "1" {
             DemoSeed.populate(c.mainContext)
         }
         if let v = ProcessInfo.processInfo.environment["VITA_DIARY_DEMO"] {

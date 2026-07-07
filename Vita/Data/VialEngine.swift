@@ -134,6 +134,35 @@ enum VialEngine {
         return nil
     }
 
+    /// The day of the Nth upcoming scheduled dose (skipping today's already-taken
+    /// slots), or nil within the horizon. Lets a low-supply notice fire on the morning
+    /// supply is projected to reach the threshold, which is a stable future date, so
+    /// rebuilds reschedule the same notice rather than nagging a fresh one each day.
+    static func dateAfterDoses(item: ProtocolItem, count: Int, from now: Date,
+                               logs: [DoseLog], horizonDays: Int = projectionHorizonDays,
+                               calendar: Calendar = .current) -> Date? {
+        guard count > 0, let rule = item.schedule, rule.frequency != .prn else { return nil }
+        var remaining = count
+        let startDay = calendar.startOfDay(for: now)
+        let nowMinutes = calendar.component(.hour, from: now) * 60 + calendar.component(.minute, from: now)
+        for offset in 0...horizonDays {
+            guard let day = calendar.date(byAdding: .day, value: offset, to: startDay) else { break }
+            for o in ScheduleService.occurrences(for: item, on: day, calendar: calendar)
+                .sorted(by: { $0.minutes < $1.minutes }) {
+                // Only count genuinely upcoming slots: skip today's already-passed or
+                // already-taken doses so the projected low-day is a real future morning.
+                if offset == 0 {
+                    if o.minutes <= nowMinutes { continue }
+                    if ScheduleService.state(itemID: item.id, minutes: o.minutes, day: day,
+                                             logs: logs, now: now, calendar: calendar) == .taken { continue }
+                }
+                remaining -= 1
+                if remaining == 0 { return day }
+            }
+        }
+        return nil
+    }
+
     // MARK: - Copy builders (pure, CopyGuard-safe: no em dashes, no middle dots)
 
     /// Primary status line: "4 doses left" / "Less than 1 dose left" / empty + resync

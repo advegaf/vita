@@ -37,6 +37,45 @@ final class NotificationManagerTests: XCTestCase {
         plan.filter { cal.isDate($0.fireDate, inSameDayAs: today) }
     }
 
+    private func withVial(_ item: ProtocolItem, mg: Double, reconDaysAgo: Int = 0,
+                          budDays: Int = 28) -> ProtocolItem {
+        let v = Vial()
+        v.compoundSlug = item.compoundSlug
+        v.vialMg = mg; v.waterMl = 2
+        v.concentrationMgPerMl = mg / 2
+        v.reconstitutedAt = cal.date(byAdding: .day, value: -reconDaysAgo, to: today)!
+        v.budDays = budDays
+        v.item = item; item.vial = v
+        return item
+    }
+
+    func testVialNoticesLowAndBUDFireOnce() {
+        // 1 mg vial at 0.25 mg/dose = 4 doses → low is imminent; BUD 28 days out.
+        let it = withVial(item(.daily, times: [8 * 60]), mg: 1)
+        let notices = NotificationManager.vialNotices(for: [it], logs: [], from: noon, calendar: cal)
+        let ids = notices.map(\.id)
+        XCTAssertTrue(ids.contains { $0.hasPrefix("vial-low-") })
+        XCTAssertTrue(ids.contains { $0.hasPrefix("vial-bud-") })
+        XCTAssertTrue(notices.allSatisfy { $0.fireDate > noon })
+        // Deterministic: a second pass yields the same ids (idempotent, no daily nag).
+        let again = NotificationManager.vialNotices(for: [it], logs: [], from: noon, calendar: cal)
+        XCTAssertEqual(ids, again.map(\.id))
+    }
+
+    func testVialNoticesNoLowWhenAmpleSupply() {
+        // 100 mg vial = 400 doses; low day is beyond the projection horizon.
+        let it = withVial(item(.daily, times: [8 * 60]), mg: 100)
+        let notices = NotificationManager.vialNotices(for: [it], logs: [], from: noon, calendar: cal)
+        XCTAssertFalse(notices.contains { $0.id.hasPrefix("vial-low-") })
+        XCTAssertTrue(notices.contains { $0.id.hasPrefix("vial-bud-") })   // BUD still applies
+    }
+
+    func testVialNoticesNoneWithoutVial() {
+        let notices = NotificationManager.vialNotices(for: [item(.daily, times: [8 * 60])],
+                                                      logs: [], from: noon, calendar: cal)
+        XCTAssertTrue(notices.isEmpty)
+    }
+
     func testMaterializedFutureOnly() {
         // Daily with a morning (past at noon) + evening (future) slot.
         let plan = NotificationManager.plan(for: [item(.daily, times: [8 * 60, 21 * 60])],

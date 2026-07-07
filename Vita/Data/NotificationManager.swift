@@ -217,6 +217,51 @@ enum NotificationManager {
         return out.sorted { $0.fireDate < $1.fireDate }
     }
 
+    // MARK: Vial notices (low supply + beyond-use), one-shot per vial
+
+    /// Passive notices for a vial running low or reaching its beyond-use day. Both fire
+    /// on deterministic future mornings (projected low-day / BUD-day) with ids keyed to
+    /// the reconstitution day, so a rebuild reschedules the SAME notice instead of
+    /// minting a new one daily; once the morning passes and it fires, the past fire date
+    /// drops it from future rebuilds. The in-app VialCard carries the info regardless.
+    static func vialNotices(for items: [ProtocolItem], logs: [DoseLog], from now: Date = Date(),
+                            calendar: Calendar = .current) -> [PlannedNotice] {
+        var out: [PlannedNotice] = []
+        for item in items {
+            guard let vial = item.vial else { continue }
+            let itemLogs = logs.filter { $0.compoundSlug == vial.compoundSlug }
+            let s = VialEngine.status(item: item, vial: vial, logs: itemLogs, asOf: now, calendar: calendar)
+            let reconKey = dayKey(calendar.startOfDay(for: vial.reconstitutedAt), calendar)
+            let firstSlot = item.schedule?.timeSlotsMinutes.min()
+            let hour = firstSlot.map { $0 / 60 } ?? 9
+            let minute = firstSlot.map { $0 % 60 } ?? 0
+
+            // (a) Low supply: fire on the morning supply is projected to reach the threshold.
+            if let n = s.dosesRemaining, n > VialEngine.lowDosesThreshold,
+               let lowDay = VialEngine.dateAfterDoses(item: item, count: n - VialEngine.lowDosesThreshold,
+                                                      from: now, logs: itemLogs, calendar: calendar),
+               let fire = calendar.date(bySettingHour: hour, minute: minute, second: 0,
+                                        of: calendar.startOfDay(for: lowDay)), fire > now {
+                out.append(PlannedNotice(
+                    id: "vial-low-\(item.id.uuidString)-\(reconKey)",
+                    title: "\(item.displayName) vial is running low",
+                    body: "About \(VialEngine.lowDosesThreshold) doses left at your current dose. Worth planning a refill.",
+                    itemID: item.id, fireDate: fire))
+            }
+
+            // (b) Beyond-use: fire on the BUD-day morning (educational, never "expired").
+            if let fire = calendar.date(bySettingHour: hour, minute: minute, second: 0,
+                                        of: calendar.startOfDay(for: s.budDate)), fire > now {
+                out.append(PlannedNotice(
+                    id: "vial-bud-\(item.id.uuidString)-\(reconKey)",
+                    title: "Day \(vial.budDays) since reconstitution",
+                    body: "Your \(item.displayName) vial reaches the \(vial.budDays)-day mark many references use. Check your source.",
+                    itemID: item.id, fireDate: fire))
+            }
+        }
+        return out.sorted { $0.fireDate < $1.fireDate }
+    }
+
     // MARK: Action helpers (pure, testable)
 
     nonisolated static func status(forAction id: String) -> DoseStatus? {
@@ -259,10 +304,14 @@ enum NotificationManager {
         let logs = (try? context.fetch(FetchDescriptor<DoseLog>())) ?? []
         let allReminders = plan(for: items, logs: logs)
         let allNotices = decisionNotices(for: items)
-        // A dense stack must not starve change notices: reserve a few slots.
-        let reserved = min(allNotices.count, 8)
-        let reminders = Array(allReminders.prefix(maxPending - reserved))
-        let notices = Array(allNotices.prefix(maxPending - reminders.count))
+        let allVialNotices = vialNotices(for: items, logs: logs)
+        // A dense reminder stack must not starve change or vial notices: reserve slots
+        // for each before reminders take the rest.
+        let reservedNotices = min(allNotices.count, 8)
+        let reservedVial = min(allVialNotices.count, 4)
+        let reminders = Array(allReminders.prefix(maxPending - reservedNotices - reservedVial))
+        let notices = Array(allNotices.prefix(maxPending - reminders.count - reservedVial))
+        let vialN = Array(allVialNotices.prefix(maxPending - reminders.count - notices.count))
 
         // Replace only OUR pending requests — an in-flight one-shot "Snooze 15m"
         // copy (`snooze-*`) must survive a rebuild (any dose log or stack edit
@@ -275,6 +324,7 @@ enum NotificationManager {
             guard gen == rebuildGeneration else { return }   // superseded by a newer rebuild
             let managed = pending.map(\.identifier).filter {
                 $0.hasPrefix("dose-") || $0.hasPrefix("titr-") || $0.hasPrefix("resume-")
+                    || $0.hasPrefix("vial-")
             }
             center.removePendingNotificationRequests(withIdentifiers: managed)
 
@@ -296,7 +346,7 @@ enum NotificationManager {
                 try? await center.add(UNNotificationRequest(identifier: r.id, content: content, trigger: trigger))
             }
 
-            for n in notices {
+            for n in notices + vialN {
                 let content = UNMutableNotificationContent()
                 content.title = n.title
                 content.body = n.body
@@ -308,7 +358,8 @@ enum NotificationManager {
                 try? await center.add(UNNotificationRequest(identifier: n.id, content: content, trigger: trigger))
             }
             #if DEBUG
-            NSLog("vita-notif: scheduled %d reminders + %d notices", reminders.count, notices.count)
+            NSLog("vita-notif: scheduled %d reminders + %d notices + %d vial",
+                  reminders.count, notices.count, vialN.count)
             #endif
         }
     }
