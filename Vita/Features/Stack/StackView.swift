@@ -6,9 +6,20 @@ struct StackView: View {
     @Query(sort: [SortDescriptor(\ProtocolItem.sortIndex), SortDescriptor(\ProtocolItem.addedAt)])
     private var items: [ProtocolItem]
     @Query private var compounds: [CatalogCompound]
+    @Query private var allLogs: [DoseLog]
 
     private var bySlug: [String: CatalogCompound] {
         Dictionary(compounds.map { ($0.slug, $0) }, uniquingKeysWith: { a, _ in a })
+    }
+
+    /// A quiet "N doses left" for a row whose vial is running low (nil otherwise).
+    private func supplyHint(for item: ProtocolItem) -> String? {
+        guard let vial = item.vial else { return nil }
+        let logs = allLogs.filter { $0.compoundSlug == item.compoundSlug }
+        let s = VialEngine.status(item: item, vial: vial, logs: logs, asOf: .now,
+                                  iuPerMg: bySlug[item.compoundSlug]?.iuPerMg)
+        guard s.isLow else { return nil }
+        return VialEngine.supplyLine(s)
     }
 
     @State private var showCatalog = false
@@ -27,7 +38,8 @@ struct StackView: View {
                                 CompoundDetailView(compound: bySlug[item.compoundSlug] ?? placeholder(item),
                                                    item: item)
                             } label: {
-                                StackRow(item: item, compound: bySlug[item.compoundSlug])
+                                StackRow(item: item, compound: bySlug[item.compoundSlug],
+                                         supplyHint: supplyHint(for: item))
                             }
                             .buttonStyle(.pressableCard)
                             .contextMenu {
@@ -109,6 +121,7 @@ struct StackView: View {
 struct StackRow: View {
     let item: ProtocolItem
     let compound: CatalogCompound?
+    var supplyHint: String? = nil
 
     private var stackRowSubtitle: String {
         let active = item.effectiveDoseText(on: .now)
@@ -152,6 +165,11 @@ struct StackRow: View {
                 Text(stackRowSubtitle)
                     .font(.system(size: 13)).vtTabular().foregroundStyle(VT.body)
                     .lineLimit(2)
+                if let supplyHint {
+                    Text(supplyHint)
+                        .font(.system(size: 13)).vtTabular().foregroundStyle(VT.body)
+                        .lineLimit(1)
+                }
                 // Cycle chip as a badge BELOW the subtitle (like Today): keeps its
                 // fixed width out of the main row so the row never overflows.
                 if let chip = cycleChipText {

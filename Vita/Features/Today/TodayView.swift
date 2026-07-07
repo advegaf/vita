@@ -19,6 +19,18 @@ struct TodayView: View {
     private var logger: DoseLogger { DoseLogger(context: context) }
     private var prnItems: [ProtocolItem] { items.filter { ($0.schedule?.frequency ?? .daily) == .prn } }
 
+    /// A single quiet line when any vial is running low (nil otherwise). Taps into Stack.
+    private var lowVialLine: String? {
+        let low = items.filter { item in
+            guard let vial = item.vial else { return false }
+            let itemLogs = logs.filter { $0.compoundSlug == item.compoundSlug }
+            return VialEngine.status(item: item, vial: vial, logs: itemLogs, asOf: .now).isLow
+        }
+        guard !low.isEmpty else { return nil }
+        if low.count == 1 { return "\(low[0].displayName) vial is running low" }
+        return "\(low.count) vials are running low"
+    }
+
     var body: some View {
         TimelineView(.periodic(from: .now, by: 60)) { ctx in
             content(now: ctx.date)
@@ -95,6 +107,19 @@ struct TodayView: View {
                                      note: streak > 0 ? "\(streak)-day streak." : nil)
                                 .padding(.top, 6).frame(maxWidth: .infinity)
                         }
+                    }
+
+                    if let lowVialLine {
+                        Button { NotificationRouter.shared.pendingTab = .stack } label: {
+                            HStack(spacing: 4) {
+                                Text(lowVialLine)
+                                    .font(.system(size: 14, weight: .semibold)).foregroundStyle(VT.body)
+                                Image(systemName: "chevron.right")
+                                    .font(.system(size: 12, weight: .semibold)).foregroundStyle(VT.micro)
+                            }
+                            .frame(maxWidth: .infinity).frame(minHeight: 44).contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
                     }
 
                     if !prnItems.isEmpty { asNeededCard(now: now) }

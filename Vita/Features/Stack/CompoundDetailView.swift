@@ -45,6 +45,7 @@ struct CompoundDetailView: View {
             VStack(alignment: .leading, spacing: VT.sCardGap) {
                 header
                 doseCard
+                vialSection
                 if isStackMode { adherenceCard }
                 timingCard
                 InfoCard(lead: "Why.", leadColor: VT.why,
@@ -119,10 +120,6 @@ struct CompoundDetailView: View {
                             .font(.system(size: 14, weight: .semibold)).foregroundStyle(VT.dose)
                     }.buttonStyle(.plain)
                 }
-                if let units = item.effectiveDrawUnitsText(on: .now) {
-                    Text(units.replacingOccurrences(of: "draw ", with: "Draw to "))
-                        .font(.system(size: 14, weight: .semibold)).vtTabular().foregroundStyle(VT.dose)
-                }
                 if let next = ScheduleService.nextTitration(for: item, on: .now) {
                     Text("→ next: \(vtFormatNumber(next.dose)) \(item.doseUnit.label) in \(next.weeksAway) wk\(next.weeksAway == 1 ? "" : "s")")
                         .font(.system(size: 13, weight: .semibold)).foregroundStyle(VT.dose)
@@ -153,15 +150,57 @@ struct CompoundDetailView: View {
                     .padding(.top, 2)
             }
 
-            Button { showCalculator = true } label: {
-                Text("Open calculator →")
-                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(VT.dose)
+            // The reconstitution calculator lives on the VialCard in stack mode; keep
+            // it here only when browsing the catalog (no item / no vial yet).
+            if !isStackMode {
+                Button { showCalculator = true } label: {
+                    Text("Open calculator →")
+                        .font(.system(size: 15, weight: .semibold)).foregroundStyle(VT.dose)
+                }
+                .buttonStyle(.plain).padding(.top, 2)
             }
-            .buttonStyle(.plain).padding(.top, 2)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(VT.sCardPad)
         .vtCard()
+    }
+
+    // MARK: Vial card (M37) — supply, run-out, BUD; or an empty-state CTA
+
+    @ViewBuilder
+    private var vialSection: some View {
+        if isStackMode, let item {
+            if let vial = item.vial {
+                VialCard(
+                    item: item, vial: vial,
+                    logs: allLogs.filter { $0.compoundSlug == item.compoundSlug },
+                    iuPerMg: compound.iuPerMg,
+                    onStartSameSize: {
+                        StackService(context: context).startNewVial(
+                            for: item, vialMg: vial.vialMg, waterMl: vial.waterMl,
+                            syringe: vial.syringe, budDays: vial.budDays)
+                    },
+                    onAdjust: { openSetup() },
+                    onOpenCalculator: { showCalculator = true },
+                    onDismissLegacyNudge: {
+                        vial.legacyNudgeDismissedAt = .now
+                        context.saveLogged("VialCard.dismissLegacyNudge")
+                    }
+                )
+            } else {
+                Button { openSetup() } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "plus.circle")
+                        Text("Add your vial to track supply")
+                    }
+                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(VT.dose)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(minHeight: 44).contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .padding(VT.sCardPad).frame(maxWidth: .infinity, alignment: .leading).vtCard()
+            }
+        }
     }
 
     private var protocolLine: String {
