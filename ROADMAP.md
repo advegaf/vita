@@ -115,4 +115,6 @@ The backlog above is filed as GitHub issues:
 
 ## Non-goals (for now)
 
-Dark mode (tokens are ready), a watchOS companion, cost/price tracking, multi-user/caregiver sharing, and full App Store hardening (which requires the proxy backend in #1 and a stricter content/compliance review).
+A watchOS companion, cost/price tracking, multi-user/caregiver sharing, and full App Store hardening (which requires the proxy backend in #1 and a stricter content/compliance review).
+
+Dark mode shipped: a warm-dark theme via trait-adaptive `VT` tokens, following the system with a System/Light/Dark override in Settings.

@@ -60,6 +60,7 @@ struct SettingsView: View {
                         .padding(.bottom, 2)
                     profileCard
                     if HealthKitService.isAvailable { healthCard }
+                    appearanceCard
                     unitsCard
                     notificationsCard
                     aiCard
@@ -175,6 +176,20 @@ struct SettingsView: View {
     }
 
     // MARK: Units
+
+    private var appearanceCard: some View {
+        card("Appearance.", VT.why) {
+            HStack(spacing: 8) {
+                ForEach(AppAppearance.allCases, id: \.self) { mode in
+                    PillToggle(title: mode.label,
+                               isOn: (settings?.appearance ?? .system) == mode) {
+                        settings?.appearance = mode
+                        context.saveLogged("SettingsView")
+                    }
+                }
+            }
+        }
+    }
 
     private var unitsCard: some View {
         card("Units.", VT.timing) {

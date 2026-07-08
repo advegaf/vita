@@ -24,7 +24,7 @@ struct PillToggle: View {
         } label: {
             Text(title)
                 .font(.system(size: 14, weight: .semibold))
-                .foregroundStyle(isOn ? .white : VT.body)
+                .foregroundStyle(isOn ? VT.onInk : VT.body)
                 .frame(maxWidth: fillsWidth ? .infinity : nil)
                 .padding(.horizontal, fillsWidth ? 4 : 16)
                 .padding(.vertical, 11)

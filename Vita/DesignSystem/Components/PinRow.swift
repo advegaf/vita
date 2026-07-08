@@ -125,9 +125,12 @@ struct PinRow: View {
                     .opacity(isActed ? 1 : 0)
                     .scaleEffect(isTaken ? 1 : (isSkipped ? 1 : 0.7))   // fill blooms in
                 if isTaken {
+                    // In dark mode the knob fill (VT.why) flips to a light tan, so a
+                    // white check would vanish — use a dark warm ink there instead.
                     Checkmark()
                         .trim(from: 0, to: checkProgress)
-                        .stroke(.white, style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
+                        .stroke(VT.onInk,
+                                style: StrokeStyle(lineWidth: 2.4, lineCap: .round, lineJoin: .round))
                         .frame(width: 15, height: 15)
                 } else if isSkipped {
                     Image(systemName: "minus")

@@ -5,8 +5,11 @@ import SwiftData
 struct AppRootView: View {
     @Environment(\.modelContext) private var context
     @Query private var profiles: [UserProfile]
+    @Query private var settingsList: [AppSettings]
 
     private var onboarded: Bool { profiles.first?.onboardedAt != nil }
+    // Empty pre-onboarding query -> nil -> follow the system.
+    private var appearance: AppAppearance { settingsList.first?.appearance ?? .system }
 
     @State private var showCalcDebug = false
 
@@ -20,6 +23,7 @@ struct AppRootView: View {
             }
         }
         .animation(.easeInOut(duration: 0.3), value: onboarded)
+        .preferredColorScheme(appearance.colorScheme)
         #if DEBUG
         .task {
             if ProcessInfo.processInfo.environment["VITA_LAB_SELFTEST"] == "1" {

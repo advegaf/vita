@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 // MARK: - Color hex helper
 
@@ -22,6 +23,14 @@ extension Color {
         }
         self.init(.sRGB, red: r, green: g, blue: b, opacity: a)
     }
+
+    /// Trait-adaptive token: resolves to `light` or `dark` per the live
+    /// userInterfaceStyle (reacts to system changes AND the in-app override).
+    init(light: String, dark: String) {
+        self.init(uiColor: UIColor { tc in
+            UIColor(Color(hex: tc.userInterfaceStyle == .dark ? dark : light))
+        })
+    }
 }
 
 // MARK: - The vita ("fields"-family) design tokens — a closed, semantic set.
@@ -30,29 +39,45 @@ extension Color {
 
 enum VT {
 
+    // Warm-dark: near-black with a brown undertone (the opposite of cream), not gray.
+
     // Surfaces
-    static let canvas   = Color(hex: "F1EEE9") // app background (never a card)
-    static let card     = Color(hex: "FFFFFF") // every card / sheet
-    static let hairline = Color(hex: "EAE6DF") // divider inside the Dose card
+    static let canvas   = Color(light: "F1EEE9", dark: "17140F") // app background (never a card)
+    static let card     = Color(light: "FFFFFF", dark: "221D17") // every card / sheet
+    static let hairline = Color(light: "EAE6DF", dark: "3A332B") // divider / dark card border
 
     // Text
-    static let ink   = Color(hex: "1A1A1A") // headlines, charcoal pill, bolded terms
-    static let body  = Color(hex: "6E6E6E") // body copy
-    static let micro = Color(hex: "9A958C") // disclaimers, captions, micro-caps
+    static let ink   = Color(light: "1A1A1A", dark: "F2EBE3") // headlines, charcoal pill, bolded terms
+    /// Label/glyph color sitting ON a filled surface (the ink pill, a selected toggle,
+    /// the done checkmark): white in light, warm near-black in dark — because every
+    /// dark-mode fill (ink, accents) is a light tone, so a dark label reads on all.
+    static let onInk = Color(light: "FFFFFF", dark: "17140F")
+    static let body  = Color(light: "6E6E6E", dark: "B9B0A4") // body copy
+    static let micro = Color(light: "9A958C", dark: "A39A8C") // disclaimers, captions (>=4.5 on dark card)
 
     // Accents (semantic — each does double duty as dimension + day-state)
-    static let dose   = Color(hex: "2BB3F3") // Dose  + "due-now / action"
-    static let timing = Color(hex: "FFC22E") // Timing + "upcoming"
-    static let why    = Color(hex: "3E2B22") // Why   + "logged / done"
-    static let overdue = Color(hex: "C0593F") // overdue ONLY (never iOS error-red)
+    static let dose   = Color(light: "2BB3F3", dark: "4FC3F7") // Dose  + "due-now / action"
+    static let timing = Color(light: "FFC22E", dark: "FFCB4D") // Timing + "upcoming"
+    static let why    = Color(light: "3E2B22", dark: "DDB9A4") // Why + "logged / done" (flips to light on dark)
+    static let overdue = Color(light: "C0593F", dark: "D97E63") // overdue ONLY (never iOS error-red)
 
     // Category tints — matched to the vial render hues (one per category, closed set)
-    static let catBlue   = Color(hex: "3FA9E0")  // Weight Loss
-    static let catPurple = Color(hex: "9B7FE0")  // Cognitive
-    static let catBrown  = Color(hex: "8A7059")  // Muscle & Recovery
-    static let catPink   = Color(hex: "EC9CB4")  // Sexual Health
-    static let catYellow = Color(hex: "E8B43C")  // General Health
-    static let catGray   = Color(hex: "9A958C")  // Other
+    static let catBlue   = Color(light: "3FA9E0", dark: "5CB8ED")  // Weight Loss
+    static let catPurple = Color(light: "9B7FE0", dark: "B29AEB")  // Cognitive
+    static let catBrown  = Color(light: "8A7059", dark: "B0917A")  // Muscle & Recovery (lifts so it doesn't vanish)
+    static let catPink   = Color(light: "EC9CB4", dark: "F0A9BE")  // Sexual Health
+    static let catYellow = Color(light: "E8B43C", dark: "ECC05A")  // General Health
+    static let catGray   = Color(light: "9A958C", dark: "A7A093")  // Other
+
+    /// Registry for the appearance test: every semantic color token, so the test can
+    /// assert each resolves distinctly light vs dark and meets contrast on text.
+    static let allColorTokens: [(name: String, color: Color)] = [
+        ("canvas", canvas), ("card", card), ("hairline", hairline),
+        ("ink", ink), ("body", body), ("micro", micro),
+        ("dose", dose), ("timing", timing), ("why", why), ("overdue", overdue),
+        ("catBlue", catBlue), ("catPurple", catPurple), ("catBrown", catBrown),
+        ("catPink", catPink), ("catYellow", catYellow), ("catGray", catGray),
+    ]
 
     // Radii
     static let rCard: CGFloat       = 20
@@ -71,14 +96,30 @@ enum VT {
 }
 
 extension View {
-    /// The one card shadow used everywhere. No borders, no glow.
-    func vtCardShadow() -> some View {
-        shadow(color: VT.shadowColor, radius: VT.shadowBlur / 2, x: 0, y: VT.shadowY)
-    }
+    /// The one card shadow. In dark mode a soft shadow on a dark surface is invisible,
+    /// so it's dropped there (the card surface + hairline border carry elevation).
+    func vtCardShadow() -> some View { modifier(VTCardShadow()) }
 
-    /// Standard white card surface.
-    func vtCard(radius: CGFloat = VT.rCard) -> some View {
-        background(VT.card, in: RoundedRectangle(cornerRadius: radius, style: .continuous))
-            .vtCardShadow()
+    /// Standard card surface. Light: soft shadow. Dark: a 1px hairline border instead.
+    func vtCard(radius: CGFloat = VT.rCard) -> some View { modifier(VTCardStyle(radius: radius)) }
+}
+
+private struct VTCardShadow: ViewModifier {
+    @Environment(\.colorScheme) private var scheme
+    func body(content: Content) -> some View {
+        content.shadow(color: scheme == .dark ? .clear : VT.shadowColor,
+                       radius: VT.shadowBlur / 2, x: 0, y: scheme == .dark ? 0 : VT.shadowY)
+    }
+}
+
+private struct VTCardStyle: ViewModifier {
+    var radius: CGFloat
+    @Environment(\.colorScheme) private var scheme
+    func body(content: Content) -> some View {
+        let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
+        return content
+            .background(VT.card, in: shape)
+            .overlay { if scheme == .dark { shape.strokeBorder(VT.hairline, lineWidth: 1) } }
+            .modifier(VTCardShadow())
     }
 }

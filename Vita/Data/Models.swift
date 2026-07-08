@@ -115,9 +115,15 @@ final class AppSettings {
     var rxAcknowledgedSlugs: [String] = []
     var notificationsEnabled: Bool = true
     var labConsentedAt: Date?     // one-time consent: lab images leave the device to be read (M8b)
+    var appearancePreferenceRaw: String = AppAppearance.system.rawValue   // system | light | dark
     var profile: UserProfile?
     init() {}
     static let singletonID = UUID(uuidString: "00000000-0000-0000-0000-000000000002")!
+
+    var appearance: AppAppearance {
+        get { AppAppearance(rawValue: appearancePreferenceRaw) ?? .system }
+        set { appearancePreferenceRaw = newValue.rawValue }
+    }
 }
 
 @Model

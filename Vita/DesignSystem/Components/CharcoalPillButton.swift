@@ -23,11 +23,11 @@ struct CharcoalPillButton: View {
                 if loading {
                     ProgressView()
                         .controlSize(.small)
-                        .tint(.white)
+                        .tint(VT.onInk)
                 }
                 Text(title)
                     .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(VT.onInk)
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 17)
