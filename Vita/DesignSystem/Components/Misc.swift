@@ -23,6 +23,7 @@ struct DotMeter: View {
     var filled: Int
     var total: Int
     var note: String? = nil      // e.g. "3-day streak." appended after the count
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var body: some View {
         HStack(spacing: 12) {
             HStack(spacing: 6) {
@@ -30,11 +31,14 @@ struct DotMeter: View {
                     Circle()
                         .fill(i < filled ? VT.why : VT.ink.opacity(0.12))
                         .frame(width: 7, height: 7)
+                        .scaleEffect(i < filled ? 1 : 0.85)   // the newly filled dot blooms in
                 }
             }
+            .animation(reduceMotion ? nil : VMotion.pinCommit, value: filled)
             Text(note.map { "\(filled) of \(total) logged, \($0)" } ?? "\(filled) of \(total) logged")
                 .font(.system(size: 13, weight: .medium)).vtTabular()
                 .foregroundStyle(VT.micro)
+                .contentTransition(.numericText())
         }
     }
 }

@@ -15,8 +15,21 @@ struct TodayView: View {
     @State private var selectedBlock: String?
     @State private var showSettings = false
     @State private var editDraft: DoseDraft?
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var logger: DoseLogger { DoseLogger(context: context) }
+
+    /// Logs an occurrence inside a single animation transaction so the focus-card
+    /// swap, DotMeter, and headline count all move together (the pin knob is already
+    /// animated). Reduce-motion collapses it to a quick fade.
+    private func logAnimated(_ item: ProtocolItem, _ o: DoseOccurrence, status: DoseStatus) {
+        withAnimation(reduceMotion ? VMotion.reduced : VMotion.cardEntrance) {
+            logger.log(item: item, occurrence: o, status: status)
+        }
+    }
+    private func openDetail(_ item: ProtocolItem) {
+        NotificationRouter.shared.pendingDetailItemID = item.id
+    }
     private var prnItems: [ProtocolItem] { items.filter { ($0.schedule?.frequency ?? .daily) == .prn } }
 
     /// Value-type snapshots for vitals correlation. A schedule's `anchorDate` defaults
@@ -87,7 +100,10 @@ struct TodayView: View {
                         .font(.system(size: 12, weight: .medium)).tracking(0.4)
                         .textCase(.uppercase).foregroundStyle(VT.micro)
                     VStack(alignment: .leading, spacing: 0) {
-                        if total > 0 { Text(countLine(remaining: remaining)) }
+                        if total > 0 {
+                            Text(countLine(remaining: remaining))
+                                .contentTransition(.numericText())
+                        }
                         Text(currentBlock.greeting)
                     }
                     .vtHeadlineStyle()
@@ -97,13 +113,21 @@ struct TodayView: View {
                 if items.isEmpty {
                     emptyStack
                 } else {
-                    if total == 0 && !hasResting {
-                        RestDayCard()
-                    } else if total > 0 && remaining == 0 {
-                        DayCompleteCard()
-                    } else if let next {
-                        focusCard(next, now: now)
+                    Group {
+                        if total == 0 && !hasResting {
+                            RestDayCard()
+                        } else if total > 0 && remaining == 0 {
+                            DayCompleteCard()
+                        } else if let next {
+                            focusCard(next, now: now)
+                        }
                     }
+                    // The crescendo: the focus card dissolving into "All done" as the
+                    // last dose is logged. Identity swap drives an insert/remove.
+                    .id(remaining == 0 ? "complete" : (next?.id ?? "rest"))
+                    .transition(reduceMotion ? .opacity
+                        : .asymmetric(insertion: .opacity.combined(with: .scale(scale: 0.97, anchor: .top)),
+                                      removal: .opacity))
 
                     if total > 0 || hasResting {
                         CandySegmentedControl(
@@ -154,7 +178,8 @@ struct TodayView: View {
             peptide: item?.displayName ?? "",
             doseLine: doseLine(item, now: now),
             due: dateFor(minutes: o.minutes),
-            onLog: { if let item { logger.log(item: item, occurrence: o, status: .taken) } }
+            onLog: { if let item { logAnimated(item, o, status: .taken) } },
+            onOpenDetail: { if let item { openDetail(item) } }
         )
     }
 
@@ -208,9 +233,11 @@ struct TodayView: View {
                    overdueText: state == .overdue
                        ? ScheduleService.overdueLabel(minutesLate: minutes(of: now) - o.minutes)
                        : nil,
-                   onTake: { logger.log(item: item, occurrence: o, status: .taken) },
-                   onSkip: { logger.log(item: item, occurrence: o, status: .skipped) },
-                   onUndo: { logger.undo(item: item, occurrence: o) },
+                   onTake: { logAnimated(item, o, status: .taken) },
+                   onSkip: { logAnimated(item, o, status: .skipped) },
+                   onUndo: { withAnimation(reduceMotion ? VMotion.reduced : VMotion.cardEntrance) {
+                       logger.undo(item: item, occurrence: o) } },
+                   onOpenDetail: { openDetail(item) },
                    onEdit: {
                        // Re-resolve at action time: a context menu can outlive
                        // its item (deleted from the Stack tab meanwhile).

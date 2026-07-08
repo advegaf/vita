@@ -31,6 +31,7 @@ struct PinRow: View {
     var onTake: () -> Void = {}
     var onSkip: () -> Void = {}
     var onUndo: () -> Void = {}
+    var onOpenDetail: (() -> Void)? = nil   // tap the name/dose area → compound detail
     var onEdit: (() -> Void)? = nil   // long-press → "Adjust timing" (opens the dose sheet)
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -43,23 +44,33 @@ struct PinRow: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            CompoundTile(category: category, size: 34)
-
-            VStack(alignment: .leading, spacing: 3) {
-                Text(name)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(isActed ? VT.body : VT.ink)
-                    .strikethrough(isTaken, color: VT.micro)
-                // Dose owns its own line (full width, never wraps); the cycle chip
-                // drops below it as a deliberate badge rather than crowding the dose.
-                Text(isSkipped ? "skipped" : dose)
-                    .font(.system(size: 13)).vtTabular()
-                    .foregroundStyle(VT.body)
-                    .lineLimit(1)
-                if let cycleChip, !isActed {
-                    CycleChip(text: cycleChip).padding(.top, 1)
+            // Leading content opens detail on tap; the knob (its own Button) keeps
+            // logging. Long-press context menu still works over the whole row.
+            Button { onOpenDetail?() } label: {
+                HStack(spacing: 12) {
+                    CompoundTile(category: category, size: 34)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(name)
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(isActed ? VT.body : VT.ink)
+                            .strikethrough(isTaken, color: VT.micro)
+                        // Dose owns its own line (full width, never wraps); the cycle
+                        // chip drops below it as a deliberate badge, not crowding it.
+                        Text(isSkipped ? "skipped" : dose)
+                            .font(.system(size: 13)).vtTabular()
+                            .foregroundStyle(VT.body)
+                            .lineLimit(1)
+                        if let cycleChip, !isActed {
+                            CycleChip(text: cycleChip).padding(.top, 1)
+                        }
+                    }
                 }
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.pressableCard)
+            .disabled(onOpenDetail == nil)
+            .accessibilityLabel("\(name), \(isSkipped ? "skipped" : dose)")
+            .accessibilityHint("Opens details")
 
             Spacer()
 
@@ -126,6 +137,8 @@ struct PinRow: View {
             }
             .frame(width: 30, height: 30)
             .scaleEffect(pressed ? 0.94 : 1)
+            .frame(width: 44, height: 44)          // >=44pt tap target around the 30pt knob
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .simultaneousGesture(

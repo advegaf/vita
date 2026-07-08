@@ -7,13 +7,16 @@ struct CharcoalPillButton: View {
     /// Shows a small white spinner before the title (e.g. "Refining with AI…").
     /// The button stays tappable; the caller decides what a tap means mid-work.
     var loading: Bool = false
+    /// Fire the heavier "commit" haptic instead of the soft press one — for buttons
+    /// that complete a real action (logging a dose), matching the pin-knob ritual.
+    var commitHaptic: Bool = false
     var action: () -> Void
 
     @State private var pressed = false
 
     var body: some View {
         Button(action: {
-            Haptics.press()
+            if commitHaptic { Haptics.commit() } else { Haptics.press() }
             action()
         }) {
             HStack(spacing: 10) {

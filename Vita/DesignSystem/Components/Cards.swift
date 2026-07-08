@@ -65,9 +65,12 @@ struct DoseCard: View {
 /// Home next-dose focus card (radius 24). Live countdown + docked charcoal pill.
 struct FocusCard: View {
     var peptide: String
-    var doseLine: String         // "Draw to 20 units · 0.25 mg"
+    var doseLine: String         // "250 mcg • 10u"
     var due: Date
     var onLog: () -> Void = {}
+    /// Tapping the peptide/dose area opens the compound detail (the "Log dose"
+    /// button stays the only place that logs).
+    var onOpenDetail: (() -> Void)? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -77,9 +80,14 @@ struct FocusCard: View {
                     .font(.system(size: 14, weight: .semibold)).vtTabular()
                     .foregroundStyle(VT.body)
             }
-            Text(peptide).font(.vtPicker).foregroundStyle(VT.ink)
-            Text(doseLine).font(.system(size: 15)).vtTabular().foregroundStyle(VT.body)
-            CharcoalPillButton(title: "Log dose", action: onLog)
+            VStack(alignment: .leading, spacing: 10) {
+                Text(peptide).font(.vtPicker).foregroundStyle(VT.ink)
+                Text(doseLine).font(.system(size: 15)).vtTabular().foregroundStyle(VT.body)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+            .onTapGesture { onOpenDetail?() }
+            CharcoalPillButton(title: "Log dose", commitHaptic: true, action: onLog)
                 .padding(.top, 6)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
