@@ -78,6 +78,8 @@ enum CycleUnit: String, Codable, Sendable, CaseIterable {
     case days, weeks
     var label: String { self == .weeks ? "weeks" : "days" }
     var short: String { self == .weeks ? "wk" : "d" }
+    /// Capitalized full word for the cycle badge ("Week 4/12" / "Day 3/5").
+    var chipWord: String { self == .weeks ? "Week" : "Day" }
     var perStep: Int { self == .weeks ? 7 : 1 }   // multiplier days ↔ unit
 }
 

@@ -157,32 +157,35 @@ final class ProtocolItem {
     var doseText: String { "\(vtFormatNumber(doseAmount)) \(doseUnit.label)" }
 
     /// "draw 10u" when a vial is set up and the dose converts to mg. Nil otherwise.
-    /// Routes through `VialEngine.doseMg` (the single mg-conversion source), so IU
-    /// items also draw, using the HGH-class approximation.
-    var drawUnitsText: String? {
+    /// Raw syringe units to draw for the base dose (nil without a vial or a
+    /// convertible dose). Routes through `VialEngine.doseMg` so IU items draw too.
+    var drawUnits: Double? {
         guard let vial, let doseMg = VialEngine.doseMg(doseAmount, unit: doseUnit), doseMg > 0 else { return nil }
         let u = ReconstitutionCalculator.units(doseMg: doseMg, vialMg: vial.vialMg,
                                                waterMl: vial.waterMl, syringe: vial.syringe)
-        guard u > 0 else { return nil }
-        return "draw \(vtFormatUnits(u))u"
+        return u > 0 ? u : nil
     }
 
-    // M9 titration-aware (date-threaded) variants. Base doseText/drawUnitsText stay
-    // for back-compat where "today" isn't meaningful.
+    // M9 titration-aware (date-threaded) variants.
     func effectiveDose(on date: Date, calendar: Calendar = .current) -> Double {
         ScheduleService.activeDose(for: self, on: date, calendar: calendar)
     }
     func effectiveDoseText(on date: Date, calendar: Calendar = .current) -> String {
         "\(vtFormatNumber(effectiveDose(on: date, calendar: calendar))) \(doseUnit.label)"
     }
-    func effectiveDrawUnitsText(on date: Date, calendar: Calendar = .current) -> String? {
+    func effectiveDrawUnits(on date: Date, calendar: Calendar = .current) -> Double? {
         guard let vial,
               let doseMg = VialEngine.doseMg(effectiveDose(on: date, calendar: calendar), unit: doseUnit),
               doseMg > 0 else { return nil }
         let u = ReconstitutionCalculator.units(doseMg: doseMg, vialMg: vial.vialMg,
                                                waterMl: vial.waterMl, syringe: vial.syringe)
-        guard u > 0 else { return nil }
-        return "draw \(vtFormatUnits(u))u"
+        return u > 0 ? u : nil
+    }
+    /// The row/pin dose display: "250 mcg • 10u" in the compound's authored unit,
+    /// or just the dose when there is no vial. Single source for every dose+draw render.
+    func doseWithDrawText(on date: Date, calendar: Calendar = .current) -> String {
+        DoseFormat.doseWithDraw(dose: effectiveDoseText(on: date, calendar: calendar),
+                                drawUnits: effectiveDrawUnits(on: date, calendar: calendar))
     }
 }
 

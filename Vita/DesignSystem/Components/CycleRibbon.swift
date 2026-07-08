@@ -38,21 +38,21 @@ struct CycleRibbon: View {
     }
 }
 
-/// Compact cycle chip for Stack/Today rows ("wk 3/8" / "rest"). Mirrors the RxBadge
-/// capsule grammar so it sits beside it naturally.
+/// Compact cycle status badge for Stack/Today rows ("Week 4/12" / "Rest"). A quiet
+/// neutral chip so it reads as status, not an accent competing with the dose color.
 struct CycleChip: View {
     let text: String
     var resting: Bool = false
     var body: some View {
         Text(text)
             .font(.system(size: 11, weight: .semibold)).vtTabular()
-            .foregroundStyle(resting ? VT.micro : VT.dose)
-            // Never wrap "wk 12/52" to two lines: demand intrinsic width so the
+            .foregroundStyle(resting ? VT.micro : VT.body)
+            // Never wrap "Week 12/52" to two lines: demand intrinsic width so the
             // sibling subtitle compresses instead of the chip.
             .lineLimit(1)
             .fixedSize(horizontal: true, vertical: false)
-            .padding(.horizontal, 7).padding(.vertical, 3)
-            .background((resting ? VT.micro : VT.dose).opacity(0.12), in: Capsule())
+            .padding(.horizontal, 8).padding(.vertical, 3)
+            .background(VT.ink.opacity(0.06), in: Capsule())
             .accessibilityLabel(resting ? "Resting" : "Cycle \(text)")
     }
 }
@@ -60,10 +60,10 @@ struct CycleChip: View {
 #Preview {
     VStack(alignment: .leading, spacing: VT.sSection) {
         CycleRibbon(status: .init(phase: .on, unitIsWeeks: true, indexInUnit: 3, totalUnits: 8,
-                                  fraction: 0.25, daysLeftInPhase: 5, resumesOn: nil, chipText: "wk 3/8"))
+                                  fraction: 0.25, daysLeftInPhase: 5, resumesOn: nil, chipText: "Week 3/8"))
         CycleRibbon(status: .init(phase: .resting, unitIsWeeks: true, indexInUnit: 1, totalUnits: 8,
-                                  fraction: 0.8, daysLeftInPhase: 2, resumesOn: Date(), chipText: "rest"))
-        HStack { CycleChip(text: "wk 3/8"); CycleChip(text: "rest", resting: true) }
+                                  fraction: 0.8, daysLeftInPhase: 2, resumesOn: Date(), chipText: "Rest"))
+        HStack { CycleChip(text: "Week 4/12"); CycleChip(text: "Rest", resting: true) }
     }
     .padding(VT.sSection).vtCard().padding(VT.sSection).background(VT.canvas)
 }

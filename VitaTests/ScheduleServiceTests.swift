@@ -180,7 +180,7 @@ final class ScheduleServiceTests: XCTestCase {
         XCTAssertEqual(s.indexInUnit, 3)
         XCTAssertEqual(s.totalUnits, 8)
         XCTAssertEqual(s.daysLeftInPhase, 42)
-        XCTAssertEqual(s.chipText, "wk 3/8")
+        XCTAssertEqual(s.chipText, "Week 3/8")
         XCTAssertTrue(s.unitIsWeeks)
     }
 
@@ -189,7 +189,7 @@ final class ScheduleServiceTests: XCTestCase {
         let s = ScheduleService.cycleStatus(for: r, on: day(60))!   // phaseDay 60 → off
         XCTAssertEqual(s.phase, .resting)
         XCTAssertEqual(s.daysLeftInPhase, 24)                       // 28 - (60-56)
-        XCTAssertEqual(s.chipText, "rest")
+        XCTAssertEqual(s.chipText, "Rest")
         XCTAssertEqual(s.resumesOn.map { cal.startOfDay(for: $0) }, day(84))
     }
 

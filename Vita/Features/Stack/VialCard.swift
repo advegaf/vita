@@ -96,10 +96,10 @@ struct VialCard: View {
 
     private func contentsLine(_ s: VialEngine.Status) -> some View {
         var parts = ["\(vtFormatNumber(vial.vialMg)) mg + \(vtFormatNumber(vial.waterMl)) mL"]
-        if let draw = item.effectiveDrawUnitsText(on: .now) {
-            parts.append(draw.replacingOccurrences(of: "draw ", with: "draw to "))
+        if let u = item.effectiveDrawUnits(on: .now) {
+            parts.append("draw \(vtFormatUnits(u))u")
         }
-        return Text(parts.joined(separator: ", "))
+        return Text(parts.joined(separator: " • "))
             .font(.system(size: 13)).vtTabular().foregroundStyle(VT.body)
     }
 

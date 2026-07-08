@@ -133,6 +133,20 @@ enum ScheduleService {
         }
     }
 
+    /// Compact cadence for a truncated stack row ("Daily", "Weekly", "Mon Wed Fri",
+    /// "As needed") — drops the time-of-day; the detail view shows the full label.
+    static func cadenceShort(for rule: ScheduleRule) -> String {
+        switch rule.frequency {
+        case .prn:   return "As needed"
+        case .daily: return "Daily"
+        case .eod:   return "Every other day"
+        case .weekly:
+            let names = ["", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+            let days = rule.weekdays.sorted().compactMap { (1...7).contains($0) ? names[$0] : nil }
+            return days.isEmpty ? "Weekly" : days.joined(separator: " ")
+        }
+    }
+
     // MARK: - M9 cycles + titration (pure, calendar-injectable)
 
     enum CyclePhase: Equatable { case on, resting }
@@ -182,7 +196,7 @@ enum ScheduleService {
         let resumesOn = resting
             ? calendar.date(byAdding: .day, value: daysLeft, to: calendar.startOfDay(for: date))
             : nil
-        let chip = resting ? "rest" : "\(unit.short) \(indexInUnit)/\(onUnits)"
+        let chip = resting ? "Rest" : "\(unit.chipWord) \(indexInUnit)/\(onUnits)"
         return CycleStatus(phase: resting ? .resting : .on, unitIsWeeks: unit == .weeks,
                            indexInUnit: indexInUnit, totalUnits: onUnits,
                            fraction: Double(phaseDay) / Double(period),

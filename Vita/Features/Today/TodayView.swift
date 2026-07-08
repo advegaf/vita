@@ -160,8 +160,7 @@ struct TodayView: View {
 
     private func doseLine(_ item: ProtocolItem?, now: Date) -> String {
         guard let item else { return "" }
-        let dose = item.effectiveDoseText(on: now)
-        return item.effectiveDrawUnitsText(on: now).map { "\(dose) (\($0))" } ?? dose
+        return item.doseWithDrawText(on: now)
     }
 
     // MARK: Block pins (filtered to the selected block)
@@ -195,14 +194,13 @@ struct TodayView: View {
     @ViewBuilder
     private func pin(_ o: DoseOccurrence, now: Date) -> some View {
         if let item = items.first(where: { $0.id == o.itemID }) {
-            let dose = item.effectiveDoseText(on: now)
             let chip = item.schedule.flatMap {
                 $0.hasCycle ? ScheduleService.cycleStatus(for: $0, on: now)?.chipText : nil
             }
             let state = ScheduleService.state(itemID: o.itemID, minutes: o.minutes, day: now,
                                               logs: logs, now: now)
             PinRow(name: item.displayName,
-                   dose: item.effectiveDrawUnitsText(on: now).map { "\(dose) (\($0))" } ?? dose,
+                   dose: item.doseWithDrawText(on: now),
                    time: o.timeText,
                    category: item.category,
                    state: state,
@@ -247,7 +245,7 @@ struct TodayView: View {
                     .font(.system(size: 13)).foregroundStyle(VT.micro)
             }
             Spacer()
-            CycleChip(text: "rest", resting: true)
+            CycleChip(text: "Rest", resting: true)
         }
         .padding(.horizontal, 16).padding(.vertical, 14)
         .vtCard().opacity(0.7)

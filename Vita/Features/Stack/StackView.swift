@@ -124,11 +124,10 @@ struct StackRow: View {
     var supplyHint: String? = nil
 
     private var stackRowSubtitle: String {
-        let active = item.effectiveDoseText(on: .now)
-        let dose = item.effectiveDrawUnitsText(on: .now).map { "\(active) (\($0))" } ?? active
-        // Compute LIVE, not the stored item.cadenceLabel — items committed before
-        // the M31 separator fix kept the old "Weekly · Fri · 7:30 AM" dot format.
-        let cadence = item.schedule.map { ScheduleService.cadenceLabel(for: $0) } ?? "tap to set"
+        // Truncated: dose•units + a short cadence token (no verbose time-of-day; the
+        // detail view shows the full schedule). Computed LIVE, not the stored label.
+        let dose = item.doseWithDrawText(on: .now)
+        let cadence = item.schedule.map { ScheduleService.cadenceShort(for: $0) } ?? "tap to set"
         return "\(dose), \(cadence)"
     }
 

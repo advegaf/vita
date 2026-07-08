@@ -173,7 +173,7 @@ struct PinRow: View {
     VStack(spacing: VT.sCardGap) {
         PinRow(name: "Ipamorelin", dose: "100 mcg", time: "7:00", category: .muscleRecovery, state: .due)
         PinRow(name: "CJC-1295 + Ipamorelin", dose: "0.5 mg (draw 20u)", time: "8:00",
-               category: .muscleRecovery, state: .due, cycleChip: "wk 2/12")   // dose one line, chip below
+               category: .muscleRecovery, state: .due, cycleChip: "Week 2/12")   // dose one line, chip below
         PinRow(name: "BPC-157", dose: "250 mcg", time: "8:00", category: .muscleRecovery,
                state: .overdue, overdueText: "2h 15m late")
         PinRow(name: "CJC-1295", dose: "100 mcg", time: "10:30", category: .muscleRecovery, state: .taken)
