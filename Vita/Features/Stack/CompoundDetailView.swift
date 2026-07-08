@@ -136,6 +136,10 @@ struct CompoundDetailView: View {
                 Text("Educational range \(range)")
                     .font(.system(size: 13)).foregroundStyle(VT.micro)
             }
+            if compound.isBlend {
+                Text("This is the total blend dose, not per component.")
+                    .font(.system(size: 12)).foregroundStyle(VT.micro)
+            }
 
             Rectangle().fill(VT.hairline).frame(height: 1).padding(.vertical, 4)
             Text("PROTOCOL")

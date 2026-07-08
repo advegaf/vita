@@ -64,7 +64,8 @@ struct VitalsDetailView: View {
                     selectedDay = nil
                     Haptics.segment()
                 } label: {
-                    Text(m.title).font(.system(size: 13, weight: .semibold))
+                    Text(m.chipTitle).font(.system(size: 13, weight: .semibold))
+                        .lineLimit(1).fixedSize()
                         .foregroundStyle(on ? .white : VT.body)
                         .padding(.horizontal, 12).padding(.vertical, 7)
                         .background(on ? m.accent : VT.ink.opacity(0.06), in: Capsule())
@@ -167,13 +168,10 @@ struct VitalsDetailView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(VT.sCardPad).vtCard()
                 }
-                Button(action: askVita) {
-                    Text("Ask vita about this →")
-                        .font(.system(size: 15, weight: .semibold)).foregroundStyle(VT.dose)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .frame(minHeight: 44).contentShape(Rectangle())
+                TintedCTA(title: "Ask vita about this",
+                          accessibilityHintText: "Opens chat with your vitals prefilled") {
+                    askVita()
                 }
-                .buttonStyle(.plain)
             }
         }
     }

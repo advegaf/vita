@@ -261,6 +261,10 @@ struct DoseSetupSheet: View {
                 Text("Educational range \(rangeText)")
                     .font(.system(size: 13)).foregroundStyle(VT.micro)
             }
+            if catalog?.isBlend == true {
+                Text("This is the total blend dose, not per component.")
+                    .font(.system(size: 12)).foregroundStyle(VT.micro)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(VT.sCardPad).vtCard()

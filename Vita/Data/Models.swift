@@ -41,6 +41,9 @@ final class CatalogCompound {
     var rxStatus: RxStatus { RxStatus(rawValue: rxStatusRaw) ?? .nonRx }
     var doseUnit: DoseUnit { DoseUnit(rawValue: doseUnitRaw) ?? .mcg }
     var primaryRoute: Route? { routesRaw.first.flatMap { Route(rawValue: $0) } }
+    /// A multi-peptide blend (e.g. "CJC-1295 + Ipamorelin"). Dosing is the TOTAL blend,
+    /// not per component — surfaced as a caption so the number is not misread.
+    var isBlend: Bool { name.contains(" + ") }
     var defaultScheduleType: ScheduleType? { defaultScheduleTypeRaw.flatMap { ScheduleType(rawValue: $0) } }
 
     /// "0.25–2 mg" / "250 mcg" — used in the catalog subtitle + seed-mode Dose card.

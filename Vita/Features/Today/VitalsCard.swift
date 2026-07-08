@@ -11,6 +11,12 @@ enum VitalMetric: String, CaseIterable, Identifiable {
         case .hrv: "HRV"; case .restingHR: "Resting HR"; case .sleep: "Sleep"; case .respiratory: "Respiratory"
         }
     }
+    /// Short label for tiles + chips so a 3- or 4-across row fits without wrapping.
+    var chipTitle: String {
+        switch self {
+        case .hrv: "HRV"; case .restingHR: "Rest HR"; case .sleep: "Sleep"; case .respiratory: "Resp"
+        }
+    }
     var unit: String {
         switch self {
         case .hrv: "ms"; case .restingHR: "bpm"; case .sleep: "h"; case .respiratory: "br/min"
@@ -40,6 +46,8 @@ struct VitalsCard: View {
     @State private var loading = true
     @AppStorage("vita.vitalsAuthRequested") private var authRequested = false
     @State private var showDetail = false
+    @State private var hasLoaded = false
+    @Environment(\.scenePhase) private var scenePhase
     private let provider = VitalsService.make()
 
     private let tiles: [VitalMetric] = [.hrv, .restingHR, .sleep]
@@ -47,6 +55,12 @@ struct VitalsCard: View {
     var body: some View {
         if provider.isAvailable {
             card.task { await load() }
+                // Re-read when returning from Apple Health (the user may have just
+                // toggled Vita's access on); only after the first load so it doesn't
+                // double-fire with .task.
+                .onChange(of: scenePhase) { _, phase in
+                    if phase == .active, hasLoaded { Task { await load() } }
+                }
                 .sheet(isPresented: $showDetail) {
                     NavigationStack {
                         VitalsDetailView(series: series ?? VitalsSeries(), windows: windows)
@@ -104,24 +118,30 @@ struct VitalsCard: View {
         }
     }
 
+    @ViewBuilder
     private var connectState: some View {
-        Group {
+        VStack(alignment: .leading, spacing: 10) {
             if authRequested {
-                Text("No recent vitals in Apple Health.")
+                // Auth was requested but nothing came back. Read access returns success
+                // even when the per-type toggles are off (Apple can't report a read
+                // denial), so guide the user to enable them rather than dead-end.
+                Text("If you just connected, open Apple Health and turn on Vita's access to Heart Rate Variability, Resting Heart Rate, and Sleep. Data from a watch, Whoop, or Oura shows up here once it syncs.")
                     .font(.system(size: 14)).foregroundStyle(VT.body)
+                    .fixedSize(horizontal: false, vertical: true)
+                TintedCTA(title: "Open Apple Health", accessibilityHintText: "Opens the Health app") {
+                    if let url = URL(string: "x-apple-health://") { UIApplication.shared.open(url) }
+                }
             } else {
-                Button {
+                Text("Connect Apple Health to see HRV, resting heart rate, and sleep trends.")
+                    .font(.system(size: 14)).foregroundStyle(VT.body)
+                    .fixedSize(horizontal: false, vertical: true)
+                TintedCTA(title: "Connect Apple Health", accessibilityHintText: "Requests read access to your health data") {
                     Task {
                         _ = await provider.requestAuthorization()
                         authRequested = true
                         await load()
                     }
-                } label: {
-                    Text("Connect Apple Health →")
-                        .font(.system(size: 15, weight: .semibold)).foregroundStyle(VT.dose)
-                        .frame(minHeight: 44).contentShape(Rectangle())
                 }
-                .buttonStyle(.plain)
             }
             Text("From Apple Health. Whoop, Oura, and Fitbit can sync their data there.")
                 .font(.system(size: 12)).foregroundStyle(VT.micro)
@@ -132,6 +152,7 @@ struct VitalsCard: View {
         loading = true
         series = await provider.series(days: 60)
         loading = false
+        hasLoaded = true
         #if DEBUG
         if ProcessInfo.processInfo.environment["VITA_OPEN_VITALS"] == "1",
            !(series?.isEmpty ?? true) { showDetail = true }
@@ -151,8 +172,9 @@ private struct StatTile: View {
         let recent = VitalsInsightEngine.recentAverage(s, asOf: Date())
         let base = VitalsInsightEngine.baseline(s, asOf: Date())
         return VStack(alignment: .leading, spacing: 3) {
-            Text(metric.title.uppercased())
+            Text(metric.chipTitle.uppercased())
                 .font(.system(size: 11, weight: .semibold)).tracking(0.4).foregroundStyle(VT.micro)
+                .lineLimit(1).minimumScaleFactor(0.85)
             if let recent {
                 HStack(alignment: .firstTextBaseline, spacing: 3) {
                     Text(fmt(recent)).font(.system(size: 20, weight: .semibold)).vtTabular().foregroundStyle(VT.ink)
