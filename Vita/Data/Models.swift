@@ -112,33 +112,9 @@ final class AppSettings {
     var rxAcknowledgedSlugs: [String] = []
     var notificationsEnabled: Bool = true
     var labConsentedAt: Date?     // one-time consent: lab images leave the device to be read (M8b)
-    var shopApprovalRaw: String = ShopApproval.none.rawValue   // medical-approval gate (M36, UI-only)
     var profile: UserProfile?
     init() {}
     static let singletonID = UUID(uuidString: "00000000-0000-0000-0000-000000000002")!
-
-    var shopApproval: ShopApproval {
-        get { ShopApproval(rawValue: shopApprovalRaw) ?? .none }
-        set { shopApprovalRaw = newValue.rawValue }
-    }
-}
-
-/// One line in the shop cart. Denormalized (no relationship) like DoseLog so it
-/// survives independent of the JSON catalog. CloudKit-legal: defaulted, no inverse.
-@Model
-final class ShopCartItem {
-    var id: UUID = UUID()
-    var productCode: String = ""
-    var compound: String = ""
-    var strength: String = ""
-    var categoryRaw: String = PeptideCategory.other.rawValue
-    var unitPriceUSD: Double = 0
-    var quantity: Int = 1
-    var addedAt: Date = Date.now
-    init() {}
-
-    var category: PeptideCategory { PeptideCategory(rawValue: categoryRaw) ?? .other }
-    var lineTotalUSD: Double { unitPriceUSD * Double(quantity) }
 }
 
 @Model
