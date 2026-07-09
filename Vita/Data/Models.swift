@@ -114,6 +114,12 @@ final class AppSettings {
     var customRxOverrides: [String] = []
     var rxAcknowledgedSlugs: [String] = []
     var notificationsEnabled: Bool = true
+    // Notification depth (all defaulted, CloudKit-legal).
+    var quietHoursEnabled: Bool = false
+    var quietStartMinutes: Int = 1320     // 10:00 PM
+    var quietEndMinutes: Int = 420        // 7:00 AM
+    var preDoseLeadMinutes: Int = 0       // 0 | 10 | 30 | 60 ("remind me before")
+    var latePingEnabled: Bool = true      // one gentle overdue follow-up
     var labConsentedAt: Date?     // one-time consent: lab images leave the device to be read (M8b)
     var appearancePreferenceRaw: String = AppAppearance.system.rawValue   // system | light | dark
     var profile: UserProfile?

@@ -76,6 +76,133 @@ final class NotificationManagerTests: XCTestCase {
         XCTAssertTrue(notices.isEmpty)
     }
 
+    // MARK: - Notification depth (quiet hours, pre-dose lead, late pings)
+
+    private func prefs(quiet: Bool = false, start: Int = 1320, end: Int = 420,
+                       lead: Int = 0, late: Bool = true) -> NotificationManager.Prefs {
+        .init(quietEnabled: quiet, quietStart: start, quietEnd: end, preLead: lead, latePing: late)
+    }
+
+    private func at(_ hour: Int, _ minute: Int = 0, dayOffset: Int = 0) -> Date {
+        let day = cal.date(byAdding: .day, value: dayOffset, to: today)!
+        return cal.date(bySettingHour: hour, minute: minute, second: 0, of: day)!
+    }
+
+    func testQuietWindowWrapAndBoundaries() {
+        let p = prefs(quiet: true)                                  // 22:00 -> 07:00, wraps
+        XCTAssertTrue(NotificationManager.inQuietWindow(at(23), prefs: p, calendar: cal))
+        XCTAssertTrue(NotificationManager.inQuietWindow(at(3), prefs: p, calendar: cal))
+        XCTAssertTrue(NotificationManager.inQuietWindow(at(22), prefs: p, calendar: cal))   // start inclusive
+        XCTAssertFalse(NotificationManager.inQuietWindow(at(7), prefs: p, calendar: cal))   // end exclusive
+        XCTAssertFalse(NotificationManager.inQuietWindow(at(12), prefs: p, calendar: cal))
+
+        let day = prefs(quiet: true, start: 13 * 60, end: 15 * 60)  // non-wrapping
+        XCTAssertTrue(NotificationManager.inQuietWindow(at(14), prefs: day, calendar: cal))
+        XCTAssertFalse(NotificationManager.inQuietWindow(at(16), prefs: day, calendar: cal))
+
+        let off = prefs(quiet: true, start: 600, end: 600)          // start == end -> disabled
+        XCTAssertFalse(NotificationManager.inQuietWindow(at(10), prefs: off, calendar: cal))
+        XCTAssertFalse(NotificationManager.inQuietWindow(at(23), prefs: prefs(), calendar: cal)) // toggle off
+    }
+
+    func testShiftToQuietEndCrossesMidnight() {
+        let p = prefs(quiet: true)
+        // 23:00 tonight shifts to 07:00 TOMORROW.
+        let shifted = NotificationManager.shiftedToQuietEnd(at(23), prefs: p, calendar: cal)
+        XCTAssertEqual(shifted, at(7, dayOffset: 1))
+        // 03:00 shifts to 07:00 the same morning.
+        XCTAssertEqual(NotificationManager.shiftedToQuietEnd(at(3), prefs: p, calendar: cal), at(7))
+        // Outside the window: untouched.
+        XCTAssertEqual(NotificationManager.shiftedToQuietEnd(at(12), prefs: p, calendar: cal), at(12))
+    }
+
+    func testNoticesShiftDoseRemindersDoNot() {
+        let p = prefs(quiet: true)
+        let it = item(.daily, times: [23 * 60])                     // 11 PM dose, inside quiet
+        let reminders = NotificationManager.plan(for: [it], logs: [], from: at(12), calendar: cal)
+        // Dose reminders keep their exact scheduled time.
+        XCTAssertTrue(reminders.allSatisfy {
+            cal.component(.hour, from: $0.fireDate) == 23
+        })
+        // Advisory notices shift to the quiet end.
+        let notice = NotificationManager.PlannedNotice(
+            id: "vial-low-x-1", title: "t", body: "b", itemID: it.id, fireDate: at(23))
+        let shifted = NotificationManager.applyQuietHours(notices: [notice], prefs: p, calendar: cal)
+        XCTAssertEqual(shifted.first?.fireDate, at(7, dayOffset: 1))
+    }
+
+    func testPreRemindersLeadDropAndIds() {
+        let it = item(.daily, times: [9 * 60])
+        let reminders = NotificationManager.plan(for: [it], logs: [], from: at(6), calendar: cal)
+        let pre = NotificationManager.preReminders(from: reminders, prefs: prefs(lead: 30),
+                                                   now: at(6), calendar: cal)
+        XCTAssertFalse(pre.isEmpty)
+        XCTAssertTrue(pre.allSatisfy { $0.id.hasPrefix("pre-") })
+        // Fires 30 minutes before the paired dose reminder.
+        XCTAssertEqual(pre.first!.fireDate,
+                       reminders.first!.fireDate.addingTimeInterval(-1800))
+        // Lead 0 -> none.
+        XCTAssertTrue(NotificationManager.preReminders(from: reminders, prefs: prefs(lead: 0),
+                                                       now: at(6), calendar: cal).isEmpty)
+        // A pre-fire inside quiet hours is dropped, not shifted.
+        let nightOwl = item(.daily, times: [23 * 60])
+        let nightReminders = NotificationManager.plan(for: [nightOwl], logs: [], from: at(12), calendar: cal)
+        let quietPre = NotificationManager.preReminders(
+            from: nightReminders, prefs: prefs(quiet: true, lead: 30), now: at(12), calendar: cal)
+        XCTAssertTrue(quietPre.isEmpty)     // 22:30 is inside 22:00-07:00
+    }
+
+    func testLatePingsDelayIdsAndToggle() {
+        let it = item(.daily, times: [9 * 60])
+        let reminders = NotificationManager.plan(for: [it], logs: [], from: at(6), calendar: cal)
+        let late = NotificationManager.latePings(from: reminders, prefs: prefs(),
+                                                 now: at(6), calendar: cal)
+        XCTAssertFalse(late.isEmpty)
+        XCTAssertTrue(late.allSatisfy { $0.id.hasPrefix("late-") })
+        XCTAssertEqual(late.first!.fireDate,
+                       reminders.first!.fireDate.addingTimeInterval(45 * 60))
+        // One per occurrence (derived 1:1 from the plan).
+        XCTAssertEqual(late.count, reminders.count)
+        // Toggle off -> none.
+        XCTAssertTrue(NotificationManager.latePings(from: reminders, prefs: prefs(late: false),
+                                                    now: at(6), calendar: cal).isEmpty)
+        // Acted occurrences are structurally excluded (plan already drops them).
+        let acted = [log(it, minutes: 9 * 60)]
+        let remindersAfterLog = NotificationManager.plan(for: [it], logs: acted, from: at(6), calendar: cal)
+        let lateAfter = NotificationManager.latePings(from: remindersAfterLog, prefs: prefs(),
+                                                      now: at(6), calendar: cal)
+        XCTAssertFalse(lateAfter.contains { cal.isDate($0.fireDate, inSameDayAs: today) })
+    }
+
+    /// Structural guard for the historical stale-notification bug: every id any
+    /// planner emits must carry a prefix the rebuild sweep manages.
+    func testEveryPlannedIdHasManagedPrefix() {
+        let injectable = item(.daily, times: [9 * 60])
+        let cycled: ProtocolItem = {
+            let it = item(.daily, times: [8 * 60], name: "Cycled")
+            it.schedule!.cycleOnDays = 5; it.schedule!.cycleOffDays = 2
+            it.schedule!.titrationDayStarts = [0, 7]; it.schedule!.titrationDoses = [250, 500]
+            return it
+        }()
+        let vialed = withVial(item(.daily, times: [10 * 60], name: "Vialed"), mg: 1)
+
+        var ids: [String] = []
+        let reminders = NotificationManager.plan(for: [injectable, cycled, vialed], logs: [],
+                                                 from: at(6), calendar: cal)
+        ids += reminders.map(\.id)
+        ids += NotificationManager.decisionNotices(for: [cycled], from: at(6), calendar: cal).map(\.id)
+        ids += NotificationManager.vialNotices(for: [vialed], logs: [], from: at(6), calendar: cal).map(\.id)
+        ids += NotificationManager.preReminders(from: reminders, prefs: prefs(lead: 30),
+                                                now: at(6), calendar: cal).map(\.id)
+        ids += NotificationManager.latePings(from: reminders, prefs: prefs(),
+                                             now: at(6), calendar: cal).map(\.id)
+        XCTAssertFalse(ids.isEmpty)
+        for id in ids {
+            XCTAssertTrue(NotificationManager.managedPrefixes.contains { id.hasPrefix($0) },
+                          "unmanaged id would leak: \(id)")
+        }
+    }
+
     func testMaterializedFutureOnly() {
         // Daily with a morning (past at noon) + evening (future) slot.
         let plan = NotificationManager.plan(for: [item(.daily, times: [8 * 60, 21 * 60])],

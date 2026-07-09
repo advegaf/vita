@@ -48,10 +48,13 @@ struct DoseLogger {
         WidgetBridge.update(context: context)   // drop this occurrence's reminder
         // An ALREADY-DELIVERED banner for this occurrence would keep stale
         // Log/Skip actions in Notification Center (a stale Skip flips a taken
-        // dose); rebuild only clears pending ones.
+        // dose); rebuild only clears pending ones. Pre-alerts and late pings share
+        // the id tail, so clear those delivered copies too.
+        let doseID = NotificationManager.reminderID(itemID: item.id, day: start,
+                                                    minutes: occurrence.minutes)
+        let tail = doseID.dropFirst("dose-".count)
         UNUserNotificationCenter.current().removeDeliveredNotifications(
-            withIdentifiers: [NotificationManager.reminderID(itemID: item.id, day: start,
-                                                             minutes: occurrence.minutes)])
+            withIdentifiers: [doseID, "pre-\(tail)", "late-\(tail)"])
         return log
     }
 

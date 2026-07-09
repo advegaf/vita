@@ -236,7 +236,96 @@ struct SettingsView: View {
                 }
                 .font(.system(size: 15, weight: .semibold)).foregroundStyle(VT.dose).buttonStyle(.plain)
             }
+            if settings?.notificationsEnabled ?? true {
+                Rectangle().fill(VT.hairline).frame(height: 1).padding(.vertical, 2)
+                quietHoursRows
+                remindBeforeRow
+                latePingRow
+            }
         }
+    }
+
+    // MARK: Notification depth (quiet hours, pre-dose lead, overdue re-ping)
+
+    @ViewBuilder
+    private var quietHoursRows: some View {
+        HStack {
+            Text("Quiet hours").font(.system(size: 15)).foregroundStyle(VT.body)
+            Spacer()
+            PillToggle(title: (settings?.quietHoursEnabled ?? false) ? "On" : "Off",
+                       isOn: settings?.quietHoursEnabled ?? false, fillsWidth: false) {
+                settings?.quietHoursEnabled.toggle()
+                saveAndRebuild()
+            }
+        }
+        if settings?.quietHoursEnabled == true {
+            HStack {
+                Text("From").font(.system(size: 15)).foregroundStyle(VT.body)
+                Spacer()
+                DatePicker("", selection: minutesBinding(\.quietStartMinutes),
+                           displayedComponents: .hourAndMinute).labelsHidden()
+            }
+            HStack {
+                Text("Until").font(.system(size: 15)).foregroundStyle(VT.body)
+                Spacer()
+                DatePicker("", selection: minutesBinding(\.quietEndMinutes),
+                           displayedComponents: .hourAndMinute).labelsHidden()
+            }
+            Text("Advisory notices wait until quiet hours end. Dose reminders still fire at their scheduled time.")
+                .font(.system(size: 12)).foregroundStyle(VT.micro)
+        }
+    }
+
+    private var remindBeforeRow: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Remind before").font(.system(size: 15)).foregroundStyle(VT.body)
+            HStack(spacing: 8) {
+                ForEach([0, 10, 30, 60], id: \.self) { m in
+                    PillToggle(title: m == 0 ? "Off" : "\(m)m",
+                               isOn: (settings?.preDoseLeadMinutes ?? 0) == m, fillsWidth: false) {
+                        settings?.preDoseLeadMinutes = m
+                        saveAndRebuild()
+                    }
+                }
+            }
+        }
+    }
+
+    private var latePingRow: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text("Overdue follow-up").font(.system(size: 15)).foregroundStyle(VT.body)
+                Spacer()
+                PillToggle(title: (settings?.latePingEnabled ?? true) ? "On" : "Off",
+                           isOn: settings?.latePingEnabled ?? true, fillsWidth: false) {
+                    settings?.latePingEnabled.toggle()
+                    saveAndRebuild()
+                }
+            }
+            Text("One quiet follow-up about 45 minutes after a missed reminder.")
+                .font(.system(size: 12)).foregroundStyle(VT.micro)
+        }
+    }
+
+    private func saveAndRebuild() {
+        context.saveLogged("SettingsView")
+        NotificationManager.rebuild(context: context)
+    }
+
+    /// Binds a minutes-from-midnight Int on AppSettings to a DatePicker Date.
+    private func minutesBinding(_ key: ReferenceWritableKeyPath<AppSettings, Int>) -> Binding<Date> {
+        Binding<Date>(
+            get: {
+                let m = settings?[keyPath: key] ?? 0
+                return Calendar.current.date(bySettingHour: m / 60, minute: m % 60,
+                                             second: 0, of: Date()) ?? Date()
+            },
+            set: { d in
+                let c = Calendar.current.dateComponents([.hour, .minute], from: d)
+                settings?[keyPath: key] = (c.hour ?? 0) * 60 + (c.minute ?? 0)
+                saveAndRebuild()
+            }
+        )
     }
 
     // MARK: AI / API key

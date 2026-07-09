@@ -93,6 +93,11 @@ enum NotificationManager {
     static let maxPending = 60          // stay under the iOS 64-pending cap
     static let categoryID = "DOSE_REMINDER"
 
+    /// EVERY id prefix this manager plans. The rebuild sweep removes only these, so
+    /// a planner emitting an unlisted prefix would leak stale requests forever —
+    /// the exhaustive-prefix test in NotificationManagerTests guards this invariant.
+    nonisolated static let managedPrefixes = ["dose-", "titr-", "resume-", "vial-", "pre-", "late-"]
+
     struct PlannedReminder: Equatable {
         var id: String
         var title: String
@@ -260,6 +265,100 @@ enum NotificationManager {
         return out.sorted { $0.fireDate < $1.fireDate }
     }
 
+    // MARK: Notification depth (quiet hours, pre-dose lead, overdue re-ping) — pure
+
+    /// Value-type prefs so the planners stay container-free and testable.
+    struct Prefs: Equatable, Sendable {
+        var quietEnabled = false
+        var quietStart = 1320      // minutes-from-midnight
+        var quietEnd = 420
+        var preLead = 0            // minutes before the dose; 0 = off
+        var latePing = true
+
+        @MainActor static func from(_ s: AppSettings) -> Prefs {
+            Prefs(quietEnabled: s.quietHoursEnabled, quietStart: s.quietStartMinutes,
+                  quietEnd: s.quietEndMinutes, preLead: s.preDoseLeadMinutes,
+                  latePing: s.latePingEnabled)
+        }
+    }
+
+    /// True when `date` falls inside the quiet window. Handles the midnight wrap
+    /// (start > end spans midnight); start == end means effectively disabled.
+    nonisolated static func inQuietWindow(_ date: Date, prefs: Prefs,
+                                          calendar: Calendar = .current) -> Bool {
+        guard prefs.quietEnabled, prefs.quietStart != prefs.quietEnd else { return false }
+        let m = calendar.component(.hour, from: date) * 60 + calendar.component(.minute, from: date)
+        if prefs.quietStart < prefs.quietEnd {
+            return m >= prefs.quietStart && m < prefs.quietEnd
+        }
+        return m >= prefs.quietStart || m < prefs.quietEnd   // wraps midnight
+    }
+
+    /// The end of the quiet window containing (or after) `date` — where an advisory
+    /// notice shifts to. Adds a day when the window wraps past midnight.
+    nonisolated static func shiftedToQuietEnd(_ date: Date, prefs: Prefs,
+                                              calendar: Calendar = .current) -> Date {
+        guard inQuietWindow(date, prefs: prefs, calendar: calendar) else { return date }
+        let m = calendar.component(.hour, from: date) * 60 + calendar.component(.minute, from: date)
+        let dayStart = calendar.startOfDay(for: date)
+        // In a wrapping window, times at/after quietStart resolve to TOMORROW's end.
+        let endsTomorrow = prefs.quietStart > prefs.quietEnd && m >= prefs.quietStart
+        let endDay = endsTomorrow
+            ? (calendar.date(byAdding: .day, value: 1, to: dayStart) ?? dayStart) : dayStart
+        return calendar.date(bySettingHour: prefs.quietEnd / 60, minute: prefs.quietEnd % 60,
+                             second: 0, of: endDay) ?? date
+    }
+
+    /// Advisory notices (titr/resume/vial) shift out of quiet hours; dose reminders
+    /// are NEVER shifted (the user scheduled that time).
+    nonisolated static func applyQuietHours(notices: [PlannedNotice], prefs: Prefs,
+                                            calendar: Calendar = .current) -> [PlannedNotice] {
+        notices.map { n in
+            var out = n
+            out.fireDate = shiftedToQuietEnd(n.fireDate, prefs: prefs, calendar: calendar)
+            return out
+        }
+    }
+
+    /// "Coming up" lead reminders derived 1:1 from the dose plan. Dropped inside
+    /// quiet hours (a shifted pre-alert could land after the dose itself) and when
+    /// already past. Same userInfo/category as the dose reminder so Log works early.
+    static func preReminders(from reminders: [PlannedReminder], prefs: Prefs,
+                             now: Date = Date(),
+                             calendar: Calendar = .current) -> [PlannedReminder] {
+        guard prefs.preLead > 0 else { return [] }
+        return reminders.compactMap { r in
+            let fire = r.fireDate.addingTimeInterval(-Double(prefs.preLead) * 60)
+            guard fire > now, !inQuietWindow(fire, prefs: prefs, calendar: calendar) else { return nil }
+            return PlannedReminder(
+                id: "pre-" + r.id.dropFirst("dose-".count),
+                title: "Coming up: \(r.title.replacingOccurrences(of: "Time to pin ", with: ""))",
+                body: r.body, itemID: r.itemID, minutes: r.minutes, fireDate: fire)
+        }
+    }
+
+    /// One gentle follow-up ~45 minutes after an unacted dose reminder. Structural
+    /// one-per-occurrence: deterministic id + the source plan already excludes acted
+    /// occurrences, and every log triggers a rebuild that sweeps stale ids.
+    static let latePingDelayMinutes = 45
+
+    static func latePings(from reminders: [PlannedReminder], prefs: Prefs,
+                          now: Date = Date(),
+                          calendar: Calendar = .current) -> [PlannedReminder] {
+        guard prefs.latePing else { return [] }
+        return reminders.compactMap { r in
+            let fire = r.fireDate.addingTimeInterval(Double(latePingDelayMinutes) * 60)
+            guard fire > now, !inQuietWindow(fire, prefs: prefs, calendar: calendar) else { return nil }
+            let name = r.title.replacingOccurrences(of: "Time to pin ", with: "")
+            let time = DoseOccurrence(itemID: r.itemID, minutes: r.minutes).timeText
+            return PlannedReminder(
+                id: "late-" + r.id.dropFirst("dose-".count),
+                title: "Still pending: \(name)",
+                body: "Scheduled for \(time). Log or skip when you are ready.",
+                itemID: r.itemID, minutes: r.minutes, fireDate: fire)
+        }
+    }
+
     // MARK: Action helpers (pure, testable)
 
     nonisolated static func status(forAction id: String) -> DoseStatus? {
@@ -300,9 +399,11 @@ enum NotificationManager {
 
         let items = (try? context.fetch(FetchDescriptor<ProtocolItem>())) ?? []
         let logs = (try? context.fetch(FetchDescriptor<DoseLog>())) ?? []
+        let prefs = Prefs.from(settings)
         let allReminders = plan(for: items, logs: logs)
-        let allNotices = decisionNotices(for: items)
-        let allVialNotices = vialNotices(for: items, logs: logs)
+        // Advisory notices shift out of quiet hours; dose reminders never do.
+        let allNotices = applyQuietHours(notices: decisionNotices(for: items), prefs: prefs)
+        let allVialNotices = applyQuietHours(notices: vialNotices(for: items, logs: logs), prefs: prefs)
         // A dense reminder stack must not starve change or vial notices: reserve slots
         // for each before reminders take the rest.
         let reservedNotices = min(allNotices.count, 8)
@@ -310,6 +411,13 @@ enum NotificationManager {
         let reminders = Array(allReminders.prefix(maxPending - reservedNotices - reservedVial))
         let notices = Array(allNotices.prefix(maxPending - reminders.count - reservedVial))
         let vialN = Array(allVialNotices.prefix(maxPending - reminders.count - notices.count))
+        // Pre-dose leads + overdue re-pings are conveniences: they fill LEFTOVER
+        // budget only and never displace a real dose reminder or notice.
+        let leftover = maxPending - reminders.count - notices.count - vialN.count
+        let extras = Array((preReminders(from: reminders, prefs: prefs)
+                            + latePings(from: reminders, prefs: prefs))
+            .sorted { $0.fireDate < $1.fireDate }
+            .prefix(max(0, leftover)))
 
         // Replace only OUR pending requests — an in-flight one-shot "Snooze 15m"
         // copy (`snooze-*`) must survive a rebuild (any dose log or stack edit
@@ -320,18 +428,19 @@ enum NotificationManager {
         Task { @MainActor in
             let pending = await center.pendingNotificationRequests()
             guard gen == rebuildGeneration else { return }   // superseded by a newer rebuild
-            let managed = pending.map(\.identifier).filter {
-                $0.hasPrefix("dose-") || $0.hasPrefix("titr-") || $0.hasPrefix("resume-")
-                    || $0.hasPrefix("vial-")
+            let managed = pending.map(\.identifier).filter { id in
+                Self.managedPrefixes.contains { id.hasPrefix($0) }
             }
             center.removePendingNotificationRequests(withIdentifiers: managed)
 
-            for r in reminders {
+            for r in reminders + extras {
                 let content = UNMutableNotificationContent()
                 content.title = r.title
                 content.body = r.body
                 content.sound = .default
-                content.interruptionLevel = .timeSensitive
+                // Only the true dose-time reminder is time-sensitive; pre-alerts and
+                // the overdue follow-up are ordinary interruptions.
+                content.interruptionLevel = r.id.hasPrefix("dose-") ? .timeSensitive : .active
                 content.categoryIdentifier = categoryID
                 content.userInfo = [
                     "itemID": r.itemID.uuidString,
@@ -356,8 +465,8 @@ enum NotificationManager {
                 try? await center.add(UNNotificationRequest(identifier: n.id, content: content, trigger: trigger))
             }
             #if DEBUG
-            NSLog("vita-notif: scheduled %d reminders + %d notices + %d vial",
-                  reminders.count, notices.count, vialN.count)
+            NSLog("vita-notif: scheduled %d reminders + %d notices + %d vial + %d pre/late",
+                  reminders.count, notices.count, vialN.count, extras.count)
             #endif
         }
     }
