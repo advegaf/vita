@@ -104,14 +104,29 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: com.example.vita.tests
         GENERATE_INFOPLIST_FILE: YES
 
+  VitaUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: VitaUITests
+    dependencies:
+      - target: Vita
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.vita.uitests
+        GENERATE_INFOPLIST_FILE: YES
+
 schemes:
   Vita:
     build:
       targets:
         Vita: all
         VitaTests: [test]
+        VitaUITests: [test]
     test:
       targets:
         - VitaTests
+        - VitaUITests
     run:
       config: Debug

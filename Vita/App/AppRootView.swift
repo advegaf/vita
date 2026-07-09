@@ -15,12 +15,23 @@ struct AppRootView: View {
 
     var body: some View {
         Group {
+            #if DEBUG
+            if ProcessInfo.processInfo.environment["VITA_SPIKE_CARD"] == "1" {
+                SpikeCardView()
+            } else if onboarded {
+                RootTabView()
+            } else {
+                OnboardingWizard()
+                    .transition(.opacity)
+            }
+            #else
             if onboarded {
                 RootTabView()
             } else {
                 OnboardingWizard()
                     .transition(.opacity)
             }
+            #endif
         }
         .animation(.easeInOut(duration: 0.3), value: onboarded)
         .preferredColorScheme(appearance.colorScheme)
