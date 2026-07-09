@@ -160,7 +160,7 @@ struct StackRow: View {
             VStack(alignment: .leading, spacing: 3) {
                 Text(item.displayName)
                     .font(.system(size: 16, weight: .semibold)).foregroundStyle(VT.ink)
-                    .lineLimit(1).minimumScaleFactor(0.85)
+                    .lineLimit(2)
                 Text(stackRowSubtitle)
                     .font(.system(size: 13)).vtTabular().foregroundStyle(VT.body)
                     .lineLimit(2)

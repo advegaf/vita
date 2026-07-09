@@ -11,25 +11,19 @@ struct AppRootView: View {
     // Empty pre-onboarding query -> nil -> follow the system.
     private var appearance: AppAppearance { settingsList.first?.appearance ?? .system }
 
-    /// Welcome gate: the hero screen shows once before onboarding begins.
-    @AppStorage("vita.welcomed") private var welcomed = false
     @State private var showCalcDebug = false
 
     var body: some View {
         Group {
             if onboarded {
                 RootTabView()
-            } else if welcomed {
-                OnboardingWizard()
-                    .transition(.opacity)
             } else {
-                HeroWelcomeView { withAnimation(.easeInOut(duration: 0.3)) { welcomed = true } }
+                OnboardingWizard()
                     .transition(.opacity)
             }
         }
         .animation(.easeInOut(duration: 0.3), value: onboarded)
-        // Dark scheme over the welcome photo (light status bar); user preference after.
-        .preferredColorScheme((onboarded || welcomed) ? appearance.colorScheme : .dark)
+        .preferredColorScheme(appearance.colorScheme)
         #if DEBUG
         .task {
             if ProcessInfo.processInfo.environment["VITA_LAB_SELFTEST"] == "1" {

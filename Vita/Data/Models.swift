@@ -92,9 +92,6 @@ final class Goal {
 final class UserProfile {
     var id: UUID = UserProfile.singletonID
     var createdAt: Date = Date.now
-    /// First name for the Home greeting ("Welcome back, Angel"). Optional feel:
-    /// empty = greet without a name.
-    var displayName: String = ""
     var selectedGoalKinds: [String] = []
     var consentedAt: Date?      // educational/non-medical-advice consent
     var onboardedAt: Date?      // wizard finished; nil = show onboarding

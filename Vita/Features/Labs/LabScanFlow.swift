@@ -92,7 +92,7 @@ struct LabScanFlow: View {
             Button {
                 NotificationRouter.shared.pendingChatPrompt =
                     LabGrounding.stackReviewPrompt(panels: LabService(context: context).panels())
-                NotificationRouter.shared.showChat = true
+                NotificationRouter.shared.pendingTab = .chat
                 dismiss()
             } label: {
                 Text("Ask vita to review your plan →")

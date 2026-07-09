@@ -11,15 +11,11 @@ struct TodayView: View {
     @Query(sort: [SortDescriptor(\ProtocolItem.sortIndex), SortDescriptor(\ProtocolItem.addedAt)])
     private var items: [ProtocolItem]
     @Query private var logs: [DoseLog]
-    @Query private var profiles: [UserProfile]
-    @Query private var panels: [LabPanel]
 
     @State private var selectedBlock: String?
     @State private var showSettings = false
     @State private var editDraft: DoseDraft?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    /// Set by the Health connect flows (onboarding + Settings); drives the setup card.
-    @AppStorage("vita.healthConnected") private var healthConnected = false
 
     private var logger: DoseLogger { DoseLogger(context: context) }
 
@@ -49,35 +45,6 @@ struct TodayView: View {
         NotificationRouter.shared.pendingDetailItemID = item.id
     }
     private var prnItems: [ProtocolItem] { items.filter { ($0.schedule?.frequency ?? .daily) == .prn } }
-
-    // MARK: Wellness snapshot (score + adherence + biomarker mix)
-
-    private var firstName: String {
-        let name = profiles.first?.displayName.trimmingCharacters(in: .whitespaces) ?? ""
-        return name.split(separator: " ").first.map(String.init) ?? ""
-    }
-
-    private var initials: String {
-        let parts = (profiles.first?.displayName ?? "").split(separator: " ").prefix(2)
-        let letters = parts.compactMap { $0.first.map(String.init) }.joined()
-        return letters.isEmpty ? "V" : letters.uppercased()
-    }
-
-    /// Latest panel's marker statuses + 30-day adherence across scheduled items.
-    private func wellness(now: Date) -> (result: HealthScore.Result, logged: Int, scheduled: Int) {
-        let latest = panels.max { $0.effectiveDate < $1.effectiveDate }
-        let statuses = (latest?.values ?? []).compactMap {
-            HealthScore.classify(value: $0.qualitativeText == nil ? $0.value : nil,
-                                 refLow: $0.refLow, refHigh: $0.refHigh)
-        }
-        var logged = 0, scheduled = 0
-        for item in items where (item.schedule?.frequency ?? .daily) != .prn {
-            let s = Adherence.summary(item: item, logs: logs, asOf: now)
-            logged += s.logged; scheduled += s.scheduled
-        }
-        return (HealthScore.compute(statuses: statuses, adherenceLogged: logged,
-                                    adherenceScheduled: scheduled), logged, scheduled)
-    }
 
     /// A single quiet line when any vial is running low (nil otherwise). Taps into Stack.
     private var lowVialLine: String? {
@@ -125,52 +92,28 @@ struct TodayView: View {
         let restingByBlock = restingItemsByBlock(on: now)
         let hasResting = restingByBlock.values.contains { !$0.isEmpty }
 
-        let snap = wellness(now: now)
-        let hasLabs = snap.result.hasLabs
-
         return ScrollView {
             VStack(alignment: .leading, spacing: VT.sCardGap) {
-                HStack(alignment: .center, spacing: 12) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(firstName.isEmpty ? "Welcome back." : "Welcome back, \(firstName).")
-                            .vtHeadlineStyle()
-                        Text(total > 0 ? countLine(remaining: remaining) : currentBlock.greeting)
-                            .font(.system(size: 15)).foregroundStyle(VT.body)
-                            .contentTransition(.numericText())
-                    }
-                    Spacer()
-                    Button { showSettings = true } label: {
-                        Text(initials)
-                            .font(.system(size: 15, weight: .semibold)).foregroundStyle(VT.ink)
-                            .frame(width: 42, height: 42)
-                            .background(VT.card, in: Circle())
-                            .overlay(Circle().strokeBorder(VT.hairline, lineWidth: 1))
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel("Profile and settings")
-                }
-                .padding(.top, 8).padding(.bottom, 2)
+                TopBarPill(onMenu: { showSettings = true }).padding(.bottom, 4)
 
-                if !items.isEmpty || hasLabs {
-                    HStack(spacing: 12) {
-                        HealthScoreCard(result: snap.result)
-                        AdherenceHeroCard(logged: snap.logged, scheduled: snap.scheduled)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("TODAY")
+                        .font(.system(size: 12, weight: .medium)).tracking(0.4)
+                        .textCase(.uppercase).foregroundStyle(VT.micro)
+                    VStack(alignment: .leading, spacing: 0) {
+                        if total > 0 {
+                            Text(countLine(remaining: remaining))
+                                .contentTransition(.numericText())
+                        }
+                        Text(currentBlock.greeting)
                     }
+                    .vtHeadlineStyle()
                 }
-
-                if hasLabs {
-                    BiomarkerSummaryCard(result: snap.result) {
-                        NotificationRouter.shared.pendingTab = .data
-                    }
-                }
+                .padding(.bottom, 2)
 
                 if items.isEmpty {
-                    setupSection
+                    emptyStack
                 } else {
-                    Text("TODAY'S PROTOCOL")
-                        .font(.system(size: 12, weight: .medium)).tracking(0.4)
-                        .foregroundStyle(VT.micro)
-                        .padding(.top, 8)
                     Group {
                         if total == 0 && !hasResting {
                             RestDayCard()
@@ -205,7 +148,7 @@ struct TodayView: View {
                     }
 
                     if let lowVialLine {
-                        Button { NotificationRouter.shared.pendingTab = .protocolTab } label: {
+                        Button { NotificationRouter.shared.pendingTab = .stack } label: {
                             HStack(spacing: 4) {
                                 Text(lowVialLine)
                                     .font(.system(size: 14, weight: .semibold)).foregroundStyle(VT.body)
@@ -218,54 +161,12 @@ struct TodayView: View {
                     }
 
                     if !prnItems.isEmpty { asNeededCard(now: now) }
-
-                    if !setupSteps.isEmpty { setupSection.padding(.top, 8) }
                 }
             }
             .padding(VT.sSection)
-            .padding(.bottom, 92)   // room to scroll clear of the floating dock
         }
         .scrollIndicators(.hidden)
         .background(VT.canvas)
-    }
-
-    // MARK: Setup cards ("Help us know you better")
-
-    private struct SetupStep: Identifiable {
-        let id: String; let title: String; let symbol: String; let go: () -> Void
-    }
-
-    private var setupSteps: [SetupStep] {
-        var out: [SetupStep] = []
-        if !healthConnected {
-            out.append(.init(id: "health", title: "Connect Apple Health", symbol: "heart.fill",
-                             go: { showSettings = true }))
-        }
-        if panels.isEmpty {
-            out.append(.init(id: "labs", title: "Scan your bloodwork", symbol: "doc.text.viewfinder",
-                             go: { NotificationRouter.shared.pendingTab = .data }))
-        }
-        if items.isEmpty {
-            out.append(.init(id: "protocol", title: "Build your protocol",
-                             symbol: "list.bullet.rectangle.portrait.fill",
-                             go: { NotificationRouter.shared.pendingTab = .protocolTab }))
-        }
-        return out
-    }
-
-    private var setupSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("Help us know you better")
-                    .font(.system(size: 20, weight: .semibold)).foregroundStyle(VT.ink)
-                Spacer()
-                Text("\(3 - setupSteps.count) of 3")
-                    .font(.system(size: 14)).vtTabular().foregroundStyle(VT.micro)
-            }
-            ForEach(setupSteps) { step in
-                SetupCard(title: step.title, symbol: step.symbol, action: step.go)
-            }
-        }
     }
 
     // MARK: Up next FocusCard
@@ -428,6 +329,16 @@ struct TodayView: View {
         if mins < 1 { return "just now" }
         if mins < 60 { return "\(mins)m ago" }
         return "\(mins / 60)h ago"
+    }
+
+    private var emptyStack: some View {
+        VStack(spacing: 12) {
+            Text("Nothing scheduled yet.")
+                .font(.vtHeadline).foregroundStyle(VT.ink).multilineTextAlignment(.center)
+            Text("Add peptides to your stack and they'll show up here.")
+                .font(.system(size: 15)).foregroundStyle(VT.body).multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity).padding(.top, 56)
     }
 
     // MARK: Derived state helpers

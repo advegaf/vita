@@ -16,7 +16,6 @@ struct SettingsView: View {
     // Profile mirrors (loaded from the profile on appear; persisted on blur/Done).
     @State private var ageText = ""
     @State private var sex = ""
-    @State private var nameText = ""
     @State private var weightText = ""
     @State private var heightCmText = ""
     @State private var feetText = ""
@@ -117,11 +116,6 @@ struct SettingsView: View {
 
     private var profileCard: some View {
         card("Profile.", VT.dose) {
-            vtFieldShell("Name") {
-                TextField("Optional", text: $nameText).focused($editing)
-                    .textContentType(.givenName)
-                    .font(.system(size: 17, weight: .semibold)).foregroundStyle(VT.ink)
-            }
             vtPlainField("Age", text: $ageText, suffix: "yrs", keyboard: .numberPad, focus: $editing)
             VStack(alignment: .leading, spacing: 6) {
                 Text("Sex").font(.system(size: 13)).foregroundStyle(VT.micro)
@@ -564,7 +558,6 @@ struct SettingsView: View {
 
     private func loadProfile() {
         guard let p = profile else { return }
-        nameText = p.displayName
         if let b = p.birthDate {
             ageText = Calendar.current.dateComponents([.year], from: b, to: Date()).year.map(String.init) ?? ""
         }
@@ -580,7 +573,6 @@ struct SettingsView: View {
 
     private func persistProfile() {
         guard let p = profile else { return }
-        p.displayName = nameText.trimmingCharacters(in: .whitespaces)
         if let age = Int(ageText), age > 0, age < 130 {
             p.birthDate = Calendar.current.date(byAdding: .year, value: -age, to: Date())
         }
@@ -623,7 +615,6 @@ struct SettingsView: View {
         Task {
             let granted = await HealthKitService.shared.requestAuthorization()
             if granted {
-                UserDefaults.standard.set(true, forKey: "vita.healthConnected")
                 // Quick reads (weight + height + age + sex) update the profile + finish fast…
                 let v = await HealthKitService.shared.profileVitals()
                 await MainActor.run {

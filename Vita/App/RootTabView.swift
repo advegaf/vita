@@ -1,9 +1,6 @@
 import SwiftUI
 import SwiftData
 
-/// Root navigation: three content tabs behind a floating PillDock + a circular AI
-/// button that presents chat as a sheet (chat is not a tab). The system tab bar is
-/// hidden; content scrolls under the dock like it did under the old glass bar.
 struct RootTabView: View {
     @State private var selection: AppTab = AppTab.initialForScreenshots
     private var router = NotificationRouter.shared
@@ -11,28 +8,24 @@ struct RootTabView: View {
     @Query private var compounds: [CatalogCompound]
 
     var body: some View {
+        // The system Liquid Glass bar is hidden; ConcaveTabBar below replaces it
+        // with a carved-into-the-canvas surface (same AppTab selection + routing).
         TabView(selection: $selection) {
-            Tab(value: AppTab.home) { TodayView().toolbarVisibility(.hidden, for: .tabBar) }
-                label: { Label("Home", systemImage: "house.fill") }
-            Tab(value: AppTab.data) { DiaryView().toolbarVisibility(.hidden, for: .tabBar) }
-                label: { Label("Data", systemImage: "chart.bar.fill") }
-            Tab(value: AppTab.protocolTab) { StackView().toolbarVisibility(.hidden, for: .tabBar) }
-                label: { Label("Protocol", systemImage: "list.bullet.rectangle.portrait.fill") }
+            Tab(value: AppTab.today) { TodayView().toolbarVisibility(.hidden, for: .tabBar) }
+                label: { EmptyView() }
+            Tab(value: AppTab.stack) { StackView().toolbarVisibility(.hidden, for: .tabBar) }
+                label: { EmptyView() }
+            Tab(value: AppTab.diary) { DiaryView().toolbarVisibility(.hidden, for: .tabBar) }
+                label: { EmptyView() }
+            Tab(value: AppTab.chat) { ChatView().toolbarVisibility(.hidden, for: .tabBar) }
+                label: { EmptyView() }
         }
-        .overlay(alignment: .bottom) {
-            PillDock(selection: $selection, onAI: { router.showChat = true })
-                .padding(.bottom, 4)
+        .tint(VT.ink)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            ConcaveTabBar(selection: $selection)
         }
         .onChange(of: router.pendingTab) { _, tab in
             if let tab { selection = tab; router.pendingTab = nil }
-        }
-        .sheet(isPresented: Binding(
-            get: { router.showChat },
-            set: { router.showChat = $0 }
-        )) {
-            ChatView()
-                .presentationDetents([.large])
-                .presentationDragIndicator(.visible)
         }
         .task {
             #if DEBUG
@@ -40,10 +33,6 @@ struct RootTabView: View {
                 try? await Task.sleep(nanoseconds: 600_000_000)
                 router.pendingDetailItemID = (v == "1" ? items.first
                                               : items.first { $0.compoundSlug == v })?.id
-            }
-            if ProcessInfo.processInfo.environment["VITA_OPEN_CHAT"] == "1" {
-                try? await Task.sleep(nanoseconds: 400_000_000)
-                router.showChat = true
             }
             #endif
         }
@@ -82,6 +71,7 @@ struct RootTabView: View {
         c.rxStatusRaw = item.rxStatusRaw; c.doseUnitRaw = item.doseUnitRaw
         return c
     }
+
 }
 
 #Preview { RootTabView() }

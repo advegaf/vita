@@ -54,13 +54,11 @@ struct PinRow: View {
                 HStack(spacing: 12) {
                     CompoundTile(category: category, size: 34)
                     VStack(alignment: .leading, spacing: 3) {
-                        // Single line: blend names ("BPC-157 + TB-500") shrink slightly
-                        // instead of wrapping, so every row keeps the same height.
                         Text(name)
                             .font(.system(size: 16, weight: .semibold))
                             .foregroundStyle(isActed ? VT.body : VT.ink)
                             .strikethrough(isTaken, color: VT.micro)
-                            .lineLimit(1).minimumScaleFactor(0.85)
+                            .lineLimit(2)
                         // Dose owns its own line (full width, never wraps); the cycle
                         // chip drops below it as a deliberate badge, not crowding it.
                         Text(isSkipped ? "skipped" : dose)

@@ -191,7 +191,6 @@ struct HealthConnectView: View {
         Task {
             let granted = await HealthKitService.shared.requestAuthorization()
             if granted {
-                UserDefaults.standard.set(true, forKey: "vita.healthConnected")
                 // Quick reads (weight + height + age + sex) fill the form fast…
                 let v = await HealthKitService.shared.profileVitals()
                 await MainActor.run {

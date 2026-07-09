@@ -39,33 +39,29 @@ extension Color {
 
 enum VT {
 
-    // V2 (wellness redesign): airy near-white light surfaces; dark = neutral
-    // graphite (the winner of the 4-variant screenshot experiment, user-picked).
+    // Dark = neutral graphite (user-chosen from a 4-variant screenshot experiment).
+    // The warm accents keep their identity but are slightly softened in dark so they
+    // sit naturally on the cool base instead of glowing against it.
 
     // Surfaces
-    static let canvas   = Color(light: "F7F7F5", dark: "121214") // app background (never a card)
+    static let canvas   = Color(light: "F1EEE9", dark: "121214") // app background (never a card)
     static let card     = Color(light: "FFFFFF", dark: "1E1E20") // every card / sheet
-    static let hairline = Color(light: "EFEEEB", dark: "33333A") // divider / dark card border
+    static let hairline = Color(light: "EAE6DF", dark: "33333A") // divider / dark card border
 
     // Text
-    static let ink   = Color(light: "111111", dark: "F5F5F7") // headlines, charcoal pill, bolded terms
+    static let ink   = Color(light: "1A1A1A", dark: "F5F5F7") // headlines, charcoal pill, bolded terms
     /// Label/glyph color sitting ON a filled surface (the ink pill, a selected toggle,
     /// the done checkmark): white in light, near-black in dark — because every
     /// dark-mode fill (ink, accents) is a light tone, so a dark label reads on all.
     static let onInk = Color(light: "FFFFFF", dark: "121214")
-    static let body  = Color(light: "6B6B6B", dark: "AEAEB4") // body copy
-    static let micro = Color(light: "9A9A9A", dark: "8E8E96") // disclaimers, captions (>=4.5 on dark card)
+    static let body  = Color(light: "6E6E6E", dark: "AEAEB4") // body copy
+    static let micro = Color(light: "9A958C", dark: "94949B") // disclaimers, captions (>=4.5 on dark card)
 
     // Accents (semantic — each does double duty as dimension + day-state)
-    static let dose   = Color(light: "2BB3F3", dark: "4FC3F7") // brand blue: actions, AI, links
-    static let timing = Color(light: "F5B82E", dark: "FFCB4D") // Timing + "upcoming"
-    static let why    = Color(light: "3E3630", dark: "D9CBBC") // Why + "logged / done" (flips light on dark)
-    static let overdue = Color(light: "C0593F", dark: "D97E63") // overdue ONLY (never iOS error-red)
-
-    // Biomarker status trio (reference language: optimal / normal / out of range)
-    static let optimal    = Color(light: "2FBF71", dark: "4BD98A")
-    static let normal     = Color(light: "CDC22E", dark: "D9CE4B")
-    static let outOfRange = Color(light: "F05FA6", dark: "F27EB4")
+    static let dose   = Color(light: "2BB3F3", dark: "4FC3F7") // Dose  + "due-now / action"
+    static let timing = Color(light: "FFC22E", dark: "F5C554") // Timing + "upcoming" (softened on graphite)
+    static let why    = Color(light: "3E2B22", dark: "CFB4A0") // Why + "logged / done" (muted latte on graphite)
+    static let overdue = Color(light: "C0593F", dark: "D08066") // overdue ONLY (softened terracotta)
 
     // Category tints — matched to the vial render hues (one per category, closed set)
     static let catBlue   = Color(light: "3FA9E0", dark: "5CB8ED")  // Weight Loss
@@ -73,7 +69,7 @@ enum VT {
     static let catBrown  = Color(light: "8A7059", dark: "B0917A")  // Muscle & Recovery (lifts so it doesn't vanish)
     static let catPink   = Color(light: "EC9CB4", dark: "F0A9BE")  // Sexual Health
     static let catYellow = Color(light: "E8B43C", dark: "ECC05A")  // General Health
-    static let catGray   = Color(light: "9A9A9A", dark: "A7A7AD")  // Other
+    static let catGray   = Color(light: "9A958C", dark: "A7A093")  // Other
 
     /// Registry for the appearance test: every semantic color token, so the test can
     /// assert each resolves distinctly light vs dark and meets contrast on text.
@@ -81,14 +77,13 @@ enum VT {
         ("canvas", canvas), ("card", card), ("hairline", hairline),
         ("ink", ink), ("body", body), ("micro", micro),
         ("dose", dose), ("timing", timing), ("why", why), ("overdue", overdue),
-        ("optimal", optimal), ("normal", normal), ("outOfRange", outOfRange),
         ("catBlue", catBlue), ("catPurple", catPurple), ("catBrown", catBrown),
         ("catPink", catPink), ("catYellow", catYellow), ("catGray", catGray),
     ]
 
-    // Radii (V2: rounder, airier)
-    static let rCard: CGFloat       = 24
-    static let rFocusCard: CGFloat  = 28
+    // Radii
+    static let rCard: CGFloat       = 20
+    static let rFocusCard: CGFloat  = 24
     static let segmentCircle: CGFloat = 44
 
     // Spacing (4pt base)
@@ -96,10 +91,10 @@ enum VT {
     static let sCardGap: CGFloat = 14
     static let sSection: CGFloat = 24
 
-    // Shadow (single layer; softer + larger for the airy language)
-    static let shadowColor = Color(hex: "111111").opacity(0.05)
-    static let shadowY: CGFloat = 10
-    static let shadowBlur: CGFloat = 32
+    // Shadow (single layer; no border, no glow anywhere)
+    static let shadowColor = Color(hex: "1A1A1A").opacity(0.06)
+    static let shadowY: CGFloat = 8
+    static let shadowBlur: CGFloat = 24
 }
 
 extension View {
