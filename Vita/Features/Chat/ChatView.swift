@@ -266,6 +266,7 @@ struct ChatView: View {
                     .background(canSend ? VT.ink : VT.ink.opacity(0.25), in: Circle())
             }
             .buttonStyle(.plain).disabled(!canSend)
+            .accessibilityLabel("Send")
         }
     }
 

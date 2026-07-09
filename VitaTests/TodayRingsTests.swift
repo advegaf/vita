@@ -14,9 +14,12 @@ final class TodayRingsTests: XCTestCase {
         return container.mainContext
     }
 
-    /// Daily item with morning (8:00) + evening (20:00) slots.
+    /// Daily item with morning (8:00) + evening (20:00) slots. Backdated —
+    /// Adherence treats days before `addedAt` as not scheduled (no phantom
+    /// misses), so week-window tests need an item that predates the window.
     private func twoSlotItem(_ c: ModelContext) -> ProtocolItem {
         let item = ProtocolItem(); item.displayName = "BPC"
+        item.addedAt = cal.date(byAdding: .day, value: -10, to: today)!
         c.insert(item)                                   // insert before wiring the relationship
         let r = ScheduleRule(); r.frequencyRaw = "daily"; r.timeSlotsMinutes = [480, 1200]
         c.insert(r); item.schedule = r
@@ -93,8 +96,12 @@ final class TodayRingsTests: XCTestCase {
         let c = ctx()
         let item = twoSlotItem(c)
         let prn = prnItem(c)
-        // 6 past days fully acted (the unresolved today is excluded by Adherence).
-        for d in 1...6 { addLog(c, item, daysAgo: d) }
+        // 6 past days fully acted — BOTH slots, a day with one of two acted is
+        // .missed (the unresolved today is excluded by Adherence).
+        for d in 1...6 {
+            addLog(c, item, daysAgo: d, minutes: 480)
+            addLog(c, item, daysAgo: d, minutes: 1200)
+        }
         addLog(c, prn, daysAgo: 2)                       // PRN log must not affect the denominator
         let s = TodayRings.snapshot(items: [item, prn], logs: logs(c), asOf: noon, calendar: cal)
         XCTAssertEqual(s.weekScheduled, 6)

@@ -6,9 +6,10 @@ import SwiftUI
 /// 0 → 1) the photo drifts up a touch and dims, receding behind the work.
 ///
 /// Photo: "Close-up of dark green leaves and vines" by H&CO, Unsplash
-/// (unsplash.com/photos/JVeAqyZ1wrc) — Unsplash License, bundled at build time;
-/// alternate: "Sunlight shines through the leaves" by Richard Stachmann
-/// (unsplash.com/photos/cQdayjPy2UQ) in `backdrop-light`.
+/// (unsplash.com/photos/JVeAqyZ1wrc) — Unsplash License, bundled at build time.
+/// Chosen over a warm light-through-leaves candidate (its sun starburst
+/// competed with the UI as a focal point) and a misty forest (near-white top
+/// half where the white title sits).
 struct BackdropView: View {
     var progress: CGFloat
     @Environment(\.colorScheme) private var scheme

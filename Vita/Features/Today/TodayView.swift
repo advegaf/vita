@@ -78,7 +78,6 @@ struct TodayView: View {
         let remaining = total - acted
         let shownBlock = DayBlock(rawValue: selectedBlock.flatMap(blockIndex) ?? currentBlock.rawValue) ?? currentBlock
         let next = nextUnacted(in: allOcc, now: now)
-        let streak = StreakService.currentStreak(items: items, logs: logs, asOf: now)
         let restingByBlock = restingItemsByBlock(on: now)
         let hasResting = restingByBlock.values.contains { !$0.isEmpty }
 
@@ -87,6 +86,7 @@ struct TodayView: View {
                 if items.isEmpty {
                     emptyStack
                 } else {
+                    TodayHeroCard(snapshot: TodayRings.snapshot(items: items, logs: logs, asOf: now))
                     Group {
                         if total == 0 && !hasResting {
                             RestDayCard()
@@ -112,12 +112,8 @@ struct TodayView: View {
 
                         blockPins(shownBlock, grouped[shownBlock] ?? [],
                                   resting: restingByBlock[shownBlock] ?? [], now: now)
-
-                        if total > 0 {
-                            DotMeter(filled: acted, total: total,
-                                     note: streak > 0 ? "\(streak)-day streak." : nil)
-                                .padding(.top, 6).frame(maxWidth: .infinity)
-                        }
+                        // (DotMeter retired: the hero's rings + legend carry the
+                        // dose count and streak now.)
                     }
 
                     if let lowVialLine {

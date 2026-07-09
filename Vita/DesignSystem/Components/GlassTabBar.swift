@@ -43,6 +43,7 @@ struct GlassTabBar: View {
         }
         .buttonStyle(.pressableCard)
         .accessibilityLabel(tab.title)
+        .accessibilityIdentifier("tabbar-\(tab.rawValue)")   // distinct from menu items
         .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
     }
 }
