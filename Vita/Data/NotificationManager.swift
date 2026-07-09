@@ -11,8 +11,10 @@ final class NotificationRouter: NSObject, UNUserNotificationCenterDelegate {
     static let shared = NotificationRouter()
     var pendingTab: AppTab?
     var pendingDetailItemID: UUID?
+    /// Chat is a sheet (the AI button), not a tab — cross-links raise this flag.
+    var showChat = false
     /// Prefills the chat input (never auto-sends) — set by cross-links like the
-    /// lab marker's "Ask vita" alongside `pendingTab = .chat`.
+    /// lab marker's "Ask vita" alongside `showChat = true`.
     var pendingChatPrompt: String?
     var container: ModelContainer?
 
@@ -61,7 +63,7 @@ final class NotificationRouter: NSObject, UNUserNotificationCenterDelegate {
         case UNNotificationDefaultActionIdentifier:
             await MainActor.run {
                 if let id = itemID.flatMap(UUID.init(uuidString:)) { pendingDetailItemID = id }
-                else { pendingTab = .today }
+                else { pendingTab = .home }
             }
         default:
             break

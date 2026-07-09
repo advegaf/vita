@@ -1,6 +1,9 @@
 import SwiftUI
 import SwiftData
 
+/// Root navigation: three content tabs behind a floating PillDock + a circular AI
+/// button that presents chat as a sheet (chat is not a tab). The system tab bar is
+/// hidden; content scrolls under the dock like it did under the old glass bar.
 struct RootTabView: View {
     @State private var selection: AppTab = AppTab.initialForScreenshots
     private var router = NotificationRouter.shared
@@ -9,18 +12,27 @@ struct RootTabView: View {
 
     var body: some View {
         TabView(selection: $selection) {
-            Tab(value: AppTab.today) { TodayView() }
-                label: { coloredLabel("Today", "sun.max", VT.dose) }
-            Tab(value: AppTab.stack) { StackView() }
-                label: { coloredLabel("Stack", "pills", VT.why) }
-            Tab(value: AppTab.diary) { DiaryView() }
-                label: { coloredLabel("Diary", "chart.xyaxis.line", VT.timing) }
-            Tab(value: AppTab.chat) { ChatView() }
-                label: { coloredLabel("Chat", "bubble.left.and.text.bubble.right", VT.dose) }
+            Tab(value: AppTab.home) { TodayView().toolbarVisibility(.hidden, for: .tabBar) }
+                label: { Label("Home", systemImage: "house.fill") }
+            Tab(value: AppTab.data) { DiaryView().toolbarVisibility(.hidden, for: .tabBar) }
+                label: { Label("Data", systemImage: "chart.bar.fill") }
+            Tab(value: AppTab.protocolTab) { StackView().toolbarVisibility(.hidden, for: .tabBar) }
+                label: { Label("Protocol", systemImage: "list.bullet.rectangle.portrait.fill") }
         }
-        .tint(VT.ink)
+        .overlay(alignment: .bottom) {
+            PillDock(selection: $selection, onAI: { router.showChat = true })
+                .padding(.bottom, 4)
+        }
         .onChange(of: router.pendingTab) { _, tab in
             if let tab { selection = tab; router.pendingTab = nil }
+        }
+        .sheet(isPresented: Binding(
+            get: { router.showChat },
+            set: { router.showChat = $0 }
+        )) {
+            ChatView()
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
         }
         .task {
             #if DEBUG
@@ -28,6 +40,10 @@ struct RootTabView: View {
                 try? await Task.sleep(nanoseconds: 600_000_000)
                 router.pendingDetailItemID = (v == "1" ? items.first
                                               : items.first { $0.compoundSlug == v })?.id
+            }
+            if ProcessInfo.processInfo.environment["VITA_OPEN_CHAT"] == "1" {
+                try? await Task.sleep(nanoseconds: 400_000_000)
+                router.showChat = true
             }
             #endif
         }
@@ -65,18 +81,6 @@ struct RootTabView: View {
         c.name = item.displayName; c.categoryRaw = item.categoryRaw
         c.rxStatusRaw = item.rxStatusRaw; c.doseUnitRaw = item.doseUnitRaw
         return c
-    }
-
-    /// Tab label whose icon keeps its design accent at all times (the native
-    /// Liquid Glass bar template-tints by default, so the symbol is pre-rendered
-    /// with `.alwaysOriginal` in its color).
-    private func coloredLabel(_ title: String, _ symbol: String, _ color: Color) -> some View {
-        Label { Text(title) } icon: { Image(uiImage: Self.coloredIcon(symbol, color)) }
-    }
-
-    private static func coloredIcon(_ name: String, _ color: Color) -> UIImage {
-        (UIImage(systemName: name) ?? UIImage())
-            .withTintColor(UIColor(color), renderingMode: .alwaysOriginal)
     }
 }
 

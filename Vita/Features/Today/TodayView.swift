@@ -148,7 +148,7 @@ struct TodayView: View {
                     }
 
                     if let lowVialLine {
-                        Button { NotificationRouter.shared.pendingTab = .stack } label: {
+                        Button { NotificationRouter.shared.pendingTab = .protocolTab } label: {
                             HStack(spacing: 4) {
                                 Text(lowVialLine)
                                     .font(.system(size: 14, weight: .semibold)).foregroundStyle(VT.body)

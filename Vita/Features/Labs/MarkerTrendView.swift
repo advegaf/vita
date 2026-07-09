@@ -73,7 +73,7 @@ struct MarkerTrendView: View {
                 Button("Ask vita about this →") {
                     NotificationRouter.shared.pendingChatPrompt =
                         "My latest \(displayName) was \(vtFormatNumber(latest.value)) \(latest.unit) (\(latest.flag.label.lowercased())). What does this marker mean and what can affect it?"
-                    NotificationRouter.shared.pendingTab = .chat
+                    NotificationRouter.shared.showChat = true
                 }
                 .font(.system(size: 15, weight: .semibold)).foregroundStyle(VT.dose)
                 .buttonStyle(.plain)

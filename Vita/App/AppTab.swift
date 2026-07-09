@@ -1,19 +1,19 @@
 import SwiftUI
 
+/// The three dock destinations (chat is a sheet opened by the AI button, not a tab).
 enum AppTab: Hashable {
-    case today, stack, diary, chat
+    case home, data, protocolTab
 
-    /// Initial tab (production: Today). Debug: set VITA_TAB=stack|diary|chat to screenshot that tab.
+    /// Initial tab (production: Home). Debug: set VITA_TAB=data|protocol to screenshot that tab.
     static var initialForScreenshots: AppTab {
         #if DEBUG
         switch ProcessInfo.processInfo.environment["VITA_TAB"] {
-        case "stack": return .stack
-        case "diary": return .diary
-        case "chat":  return .chat
-        default:      return .today
+        case "data":     return .data
+        case "protocol": return .protocolTab
+        default:         return .home
         }
         #else
-        return .today
+        return .home
         #endif
     }
 }
