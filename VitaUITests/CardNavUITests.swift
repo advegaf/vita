@@ -15,10 +15,11 @@ final class CardNavUITests: XCTestCase {
         app.launchEnvironment["VITA_CLAUDE_STUB"] = "1"
     }
 
-    /// Slow upward drag from the card's content zone to the top.
-    private func dragCardUp() {
-        let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.75))
-        let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.10))
+    /// Slow upward drag from a PASSIVE card zone (the hero card — not a button;
+    /// drags that start on pressable controls can be eaten by the control).
+    private func dragCardUp(fromY y: CGFloat = 0.40) {
+        let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: y))
+        let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.08))
         start.press(forDuration: 0.15, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
     }
 
@@ -51,9 +52,12 @@ final class CardNavUITests: XCTestCase {
         let switcher = app.buttons["Switch view"]
         XCTAssertTrue(switcher.waitForExistence(timeout: 10), "the ⇕ switcher should sit on the photo header")
         switcher.tap()
+        sleep(1)
         // The menu's "Chat" item is the hittable one (the glass bar's is inert at rest).
-        let chat = app.buttons.matching(NSPredicate(format: "label == 'Chat' AND hittable == true")).firstMatch
-        XCTAssertTrue(chat.waitForExistence(timeout: 3))
+        let candidates = app.buttons.matching(NSPredicate(format: "label == 'Chat'")).allElementsBoundByIndex
+        guard let chat = candidates.first(where: { $0.isHittable }) else {
+            return XCTFail("no hittable Chat menu item among \(candidates.count) matches")
+        }
         chat.tap()
         XCTAssertTrue(app.textFields.firstMatch.waitForExistence(timeout: 5),
                       "Chat's input should appear after switching")
