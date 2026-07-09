@@ -6,6 +6,9 @@ import SwiftUI
 /// darker well (pressed-in), not a raised pill.
 struct ConcaveTabBar: View {
     @Binding var selection: AppTab
+    /// Collapse while the keyboard is up (matches the old system-bar behavior in
+    /// Chat: typing hides the bar instead of stacking it above the keyboard).
+    @State private var keyboardUp = false
 
     /// One shade below the canvas in both modes (the "carved" floor).
     private let floor = Color(light: "E9E4DC", dark: "0D0D0F")
@@ -28,25 +31,36 @@ struct ConcaveTabBar: View {
     ]
 
     var body: some View {
-        HStack(spacing: 6) {
-            ForEach(items, id: \.tab) { item in
-                tabButton(item)
+        Group {
+            if !keyboardUp {
+                HStack(spacing: 6) {
+                    ForEach(items, id: \.tab) { item in
+                        tabButton(item)
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.top, 8)
+                .padding(.bottom, 6)
+                .frame(maxWidth: .infinity)
+                .background {
+                    ZStack(alignment: .top) {
+                        floor.ignoresSafeArea(edges: .bottom)
+                        // The concave read: a soft shadow falling INTO the bar from
+                        // its top edge, as if the canvas casts onto a recessed surface.
+                        LinearGradient(colors: [Color.black.opacity(0.10), .clear],
+                                       startPoint: .top, endPoint: .bottom)
+                            .frame(height: 10)
+                        Rectangle().fill(seam).frame(height: 1)
+                    }
+                }
+                .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.top, 8)
-        .padding(.bottom, 6)
-        .frame(maxWidth: .infinity)
-        .background {
-            ZStack(alignment: .top) {
-                floor.ignoresSafeArea(edges: .bottom)
-                // The concave read: a soft shadow falling INTO the bar from its top
-                // edge, as if the canvas casts onto a recessed surface.
-                LinearGradient(colors: [Color.black.opacity(0.10), .clear],
-                               startPoint: .top, endPoint: .bottom)
-                    .frame(height: 10)
-                Rectangle().fill(seam).frame(height: 1)
-            }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
+            withAnimation(.easeOut(duration: 0.2)) { keyboardUp = true }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            withAnimation(.easeOut(duration: 0.2)) { keyboardUp = false }
         }
     }
 

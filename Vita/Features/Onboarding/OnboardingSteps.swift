@@ -118,7 +118,7 @@ struct GoalsView: View {
                     Circle().fill(VT.ink).opacity(on ? 1 : 0)
                     if on {
                         Image(systemName: "checkmark").font(.system(size: 13, weight: .bold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(VT.onInk)
                     }
                 }
                 .frame(width: 26, height: 26)

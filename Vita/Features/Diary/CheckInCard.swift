@@ -26,7 +26,7 @@ struct CheckInCard: View {
             Text("A minute on how today felt.")
                 .font(.system(size: 15)).foregroundStyle(VT.body)
             Text("Check in")
-                .font(.system(size: 16, weight: .semibold)).foregroundStyle(.white)
+                .font(.system(size: 16, weight: .semibold)).foregroundStyle(VT.onInk)
                 .frame(maxWidth: .infinity).padding(.vertical, 14)
                 .background(VT.ink, in: Capsule())
                 .padding(.top, 2)

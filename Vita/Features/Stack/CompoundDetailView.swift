@@ -327,7 +327,7 @@ struct CompoundDetailView: View {
             .buttonStyle(.plain).padding(.top, 4)
         } else if inStack {
             HStack(spacing: 8) { Image(systemName: "checkmark"); Text("In stack") }
-                .font(.system(size: 16, weight: .semibold)).foregroundStyle(.white)
+                .font(.system(size: 16, weight: .semibold)).foregroundStyle(VT.onInk)
                 .frame(maxWidth: .infinity).padding(.vertical, 17)
                 .background(VT.why, in: Capsule()).padding(.top, 4)
         } else {

@@ -8,22 +8,17 @@ struct RootTabView: View {
     @Query private var compounds: [CatalogCompound]
 
     var body: some View {
-        // The system Liquid Glass bar is hidden; ConcaveTabBar below replaces it
-        // with a carved-into-the-canvas surface (same AppTab selection + routing).
+        // The system Liquid Glass bar is hidden; ConcaveTabBar replaces it with a
+        // carved-into-the-canvas surface. The bar is inset PER TAB (an inset on the
+        // TabView itself does not reach the pages' safe areas, which left bottom
+        // content like Chat's input behind the bar).
         TabView(selection: $selection) {
-            Tab(value: AppTab.today) { TodayView().toolbarVisibility(.hidden, for: .tabBar) }
-                label: { EmptyView() }
-            Tab(value: AppTab.stack) { StackView().toolbarVisibility(.hidden, for: .tabBar) }
-                label: { EmptyView() }
-            Tab(value: AppTab.diary) { DiaryView().toolbarVisibility(.hidden, for: .tabBar) }
-                label: { EmptyView() }
-            Tab(value: AppTab.chat) { ChatView().toolbarVisibility(.hidden, for: .tabBar) }
-                label: { EmptyView() }
+            Tab(value: AppTab.today) { withBar { TodayView() } } label: { EmptyView() }
+            Tab(value: AppTab.stack) { withBar { StackView() } } label: { EmptyView() }
+            Tab(value: AppTab.diary) { withBar { DiaryView() } } label: { EmptyView() }
+            Tab(value: AppTab.chat) { withBar { ChatView() } } label: { EmptyView() }
         }
         .tint(VT.ink)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            ConcaveTabBar(selection: $selection)
-        }
         .onChange(of: router.pendingTab) { _, tab in
             if let tab { selection = tab; router.pendingTab = nil }
         }
@@ -61,6 +56,16 @@ struct RootTabView: View {
                 Color.clear.onAppear { router.pendingDetailItemID = nil }
             }
         }
+    }
+
+    /// Wraps a tab's content with the hidden system bar + the concave replacement.
+    /// The bar ignores the keyboard so it stays put while inputs float above it.
+    private func withBar<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        content()
+            .toolbarVisibility(.hidden, for: .tabBar)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                ConcaveTabBar(selection: $selection)
+            }
     }
 
     /// The catalog compound for a reminder's item, or a placeholder from the item.

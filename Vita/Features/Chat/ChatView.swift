@@ -47,7 +47,6 @@ struct ChatView: View {
             }
             .safeAreaInset(edge: .bottom, spacing: 0) { footer }
         }
-        .toolbar(inputFocused ? .hidden : .automatic, for: .tabBar)
         .sheet(item: $editDraft, onDismiss: { suggestedNote = nil }) { d in
             let c = bySlug[d.compoundSlug]
             DoseSetupSheet(draft: d, rangeText: c?.doseRangeText, about: c?.about,
@@ -143,7 +142,7 @@ struct ChatView: View {
             HStack {
                 Spacer(minLength: 48)
                 Text(text)
-                    .font(.system(size: 16)).foregroundStyle(.white)
+                    .font(.system(size: 16)).foregroundStyle(VT.onInk)
                     .padding(.horizontal, 15).padding(.vertical, 10)
                     .background(VT.ink, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
             }
@@ -261,7 +260,7 @@ struct ChatView: View {
                 .overlay(RoundedRectangle(cornerRadius: 20, style: .continuous).stroke(VT.hairline, lineWidth: 1))
             Button(action: { send(input) }) {
                 Image(systemName: "arrow.up")
-                    .font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
+                    .font(.system(size: 16, weight: .bold)).foregroundStyle(VT.onInk)
                     .frame(width: 38, height: 38)
                     .background(canSend ? VT.ink : VT.ink.opacity(0.25), in: Circle())
             }

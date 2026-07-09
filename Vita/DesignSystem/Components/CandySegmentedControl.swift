@@ -9,7 +9,7 @@ struct CandySegment: Identifiable, Equatable {
     let glyph: Color  // glyph color for contrast on the segment color
 
     static func dimension(_ id: String, _ title: String, _ symbol: String, _ color: Color, glyphInk: Bool = false) -> CandySegment {
-        CandySegment(id: id, title: title, symbol: symbol, color: color, glyph: glyphInk ? VT.ink : .white)
+        CandySegment(id: id, title: title, symbol: symbol, color: color, glyph: glyphInk ? VT.ink : VT.onInk)
     }
 }
 

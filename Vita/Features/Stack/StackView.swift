@@ -100,7 +100,7 @@ struct StackView: View {
                 .font(.system(size: 15)).foregroundStyle(VT.body).multilineTextAlignment(.center)
             Button { showCatalog = true } label: {
                 Text("Browse the catalog")
-                    .font(.system(size: 17, weight: .semibold)).foregroundStyle(.white)
+                    .font(.system(size: 17, weight: .semibold)).foregroundStyle(VT.onInk)
                     .padding(.horizontal, 28).padding(.vertical, 15)
                     .background(VT.ink, in: Capsule())
             }

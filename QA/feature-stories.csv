@@ -1,0 +1,71 @@
+ID,Area,User story,Expected behavior (from code),Status,Evidence,Notes
+ON-1,Onboarding,As a new user I see a welcome and can start setup,Fresh install shows OnboardingWizard (profile.onboardedAt nil gates AppRootView),Pass,ON-1-light.png ON-1-dark.png,Continue pill legible in both modes
+ON-2,Onboarding,I can pick my goals,Goals step writes selectedGoalKinds; PillToggle grid,Pass (tests),OnboardingModelTests,Wizard tap-through pending device pass
+ON-3,Onboarding,I can pick starting peptides,OnboardingPeptidesStep lists catalog; picks seed the draft plan,Pass (tests),OnboardingModelTests + StarterSuggesterTests,Wizard tap-through pending device pass
+ON-4,Onboarding,I can connect Apple Health for profile fill,HealthConnectView requests read auth; profileVitals fills profile,Needs device,,Sim has no Health data; skip path verified in code
+ON-5,Onboarding,I get a starter plan even without an API key,No key -> rule-based StarterSuggester; stub plan with VITA_CLAUDE_STUB; catalog-validated,Pass (tests),StarterSuggesterTests + ClaudeServiceTests validation,
+TD-1,Today,I see how many doses remain and a greeting,countLine + block greeting; numericText transition,Pass,TD-1-dark.png + graphite/light-today.png,
+TD-2,Today,I see my next dose with a countdown and can log it,FocusCard dose•units + site line + countdown; commit haptic + animated swap,Pass,TD-1-dark.png (visual) + DoseLoggerTests,Log tap animation validated on device earlier batch
+TD-3,Today,I can log/skip/undo a dose from its pin,Knob logs (ring+check); context menu Skip/Undo; undo restores,Pass (tests),DoseLoggerTests incl. undo/upsert,Knob ritual seen in prior device install
+TD-4,Today,Injectables suggest a rotated site and I can override,Pin "-> site" from rotation; Log-at-site override menu; stamped site after,Pass,TD-1-dark.png shows suggestion + SiteRotationTests + DoseLoggerTests,Override menu tap pending device
+TD-5,Today,Overdue doses are calm but visible,.overdue -> terracotta time + "Nh late",Pass,darkexp/A-today.png (33m late) + graphite shots,
+TD-6,Today,I can switch Morning/Midday/Night blocks,CandySegmentedControl filters pins,Pass (static),Sweep screenshots show control; glyph onInk fixed this loop,Switch tap pending device
+TD-7,Today,I see progress dots and my streak,DotMeter filled/total + streak note; dot bloom on log,Pass,Today screenshots (0 of 2 logged) + Misc.swift review,
+TD-8,Today,I am told when a vial runs low,lowVialLine -> Stack tab,Pass,TD-1-dark.png "BPC-157 vial is running low",Tap-through pending device
+TD-9,Today,PRN items live in an As-needed card,asNeededCard; log appends; "logged Nh ago",Pass (prior),M31-era screenshots + DoseLoggerTests PRN,Re-shoot with PRN seed in loop 2
+TD-10,Today,Cycled-off items show as resting,restingRow quiet "resting, back Tue",Pass,TD-10-cycle-dark.png,
+TD-11,Today,Finishing the day feels rewarding,Focus card dissolves into DayCompleteCard,Pass (code+motion specs),TodayView transition wiring reviewed,Full-day log-through pending device
+TD-12,Today,A rest day is a calm state,RestDayCard when nothing scheduled,Pass (code),TodayView branch review,
+TD-13,Today,Empty stack points me to add,emptyStack CTA,Pass,Observed during sweep (empty-store launch); CTA onInk fixed this loop,
+TD-14,Today,Tapping a peptide opens its detail,Content tap -> pendingDetailItemID -> router sheet,Pass (code),RootTabView sheet + PinRow button wiring,Tap pending device
+ST-1,Stack,I see my compounds at a glance,Row: 2-line name + dose•units + short cadence + cycle chip + low-supply,Pass,ST-1-dark.png,
+ST-2,Stack,I can add a compound from the catalog,+ -> CatalogBrowseView -> DoseSetupSheet,Pass (code+prior),Earlier device batch; catalog browse shots prior sessions,
+ST-3,Stack,I can remove a compound,Context menu Remove; logs relink on re-add,Pass (tests),StackServiceTests re-add relink,
+ST-4,Stack,Cycle status shows Week x/y or Rest,Capitalized quiet CycleChip,Pass,ST-4-cycle-light.png + TD-10-cycle-dark.png,
+DS-1,Dose sheet,I can set dose by stepping or typing,Stepper increments; tap-to-type; commit on blur,Pass,DS-1-dark.png + StackServiceTests,Typing pending device
+DS-2,Dose sheet,I pick vial size from real catalog sizes,Chips + Custom; water seeded; recon note,Pass,Prior light screenshots + DS-1-dark.png,
+DS-3,Dose sheet,Editing cannot silently reset supply,Fixed size row + hint; commit preserves reconstitutedAt,Pass,DS-1-dark.png shows hint + StackServiceTests,
+DS-4,Dose sheet,IU compounds get draw math with caveat,supportsUnitTracking + 3 IU/mg caption,Pass (tests),VialEngineTests IU + DoseFormat,Caption shot in loop 2
+DS-5,Dose sheet,I can set frequency/weekdays/times,Pills + weekday circles + time rows,Pass (tests+prior),ScheduleServiceTests + prior screenshots,
+DS-6,Dose sheet,I can configure cycles,Advanced cycle values + anchor,Pass (tests),StackServiceTests cycle round-trip,
+DS-7,Dose sheet,I can configure titration steps,Ladder rows; commit round-trips,Pass (tests),StackServiceTests titration round-trip,
+CD-1,Compound detail,I see dose and protocol clearly,doseCard + protocol + ladder + ribbon,Pass,graphite dark-detail + light detail shots,
+CD-2,Compound detail,I see my vial supply and can act,VialCard + start-new-vial dialog + calculator,Pass,dark-detail shots + VialEngineTests + StackServiceTests,
+CD-3,Compound detail,I see adherence history,30d grid + summary,Pass,dark-detail (Adherence card) + AdherenceTests,
+CD-4,Compound detail,I see rotation guidance,rotationCard next site + history,Pass (code+tests),SiteRotationTests; card shot pending loop 2,
+CD-5,Compound detail,Blends clarify total dose,isBlend caption,Pass (code),CompoundDetailView caption; shot pending loop 2,
+RC-1,Calculator,Compute draw from vial+water+dose,Live result + warnings,Pass,RC-1-dark.png + ReconstitutionCalculatorTests,
+RC-2,Calculator,Flip mg/IU,3 IU/mg toggle,Pass (tests),ReconstitutionCalculatorTests IU round-trip,
+RC-3,Calculator,Save result to my item,onSave -> StackService vial,Pass (tests),StackServiceTests commit vial,
+VL-1,Vial lifecycle,Logging decrements supply,Derived consumption from stamped logs,Pass (tests),VialEngineTests,
+VL-2,Vial lifecycle,Undo restores supply,Log deletion self-heals derivation,Pass (tests),DoseLoggerTests undo,
+VL-3,Vial lifecycle,Start new vial resets tracking,startNewVial resets reconstitutedAt,Pass (tests),StackServiceTests,
+VL-4,Vial lifecycle,One low-supply + one BUD notice,Deterministic vial- ids + budget reserve,Pass (tests),NotificationManagerTests vial notices,
+DI-1,Diary,Daily check-in,Sliders -> DiaryEntry,Pass,DI-1-dark.png DI-1-light.png; check-in CTA onInk fixed this loop,
+DI-2,Diary,Log weight and body metrics,BodyEntrySheet -> canonical units,Pass,DI-1 shots (weight card) + DiaryServiceTests,
+DI-3,Diary,30-day trends per metric,TrendCard chips + chart + scrub,Pass,DI-1-dark.png trend chart,
+DI-4,Diary,Health weight syncs in,weightSamples dedup by healthUUID,Needs device,,No Health data on sim
+LB-1,Labs,Scan a lab report with consent,Consent gate -> vision -> review,Pass (tests),LabVisionRequestTests + LabServiceTests + stub,Camera flow pending device
+LB-2,Labs,Review parsed values before saving,Editable rows; qualitative read-only,Pass (tests),LabServiceTests qualitative + prior review shots,
+LB-3,Labs,See panels and marker details,List + detail ordered out-of-range first,Pass,LB-3-diarycard-dark.png + prior detail shots,List nav tap pending device
+LB-4,Labs,See a marker's trend,Chart + ref band + ask-vita prefill,Pass (prior+code),MarkerTrendView prior shots; showChat regression fixed this loop,
+CH-1,Chat,Grounded answers about my stack,Streaming + full grounding block,Pass,CH-1-dark-fixed.png (stub),
+CH-2,Chat,Useful without a key,Rule-based fallback,Pass (tests),ChatTests fallback,
+CH-3,Chat,Suggested changes appear as chips,Validated ADD/ADJUST chips,Pass,CH-1-dark-fixed.png chips,Apply tap pending device
+CH-4,Chat,Starter prompts help me begin,starterChips from stack/goals,Pass (code+prior),ChatView starterPrompts,
+SE-1,Settings,Edit profile and units,Fields + unit toggles persist,Pass,SE-1-dark.png,
+SE-2,Settings,Pick appearance,System/Light/Dark live switch,Pass,SE-1-dark.png (picker) + AppearanceTests mapping,
+SE-3,Settings,Quiet hours + reminder depth,Toggles/pickers rebuild notifications,Pass,SE-3-bottom-dark.png + NotificationManagerTests,
+SE-4,Settings,Manage my API key,Keychain save/test/remove,Needs device,,Never live-test with user key (spend guard)
+SE-5,Settings,Override Rx status,RxOverridesView persists,Pass (code+prior),Prior sessions' shots + CatalogStore overrides,
+SE-6,Settings,Export a backup,JSON+CSV share,Pass (tests),DataExportTests,Share sheet pending device
+SE-7,Settings,Share a physician report,Paginated PDF forced-light,Pass (tests),ReportBuilderTests + PDF smoke,Share sheet pending device
+SE-8,Settings,Danger zone clears data safely,Confirm dialogs wipe stores,Pass (code),SettingsView dialogs,Destructive; verify on sim in loop 2
+NT-1,Notifications,Reminders clear when I log,plan() excludes acted; log removes pending+delivered,Pass (tests),NotificationManagerTests + DoseLoggerTests,Banner fire pending device
+NT-2,Notifications,Log/Skip/Snooze from banner,DOSE_REMINDER actions via DoseLogger,Needs device,,Unit-level routing tested
+NT-3,Notifications,Quiet hours shift advisory only,dose- never shifts; others shift; pre/late drop,Pass (tests),NotificationManagerTests quiet-window suite,
+NT-4,Notifications,Pre-dose lead + overdue follow-up,pre-/late- ids; leftover budget only,Pass (tests),NotificationManagerTests,
+WG-1,Widgets,Widget shows doses and can log,Snapshot slots; intent ledger reconciles,Pass (tests),WidgetSnapshotTests + widget-stamp regression,Gallery visual pending device
+DK-1,Dark mode,Every surface as good in dark as light,Graphite palette + parity/WCAG tests,Pass,This sweep: 10 surfaces reviewed dark; 8 fixes applied,
+DK-2,Dark mode,No color conflicts anywhere,onInk on all light-flipping fills,Pass,onInk sweep this loop (chat bubble/send/check-in/browse/in-stack/onboarding check/segment glyph),
+TB-1,Tab bar,Concave bar navigates + deep links work,Per-tab inset bar; pendingTab routing preserved,Pass,Sweep screenshots both modes; Chat input clipping fixed this loop,
