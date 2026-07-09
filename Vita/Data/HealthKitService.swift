@@ -24,25 +24,6 @@ struct HealthSnapshot: Sendable, Equatable {
     }
 }
 
-/// One day's value in a vitals series (day = startOfDay).
-struct DatedValue: Sendable, Equatable {
-    var day: Date
-    var value: Double
-}
-
-/// Day-by-day vitals over a window, read live from Apple Health (never persisted).
-/// Whoop, Oura, and Fitbit write their metrics here, so this one seam covers them.
-struct VitalsSeries: Sendable, Equatable {
-    var hrvMs: [DatedValue] = []            // SDNN, daily average
-    var restingHR: [DatedValue] = []        // bpm, daily average
-    var respiratoryRate: [DatedValue] = []  // breaths/min, daily average
-    var sleepHours: [DatedValue] = []       // per night, attributed to the wake day
-
-    var isEmpty: Bool {
-        hrvMs.isEmpty && restingHR.isEmpty && respiratoryRate.isEmpty && sleepHours.isEmpty
-    }
-}
-
 /// Read-only HealthKit access (HR/HRV, sleep, weight, steps) + basic
 /// characteristics (DOB, biological sex). Confined to an actor; HKHealthStore
 /// stays internal. No raw samples are persisted in M3a — Health is the source.
@@ -60,7 +41,6 @@ actor HealthKitService {
         if let hrv = HKObjectType.quantityType(forIdentifier: .heartRateVariabilitySDNN) { t.insert(hrv) }
         if let ht = HKObjectType.quantityType(forIdentifier: .height) { t.insert(ht) }
         if let steps = HKObjectType.quantityType(forIdentifier: .stepCount) { t.insert(steps) }
-        if let resp = HKObjectType.quantityType(forIdentifier: .respiratoryRate) { t.insert(resp) }
         if let sleep = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) { t.insert(sleep) }
         t.insert(HKObjectType.characteristicType(forIdentifier: .dateOfBirth)!)
         t.insert(HKObjectType.characteristicType(forIdentifier: .biologicalSex)!)
@@ -190,67 +170,6 @@ actor HealthKitService {
             }
             store.execute(q)
         }
-    }
-
-    // MARK: - Series (M38 vitals)
-
-    /// Daily averages over the last N days as `DatedValue`s (ascending). Uses a
-    /// statistics collection bucketed by calendar day.
-    func dailyAverages(_ id: HKQuantityTypeIdentifier, unit: HKUnit, days: Int) async -> [DatedValue] {
-        guard Self.isAvailable, let type = HKObjectType.quantityType(forIdentifier: id) else { return [] }
-        let cal = Calendar.current
-        let end = Date()
-        let start = cal.startOfDay(for: cal.date(byAdding: .day, value: -days, to: end) ?? end)
-        let anchor = cal.startOfDay(for: end)
-        let pred = HKQuery.predicateForSamples(withStart: start, end: end)
-        return await withCheckedContinuation { cont in
-            let q = HKStatisticsCollectionQuery(
-                quantityType: type, quantitySamplePredicate: pred, options: .discreteAverage,
-                anchorDate: anchor, intervalComponents: DateComponents(day: 1))
-            q.initialResultsHandler = { _, results, _ in
-                var out: [DatedValue] = []
-                results?.enumerateStatistics(from: start, to: end) { stat, _ in
-                    if let v = stat.averageQuantity()?.doubleValue(for: unit) {
-                        out.append(DatedValue(day: cal.startOfDay(for: stat.startDate), value: v))
-                    }
-                }
-                cont.resume(returning: out)
-            }
-            store.execute(q)
-        }
-    }
-
-    /// Nightly asleep hours, each attributed to the day the sleep ENDED (a night
-    /// ending Tuesday 7am counts as Tuesday). Ascending.
-    func nightlySleepHours(days: Int) async -> [DatedValue] {
-        guard Self.isAvailable, let type = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) else { return [] }
-        let cal = Calendar.current
-        let pred = HKQuery.predicateForSamples(withStart: daysAgo(days), end: Date())
-        return await withCheckedContinuation { cont in
-            let q = HKSampleQuery(sampleType: type, predicate: pred, limit: HKObjectQueryNoLimit,
-                                  sortDescriptors: nil) { _, samples, _ in
-                let asleep = (samples as? [HKCategorySample] ?? []).filter { isAsleep($0.value) }
-                var byDay: [Date: Double] = [:]
-                for s in asleep {
-                    let day = cal.startOfDay(for: s.endDate)
-                    byDay[day, default: 0] += s.endDate.timeIntervalSince(s.startDate) / 3600.0
-                }
-                let out = byDay.map { DatedValue(day: $0.key, value: $0.value) }.sorted { $0.day < $1.day }
-                cont.resume(returning: out)
-            }
-            store.execute(q)
-        }
-    }
-
-    /// HRV, resting HR, respiratory rate, and nightly sleep over the window, fanned
-    /// out concurrently. One read of Apple Health covers Whoop/Oura/Fitbit data.
-    func vitalsSeries(days: Int = 60) async -> VitalsSeries {
-        guard Self.isAvailable else { return VitalsSeries() }
-        async let hrv = dailyAverages(.heartRateVariabilitySDNN, unit: .secondUnit(with: .milli), days: days)
-        async let rhr = dailyAverages(.restingHeartRate, unit: HKUnit.count().unitDivided(by: .minute()), days: days)
-        async let resp = dailyAverages(.respiratoryRate, unit: HKUnit.count().unitDivided(by: .minute()), days: days)
-        async let sleep = nightlySleepHours(days: days)
-        return await VitalsSeries(hrvMs: hrv, restingHR: rhr, respiratoryRate: resp, sleepHours: sleep)
     }
 
     private func daysAgo(_ d: Int) -> Date {
