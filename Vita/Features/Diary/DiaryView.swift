@@ -41,7 +41,6 @@ struct DiaryView: View {
         let streak = DiaryStreak.current(entries: entries, asOf: now)
         return ScrollView {
             VStack(alignment: .leading, spacing: VT.sCardGap) {
-                header(logged: today?.isLogged ?? false)
                 CheckInCard(entry: today, streak: streak) {
                     showCheckIn = true
                 }
@@ -54,7 +53,6 @@ struct DiaryView: View {
                     .buttonStyle(.pressableCard)
             }
             .padding(VT.sSection)
-            .padding(.bottom, 24)   // clear the floating Liquid Glass tab bar
         }
         .scrollIndicators(.hidden)
         .background(VT.canvas)
@@ -83,11 +81,6 @@ struct DiaryView: View {
         .sheet(isPresented: $showBodyEntry) {
             BodyEntrySheet()
         }
-    }
-
-    private func header(logged: Bool) -> some View {
-        ScreenHeader(eyebrow: "Diary", title: logged ? "Logged today." : "How are you today?")
-            .padding(.bottom, 2)
     }
 
     /// Read-only Health weight backfill, once per session. A no-op if Health is

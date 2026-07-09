@@ -19,14 +19,14 @@ struct AppRootView: View {
             if ProcessInfo.processInfo.environment["VITA_SPIKE_CARD"] == "1" {
                 SpikeCardView()
             } else if onboarded {
-                RootTabView()
+                ImmersiveRootView()
             } else {
                 OnboardingWizard()
                     .transition(.opacity)
             }
             #else
             if onboarded {
-                RootTabView()
+                ImmersiveRootView()
             } else {
                 OnboardingWizard()
                     .transition(.opacity)

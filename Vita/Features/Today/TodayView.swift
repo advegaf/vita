@@ -13,7 +13,6 @@ struct TodayView: View {
     @Query private var logs: [DoseLog]
 
     @State private var selectedBlock: String?
-    @State private var showSettings = false
     @State private var editDraft: DoseDraft?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
@@ -67,16 +66,7 @@ struct TodayView: View {
             if let b = ProcessInfo.processInfo.environment["VITA_TODAY_BLOCK"] { selectedBlock = b }
             #endif
         }
-        .sheet(isPresented: $showSettings) { SettingsView() }
         .sheet(item: $editDraft) { d in DoseSetupSheet(draft: d) }
-        .task {
-            #if DEBUG
-            if ProcessInfo.processInfo.environment["VITA_OPEN_SETTINGS"] == "1" {
-                try? await Task.sleep(nanoseconds: 400_000_000)
-                showSettings = true
-            }
-            #endif
-        }
     }
 
     private func content(now: Date) -> some View {
@@ -94,23 +84,6 @@ struct TodayView: View {
 
         return ScrollView {
             VStack(alignment: .leading, spacing: VT.sCardGap) {
-                TopBarPill(onMenu: { showSettings = true }).padding(.bottom, 4)
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("TODAY")
-                        .font(.system(size: 12, weight: .medium)).tracking(0.4)
-                        .textCase(.uppercase).foregroundStyle(VT.micro)
-                    VStack(alignment: .leading, spacing: 0) {
-                        if total > 0 {
-                            Text(countLine(remaining: remaining))
-                                .contentTransition(.numericText())
-                        }
-                        Text(currentBlock.greeting)
-                    }
-                    .vtHeadlineStyle()
-                }
-                .padding(.bottom, 2)
-
                 if items.isEmpty {
                     emptyStack
                 } else {
@@ -375,13 +348,6 @@ struct TodayView: View {
             if !pending.isEmpty { return (b, pending.count) }
         }
         return nil
-    }
-
-    private func countLine(remaining: Int) -> String {
-        if remaining == 0 { return "All done for today." }
-        let words = ["zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine"]
-        let n = remaining < words.count ? words[remaining] : "\(remaining)"
-        return remaining == 1 ? "\(n) dose left." : "\(n) doses left."
     }
 
     private func blockBinding(default current: DayBlock) -> Binding<String> {

@@ -82,10 +82,10 @@ struct StackView: View {
         }
     }
 
+    // The view title lives on the photo header now (M38); the card keeps just
+    // the add action, aligned where the old header's + sat.
     private var header: some View {
-        HStack(alignment: .firstTextBaseline) {
-            ScreenHeader(eyebrow: "Stack",
-                         title: items.isEmpty ? "Your stack." : "\(items.count) in your stack.")
+        HStack {
             Spacer()
             CircleIconButton(systemName: "plus", label: "Add a peptide") { showCatalog = true }
         }

@@ -21,6 +21,17 @@ struct TodayRingsSnapshot: Equatable {
 
     var weekPercentText: String { "\(Int((weekProgress * 100).rounded()))%" }
 
+    /// "Two doses left." — the photo-header subtitle (same voice as the old
+    /// Today headline count).
+    var remainingLine: String {
+        let remaining = dosesTotal - dosesActed
+        if dosesTotal == 0 { return "Nothing scheduled." }
+        if remaining == 0 { return "All done for today." }
+        let words = ["zero", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine"]
+        let n = remaining < words.count ? words[remaining] : "\(remaining)"
+        return remaining == 1 ? "\(n) dose left." : "\(n) doses left."
+    }
+
     /// "On track." / "All done." / "Two to catch up." / "Rest day."
     var headline: String {
         if dosesTotal == 0 { return "Rest day." }
