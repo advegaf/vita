@@ -40,6 +40,9 @@ struct SettingsView: View {
     // Data export
     @State private var exportURLs: [URL] = []
     @State private var showExportShare = false
+    // Physician report
+    @State private var reportURL: URL?
+    @State private var showReportShare = false
     // Danger
     @State private var pendingDanger: DangerKind?
     @State private var debugRx = false
@@ -439,9 +442,35 @@ struct SettingsView: View {
                 .buttonStyle(.plain)
             Text("Doses, diary, and lab values as JSON and CSV. Lab scan images stay on your phone.")
                 .font(.system(size: 12)).foregroundStyle(VT.micro)
+            Rectangle().fill(VT.hairline).frame(height: 1).padding(.vertical, 2)
+            Button("Share report") { shareReport() }
+                .font(.system(size: 15, weight: .semibold)).foregroundStyle(VT.dose)
+                .buttonStyle(.plain)
+            Text("A short PDF for your physician or coach: stack, adherence, weight, latest labs.")
+                .font(.system(size: 12)).foregroundStyle(VT.micro)
         }
         .sheet(isPresented: $showExportShare) {
             ActivityShareSheet(items: exportURLs)
+        }
+        .sheet(isPresented: $showReportShare) {
+            if let reportURL { ActivityShareSheet(items: [reportURL]) }
+        }
+    }
+
+    private func shareReport() {
+        let items = (try? context.fetch(FetchDescriptor<ProtocolItem>())) ?? []
+        let logs = (try? context.fetch(FetchDescriptor<DoseLog>())) ?? []
+        let metrics = (try? context.fetch(FetchDescriptor<BodyMetric>())) ?? []
+        let panels = (try? context.fetch(FetchDescriptor<LabPanel>())) ?? []
+        let report = ReportBuilder.build(
+            items: items, logs: logs, metrics: metrics, panels: panels,
+            profile: profile, weightUnit: weightUnit)
+        do {
+            reportURL = try ReportPDF.write(report: report)
+            showReportShare = true
+            Haptics.press()
+        } catch {
+            NSLog("vita-report-FAILED: %@", String(describing: error))
         }
     }
 
