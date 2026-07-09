@@ -145,6 +145,9 @@ final class ProtocolItem {
     var displayName: String = ""
     var categoryRaw: String = PeptideCategory.other.rawValue
     var rxStatusRaw: String = RxStatus.nonRx.rawValue
+    /// Denormalized from the catalog (like categoryRaw). Empty = unknown route
+    /// (legacy items are backfilled by CatalogStore.ensureSeeded).
+    var routeRaw: String = ""
     var doseAmount: Double = 0
     var doseUnitRaw: String = DoseUnit.mcg.rawValue
     var kindRaw: String = "scheduled" // scheduled | prn
@@ -162,6 +165,9 @@ final class ProtocolItem {
 
     var category: PeptideCategory { PeptideCategory(rawValue: categoryRaw) ?? .other }
     var rxStatus: RxStatus { RxStatus(rawValue: rxStatusRaw) ?? .nonRx }
+    var route: Route? { routeRaw.isEmpty ? nil : Route(rawValue: routeRaw) }
+    /// Site rotation applies only to injected routes.
+    var isInjectable: Bool { route == .subcutaneous || route == .intramuscular }
     var doseUnit: DoseUnit { DoseUnit(rawValue: doseUnitRaw) ?? .mcg }
     var doseText: String { "\(vtFormatNumber(doseAmount)) \(doseUnit.label)" }
 
@@ -307,6 +313,9 @@ final class DoseLog {
     /// is load-bearing; a versioned V2 schema is required before CloudKit ships.
     var doseAmount: Double = 0
     var doseUnitRaw: String = ""
+    /// Injection site stamped at log time (M-next). SENTINEL: empty = legacy log,
+    /// skipped dose, or non-injectable route — invisible to rotation.
+    var siteRaw: String = ""
     var categoryRaw: String = PeptideCategory.other.rawValue
     var scheduledDayStart: Date = Date.now    // startOfDay of the scheduled day
     var scheduledMinutes: Int = 0             // slot, minutes-from-midnight
@@ -319,4 +328,6 @@ final class DoseLog {
     var category: PeptideCategory { PeptideCategory(rawValue: categoryRaw) ?? .other }
     /// nil for legacy logs (empty `doseUnitRaw`); a stamped unit otherwise.
     var doseUnit: DoseUnit? { doseUnitRaw.isEmpty ? nil : DoseUnit(rawValue: doseUnitRaw) }
+    /// nil for legacy/skipped/non-injectable logs (empty `siteRaw`).
+    var site: InjectionSite? { siteRaw.isEmpty ? nil : InjectionSite(rawValue: siteRaw) }
 }

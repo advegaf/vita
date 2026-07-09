@@ -107,6 +107,21 @@ enum Route: String, Codable, Sendable {
     }
 }
 
+/// Standard injection sites for subQ/IM rotation. `allCases` order IS the rotation
+/// order: alternate sides within a region, then advance region.
+enum InjectionSite: String, Codable, Sendable, CaseIterable {
+    case leftAbdomen, rightAbdomen, leftThigh, rightThigh,
+         leftGlute, rightGlute, leftArm, rightArm
+    var label: String {
+        switch self {
+        case .leftAbdomen: "left abdomen";  case .rightAbdomen: "right abdomen"
+        case .leftThigh:   "left thigh";    case .rightThigh:   "right thigh"
+        case .leftGlute:   "left glute";    case .rightGlute:   "right glute"
+        case .leftArm:     "left arm";      case .rightArm:     "right arm"
+        }
+    }
+}
+
 enum GoalKind: String, CaseIterable, Codable, Sendable {
     case fatLoss, muscleStrength, recoveryHealing, cognitionMood, sexualHealth, longevity
     var label: String {

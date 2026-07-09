@@ -22,10 +22,24 @@ struct TodayView: View {
     /// Logs an occurrence inside a single animation transaction so the focus-card
     /// swap, DotMeter, and headline count all move together (the pin knob is already
     /// animated). Reduce-motion collapses it to a quick fade.
-    private func logAnimated(_ item: ProtocolItem, _ o: DoseOccurrence, status: DoseStatus) {
+    private func logAnimated(_ item: ProtocolItem, _ o: DoseOccurrence, status: DoseStatus,
+                             site: InjectionSite? = nil) {
         withAnimation(reduceMotion ? VMotion.reduced : VMotion.cardEntrance) {
-            logger.log(item: item, occurrence: o, status: status)
+            logger.log(item: item, occurrence: o, status: status, site: site)
         }
+    }
+
+    /// Pin site line: the suggestion before logging, the stamped site after.
+    private func siteText(for item: ProtocolItem, occurrence o: DoseOccurrence,
+                          state: DoseState, now: Date) -> String? {
+        guard item.isInjectable else { return nil }
+        if state == .taken {
+            let start = Calendar.current.startOfDay(for: now)
+            return logs.first {
+                DoseLogger.matches($0, itemID: item.id, dayStart: start, minutes: o.minutes)
+            }?.site?.label
+        }
+        return SiteRotation.next(for: item, logs: logs).map { "→ \($0.label)" }
     }
     private func openDetail(_ item: ProtocolItem) {
         NotificationRouter.shared.pendingDetailItemID = item.id
@@ -163,6 +177,9 @@ struct TodayView: View {
             peptide: item?.displayName ?? "",
             doseLine: doseLine(item, now: now),
             due: dateFor(minutes: o.minutes),
+            siteLine: item.flatMap { i in
+                i.isInjectable ? SiteRotation.next(for: i, logs: logs).map { "→ \($0.label)" } : nil
+            },
             onLog: { if let item { logAnimated(item, o, status: .taken) } },
             onOpenDetail: { if let item { openDetail(item) } }
         )
@@ -223,6 +240,9 @@ struct TodayView: View {
                    onUndo: { withAnimation(reduceMotion ? VMotion.reduced : VMotion.cardEntrance) {
                        logger.undo(item: item, occurrence: o) } },
                    onOpenDetail: { openDetail(item) },
+                   siteText: siteText(for: item, occurrence: o, state: state, now: now),
+                   onTakeAtSite: item.isInjectable
+                       ? { logAnimated(item, o, status: .taken, site: $0) } : nil,
                    onEdit: {
                        // Re-resolve at action time: a context menu can outlive
                        // its item (deleted from the Stack tab meanwhile).

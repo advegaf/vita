@@ -42,7 +42,23 @@ enum CatalogStore {
             settings.catalogSeedVersion = seedVersion
         }
         applyRxOverrides(context, settings: settings)
+        backfillRoutes(context)
         try? context.save()
+    }
+
+    /// Idempotent: items created before `ProtocolItem.routeRaw` existed get their
+    /// route from the catalog by slug (unknown slugs stay empty; rotation just hides).
+    static func backfillRoutes(_ context: ModelContext) {
+        let items = ((try? context.fetch(FetchDescriptor<ProtocolItem>())) ?? [])
+            .filter { $0.routeRaw.isEmpty }
+        guard !items.isEmpty else { return }
+        let all = (try? context.fetch(FetchDescriptor<CatalogCompound>())) ?? []
+        let bySlug = Dictionary(all.map { ($0.slug, $0) }, uniquingKeysWith: { a, _ in a })
+        for item in items {
+            if let route = bySlug[item.compoundSlug]?.primaryRoute {
+                item.routeRaw = route.rawValue
+            }
+        }
     }
 
     // MARK: Singletons (fixed-id fetch-or-create)

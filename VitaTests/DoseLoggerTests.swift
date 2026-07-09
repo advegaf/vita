@@ -179,6 +179,70 @@ final class DoseLoggerTests: XCTestCase {
         XCTAssertTrue(WidgetActions.read(directory: tmp).isEmpty)   // ledger cleared
     }
 
+    // MARK: - Site rotation stamping (M-next)
+
+    private func makeInjectable(_ ctx: ModelContext, slug: String = "bpc-157") -> ProtocolItem {
+        let item = makeItem(ctx, slug: slug)
+        item.routeRaw = Route.subcutaneous.rawValue
+        return item
+    }
+
+    func testLogStampsSuggestedSiteAndAdvances() throws {
+        let ctx = makeContext()
+        let item = makeInjectable(ctx)
+        let logger = DoseLogger(context: ctx)
+        let cal = Calendar.current
+        let yesterday = cal.date(byAdding: .day, value: -1, to: Date())!
+
+        let first = logger.log(item: item, occurrence: occ(item, 480), on: yesterday, status: .taken)
+        XCTAssertEqual(first.site, .leftAbdomen)                    // no history → first in order
+        let second = logger.log(item: item, occurrence: occ(item, 480), status: .taken)
+        XCTAssertEqual(second.site, .rightAbdomen)                  // advances past yesterday's
+    }
+
+    func testExplicitSiteOverrideWins() throws {
+        let ctx = makeContext()
+        let item = makeInjectable(ctx)
+        let logger = DoseLogger(context: ctx)
+        let log = logger.log(item: item, occurrence: occ(item, 480), status: .taken, site: .rightGlute)
+        XCTAssertEqual(log.site, .rightGlute)
+    }
+
+    func testSkipAndNonInjectableStampEmpty() throws {
+        let ctx = makeContext()
+        let injectable = makeInjectable(ctx)
+        let oral = makeItem(ctx, slug: "oral-thing")               // routeRaw stays ""
+        let logger = DoseLogger(context: ctx)
+
+        let skipped = logger.log(item: injectable, occurrence: occ(injectable, 480), status: .skipped)
+        XCTAssertNil(skipped.site)
+        let oralLog = logger.log(item: oral, occurrence: occ(oral, 540), status: .taken)
+        XCTAssertNil(oralLog.site)
+    }
+
+    func testUpsertReStampDoesNotSelfAdvance() throws {
+        let ctx = makeContext()
+        let item = makeInjectable(ctx)
+        let logger = DoseLogger(context: ctx)
+        let o = occ(item, 480)
+        // take → skip → take again on the same occurrence: the row's own old site
+        // must not advance the rotation off itself.
+        XCTAssertEqual(logger.log(item: item, occurrence: o, status: .taken).site, .leftAbdomen)
+        _ = logger.log(item: item, occurrence: o, status: .skipped)
+        XCTAssertEqual(logger.log(item: item, occurrence: o, status: .taken).site, .leftAbdomen)
+    }
+
+    func testPRNStampsAndAdvances() throws {
+        let ctx = makeContext()
+        let item = makeInjectable(ctx, slug: "pt-141")
+        let logger = DoseLogger(context: ctx)
+        let noon = Calendar.current.date(bySettingHour: 12, minute: 0, second: 0, of: Date())!
+        let a = logger.logPRN(item: item, at: noon)
+        let b = logger.logPRN(item: item, at: noon.addingTimeInterval(3600))
+        XCTAssertEqual(a.site, .leftAbdomen)
+        XCTAssertEqual(b.site, .rightAbdomen)
+    }
+
     func testStateDerivation() {
         let ctx = makeContext()
         let item = makeItem(ctx)

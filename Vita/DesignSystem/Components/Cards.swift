@@ -67,6 +67,8 @@ struct FocusCard: View {
     var peptide: String
     var doseLine: String         // "250 mcg • 10u"
     var due: Date
+    /// "→ right abdomen" rotation suggestion (injectables only).
+    var siteLine: String? = nil
     var onLog: () -> Void = {}
     /// Tapping the peptide/dose area opens the compound detail (the "Log dose"
     /// button stays the only place that logs).
@@ -82,7 +84,13 @@ struct FocusCard: View {
             }
             VStack(alignment: .leading, spacing: 10) {
                 Text(peptide).font(.vtPicker).foregroundStyle(VT.ink)
-                Text(doseLine).font(.system(size: 15)).vtTabular().foregroundStyle(VT.body)
+                    .lineLimit(1).minimumScaleFactor(0.85)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(doseLine).font(.system(size: 15)).vtTabular().foregroundStyle(VT.body)
+                    if let siteLine {
+                        Text(siteLine).font(.system(size: 13)).foregroundStyle(VT.micro)
+                    }
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())

@@ -32,6 +32,10 @@ struct PinRow: View {
     var onSkip: () -> Void = {}
     var onUndo: () -> Void = {}
     var onOpenDetail: (() -> Void)? = nil   // tap the name/dose area → compound detail
+    /// Rotation (injectables only): "→ right abdomen" before, the stamped site after.
+    var siteText: String? = nil
+    /// Long-press override: log at an explicit site instead of the suggestion.
+    var onTakeAtSite: ((InjectionSite) -> Void)? = nil
     var onEdit: (() -> Void)? = nil   // long-press → "Adjust timing" (opens the dose sheet)
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -63,6 +67,11 @@ struct PinRow: View {
                             .font(.system(size: 13)).vtTabular()
                             .foregroundStyle(VT.body)
                             .lineLimit(1)
+                        if let siteText, !isSkipped {
+                            Text(siteText)
+                                .font(.system(size: 12)).foregroundStyle(VT.micro)
+                                .lineLimit(1)
+                        }
                         if let cycleChip, !isActed {
                             CycleChip(text: cycleChip).padding(.top, 1)
                         }
@@ -100,6 +109,13 @@ struct PinRow: View {
                 Button { quiet(onUndo) } label: { Label("Undo", systemImage: "arrow.uturn.backward") }
             } else {
                 Button { quiet(onSkip) } label: { Label("Skip", systemImage: "minus.circle") }
+                if let onTakeAtSite {
+                    Menu {
+                        ForEach(InjectionSite.allCases, id: \.self) { s in
+                            Button(s.label) { Haptics.commit(); onTakeAtSite(s) }
+                        }
+                    } label: { Label("Log at site", systemImage: "scope") }
+                }
             }
             if let onEdit {
                 Divider()

@@ -28,14 +28,16 @@ struct DoseLogger {
     }
 
     /// Take or skip a scheduled occurrence. Upserts on (itemID, day, minutes).
+    /// `site` overrides the rotation suggestion (nil = auto-suggest for injectables).
     @discardableResult
     func log(item: ProtocolItem, occurrence: DoseOccurrence, on day: Date = Date(),
-             status: DoseStatus) -> DoseLog {
+             status: DoseStatus, site: InjectionSite? = nil) -> DoseLog {
         let start = Calendar.current.startOfDay(for: day)
         let log = logged(itemID: item.id, minutes: occurrence.minutes, on: day) ?? {
             let l = DoseLog(); context.insert(l); return l
         }()
         stamp(log, from: item, on: day)
+        stampSite(log, from: item, status: status, override: site)
         log.scheduledDayStart = start
         log.scheduledMinutes = occurrence.minutes
         log.statusRaw = status.rawValue
@@ -70,7 +72,8 @@ struct DoseLogger {
     /// only for a POSITIVE interval (a backwards clock change must never swallow
     /// real doses).
     @discardableResult
-    func logPRN(item: ProtocolItem, at when: Date = Date()) -> DoseLog {
+    func logPRN(item: ProtocolItem, at when: Date = Date(),
+                site: InjectionSite? = nil) -> DoseLog {
         if let recent = allLogs().filter({ $0.isPRN && $0.itemID == item.id })
             .max(by: { $0.loggedAt < $1.loggedAt }) {
             let dt = when.timeIntervalSince(recent.loggedAt)
@@ -78,6 +81,7 @@ struct DoseLogger {
         }
         let log = DoseLog()
         stamp(log, from: item, on: when)
+        stampSite(log, from: item, status: .taken, override: site)
         log.scheduledDayStart = Calendar.current.startOfDay(for: when)
         log.scheduledMinutes = -1
         log.isPRN = true
@@ -110,5 +114,15 @@ struct DoseLogger {
         log.doseUnitRaw = item.doseUnitRaw
         log.doseText = item.effectiveDoseText(on: day)
         log.categoryRaw = item.categoryRaw
+    }
+
+    /// Site stamp (M-next): taken injectable doses get the override or the rotation
+    /// suggestion; skips and non-injectable routes stamp empty. `excluding: log.id`
+    /// stops the upserted row's own old site from advancing the rotation off itself.
+    private func stampSite(_ log: DoseLog, from item: ProtocolItem,
+                           status: DoseStatus, override site: InjectionSite?) {
+        guard status == .taken, item.isInjectable else { log.siteRaw = ""; return }
+        let chosen = site ?? SiteRotation.next(for: item, logs: allLogs(), excluding: log.id)
+        log.siteRaw = chosen?.rawValue ?? ""
     }
 }

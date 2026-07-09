@@ -47,6 +47,7 @@ struct CompoundDetailView: View {
                 doseCard
                 vialSection
                 if isStackMode { adherenceCard }
+                rotationCard
                 timingCard
                 InfoCard(lead: "Why.", leadColor: VT.why,
                          text: compound.about ?? compound.mechanismBlurb ?? "Educational information about this compound.",
@@ -251,6 +252,41 @@ struct CompoundDetailView: View {
         .padding(VT.sCardPad).vtCard()
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Adherence. \(line)")
+    }
+
+    // MARK: Rotation card (M-next — injectables in stack mode only)
+
+    @ViewBuilder
+    private var rotationCard: some View {
+        if isStackMode, let item, item.isInjectable {
+            let itemLogs = allLogs.filter { $0.compoundSlug == item.compoundSlug }
+            let recent = itemLogs.filter { $0.site != nil && $0.status == .taken }
+                .sorted { $0.loggedAt > $1.loggedAt }.prefix(4)
+            VStack(alignment: .leading, spacing: 10) {
+                vtLead("Rotation.", color: VT.timing)
+                if let next = SiteRotation.next(for: item, logs: itemLogs) {
+                    Text("Next: \(next.label)")
+                        .font(.system(size: 15, weight: .semibold)).foregroundStyle(VT.ink)
+                }
+                if recent.isEmpty {
+                    Text("Sites are suggested in a steady rotation as you log.")
+                        .font(.system(size: 13)).foregroundStyle(VT.micro)
+                } else {
+                    ForEach(Array(recent), id: \.id) { log in
+                        HStack {
+                            Text(log.site?.label ?? "")
+                                .font(.system(size: 14)).foregroundStyle(VT.body)
+                            Spacer()
+                            Text(log.loggedAt.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day()))
+                                .font(.system(size: 13)).vtTabular().foregroundStyle(VT.micro)
+                        }
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(VT.sCardPad).vtCard()
+            .accessibilityElement(children: .combine)
+        }
     }
 
     // MARK: Timing card

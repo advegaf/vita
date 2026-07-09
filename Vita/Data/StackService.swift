@@ -40,6 +40,7 @@ struct StackService {
         var d = DoseDraft(compoundSlug: c.slug, displayName: c.name)
         d.categoryRaw = c.categoryRaw
         d.rxStatusRaw = c.rxStatusRaw
+        d.routeRaw = c.primaryRoute?.rawValue ?? ""
         d.doseUnit = c.doseUnit
         d.doseAmount = seedDose(c)
         d.frequency = (c.defaultScheduleType == .asNeeded) ? .prn : .daily
@@ -54,6 +55,7 @@ struct StackService {
         d.aiGenerated = item.aiGenerated
         d.categoryRaw = item.categoryRaw
         d.rxStatusRaw = item.rxStatusRaw
+        d.routeRaw = item.routeRaw
         d.doseUnit = item.doseUnit
         d.doseAmount = item.doseAmount
         if let r = item.schedule {
@@ -104,6 +106,7 @@ struct StackService {
         item.doseUnitRaw = d.doseUnit.rawValue
         item.doseAmount = max(0, d.doseAmount)
         item.aiGenerated = d.aiGenerated
+        if !d.routeRaw.isEmpty { item.routeRaw = d.routeRaw }
         item.kindRaw = (d.frequency == .prn) ? "prn" : "scheduled"
 
         let rule = item.schedule ?? {
@@ -282,6 +285,7 @@ struct DoseDraft: Identifiable {
     var displayName: String
     var categoryRaw: String = PeptideCategory.other.rawValue
     var rxStatusRaw: String = RxStatus.nonRx.rawValue
+    var routeRaw: String = ""
     var doseUnit: DoseUnit = .mcg
     var doseAmount: Double = 0
     var frequency: Frequency = .daily
