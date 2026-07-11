@@ -1,9 +1,10 @@
 import XCTest
 
-/// M38 card-navigation behaviors, verified against the REAL app (demo seed):
-/// pull-up reveals the glass bar and it switches views; the ⇕ menu switches
-/// views at rest; the card survives dismiss attempts; Chat's keyboard expands
-/// the card and hides the bar.
+/// M39 card-navigation behaviors, verified against the REAL app (demo seed):
+/// the header icon picker is the ONLY navigation (the glass tab bar is gone);
+/// the card still expands from a passive-zone drag; the card survives dismiss
+/// attempts; Chat's keyboard expands the card (and the faded header's picker
+/// is not a target while expanded).
 final class CardNavUITests: XCTestCase {
 
     private var app: XCUIApplication!
@@ -16,57 +17,49 @@ final class CardNavUITests: XCTestCase {
     }
 
     /// Slow upward drag from a PASSIVE card zone (the hero card — not a button;
-    /// drags that start on pressable controls can be eaten by the control).
-    private func dragCardUp(fromY y: CGFloat = 0.40) {
+    /// drags that start on pressable controls belong to the control).
+    private func dragCardUp(fromY y: CGFloat = 0.45) {
         let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: y))
         let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.08))
         start.press(forDuration: 0.15, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
     }
 
-    func testPullUpRevealsBarAndBarSwitchesViews() {
+    func testIconPickerSwitchesViews() {
+        app.launch()
+        let stackIcon = app.buttons["picker-stack"]
+        XCTAssertTrue(stackIcon.waitForExistence(timeout: 10), "icon picker should sit on the photo header")
+        XCTAssertTrue(stackIcon.isHittable, "picker must be tappable at rest")
+
+        stackIcon.tap()
+        XCTAssertTrue(app.buttons["Add a peptide"].waitForExistence(timeout: 5),
+                      "picker tap should switch the card to Stack")
+
+        app.buttons["picker-chat"].tap()
+        XCTAssertTrue(app.textFields.firstMatch.waitForExistence(timeout: 5),
+                      "picker tap should switch the card to Chat")
+    }
+
+    func testCardExpandsFromContentDragAndPickerFadesOut() {
         app.launch()
         let logDose = app.buttons["Log dose"]
-        XCTAssertTrue(logDose.waitForExistence(timeout: 10), "Today focus card should appear")
+        XCTAssertTrue(logDose.waitForExistence(timeout: 10))
         sleep(1)
-        let cardYBefore = logDose.frame.minY
-
-        // At rest the glass bar must not be an active target.
-        let stackItem = app.buttons["tabbar-stack"]
-        XCTAssertFalse(stackItem.exists && stackItem.isHittable,
-                       "glass bar must be inactive at the rest detent")
+        let yBefore = logDose.frame.minY
 
         dragCardUp()
         sleep(1)
-        let cardYAfter = app.buttons["Log dose"].exists ? app.buttons["Log dose"].frame.minY : -1
-        XCTAssertTrue(stackItem.waitForExistence(timeout: 3) && stackItem.isHittable,
-                      "pulling the card up should reveal the glass tab bar "
-                      + "(card moved \(cardYBefore) -> \(cardYAfter))")
+        let yAfter = app.buttons["Log dose"].frame.minY
+        XCTAssertLessThan(yAfter, yBefore - 100,
+                          "a passive-zone drag should expand the card (\(yBefore) -> \(yAfter))")
 
-        stackItem.tap()
-        XCTAssertTrue(app.buttons["Add a peptide"].waitForExistence(timeout: 5),
-                      "bar tap should switch the card to Stack")
-    }
-
-    func testSwitcherMenuChangesViewAtRest() {
-        app.launch()
-        let switcher = app.buttons["Switch view"]
-        XCTAssertTrue(switcher.waitForExistence(timeout: 10), "the ⇕ switcher should sit on the photo header")
-        switcher.tap()
-        sleep(1)
-        // The menu's "Chat" item is the hittable one (the glass bar's is inert at rest).
-        let candidates = app.buttons.matching(NSPredicate(format: "label == 'Chat'")).allElementsBoundByIndex
-        guard let chat = candidates.first(where: { $0.isHittable }) else {
-            return XCTFail("no hittable Chat menu item among \(candidates.count) matches")
-        }
-        chat.tap()
-        XCTAssertTrue(app.textFields.firstMatch.waitForExistence(timeout: 5),
-                      "Chat's input should appear after switching")
+        // The header (and its picker) fades out at the expanded detent.
+        let picker = app.buttons["picker-stack"]
+        XCTAssertFalse(picker.isHittable, "the faded header picker must not be a target while expanded")
     }
 
     func testCardCannotBeDismissed() {
         app.launch()
         XCTAssertTrue(app.buttons["Log dose"].waitForExistence(timeout: 10))
-        // Try hard to fling the card away.
         let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.45))
         let end = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.99))
         start.press(forDuration: 0.1, thenDragTo: end)
@@ -74,7 +67,11 @@ final class CardNavUITests: XCTestCase {
         XCTAssertTrue(app.buttons["Log dose"].exists, "the card must never dismiss")
     }
 
-    func testChatKeyboardExpandsCardAndHidesBar() {
+    /// The card does NOT jump detents for the keyboard (the sheet controller
+    /// drops detent changes during keyboard presentation — verified; the system
+    /// keeps the input above the keyboard instead). The visible header stays
+    /// usable while typing.
+    func testChatKeyboardTypingWorksAndHeaderStaysUsable() {
         app.launchEnvironment["VITA_TAB"] = "chat"
         app.launch()
         let input = app.textFields.firstMatch
@@ -82,12 +79,9 @@ final class CardNavUITests: XCTestCase {
         input.tap()
         sleep(1)
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5), "keyboard should appear")
-        let todayItem = app.buttons["tabbar-today"]
-        XCTAssertFalse(todayItem.exists && todayItem.isHittable,
-                       "glass bar must stay hidden while the keyboard is up")
+        XCTAssertTrue(app.buttons["picker-today"].isHittable,
+                      "the header picker stays available while typing at rest")
         input.typeText("hi")
-        // The header title should have faded out with the card expanded.
-        // (Chat input keeps working — streaming is stubbed.)
         app.buttons["Send"].firstMatch.tap()
         sleep(2)
         XCTAssertTrue(app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'hi'")).firstMatch.exists)

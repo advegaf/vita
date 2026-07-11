@@ -13,18 +13,16 @@ import SwiftData
 /// geometry per frame; programmatic detent changes report endpoints only, so
 /// large jumps are animated here with a matching spring.
 struct ImmersiveRootView: View {
-    // 0.70 (not the planned 0.62): the first screenshots showed a dead photo
-    // band between the subtitle and the card — the card should start just under
-    // the title block, like the reference.
-    static let restFraction: CGFloat = 0.70
+    // Screenshot-iterated: 0.62 left a dead photo band; 0.70 was better; 0.75
+    // per device feedback ("make it come up a little more") — the card starts
+    // right under the title block.
+    static let restFraction: CGFloat = 0.75
 
     @State private var selection: AppTab = .initialForScreenshots
     @State private var mounted: Set<AppTab> = [AppTab.initialForScreenshots]
     @State private var cardPresented = true
     @State private var detent: PresentationDetent = .fraction(ImmersiveRootView.restFraction)
-    @State private var detents: Set<PresentationDetent> = [.fraction(ImmersiveRootView.restFraction), .large]
-    @State private var storedDetent: PresentationDetent?
-    @State private var keyboardUp = false
+    private let detents: Set<PresentationDetent> = [.fraction(ImmersiveRootView.restFraction), .large]
     @State private var showSettings = false
     @State private var sheetTopY: CGFloat = 10_000
     @State private var geometryInitialized = false
@@ -51,11 +49,20 @@ struct ImmersiveRootView: View {
                 }
                 .padding(.horizontal, VT.sSection)
                 .padding(.top, 8)
+                // opacity(0) does NOT stop hit-testing or accessibility: once
+                // the card covers the faded header, take it out of both so an
+                // invisible picker can't be focused behind the sheet.
+                .allowsHitTesting(progress < 0.6)
+                .accessibilityHidden(progress > 0.6)
             }
             .sheet(isPresented: $cardPresented) {
-                cardHost(progress: progress)
+                cardHost()
             }
         }
+        // The photo layer never moves for the keyboard — and the progress math
+        // depends on stable base geometry (a keyboard-shrunk GeometryReader
+        // corrupted the derived detent positions while Chat was typing).
+        .ignoresSafeArea(.keyboard)
         // The card must be impossible to lose (memory pressure, presentation
         // conflicts): whatever dismisses it, put it back.
         .onChange(of: cardPresented) { _, shown in
@@ -135,10 +142,8 @@ struct ImmersiveRootView: View {
 
     // MARK: Card
 
-    private var barVisible: Bool { detent == .large && !keyboardUp }
-
     @ViewBuilder
-    private func cardHost(progress: CGFloat) -> some View {
+    private func cardHost() -> some View {
         ZStack {
             ForEach(AppTab.allCases) { tab in
                 if mounted.contains(tab) {
@@ -151,11 +156,7 @@ struct ImmersiveRootView: View {
             }
         }
         .safeAreaPadding(.top, 10)   // clear the notch
-        .safeAreaPadding(.bottom, barVisible ? 64 : 0)
-        .animation(reduceMotion ? VMotion.reduced : .spring(response: 0.4, dampingFraction: 1),
-                   value: barVisible)
         .overlay(alignment: .top) { notch }
-        .overlay(alignment: .bottom) { bar(progress: progress) }
         .background(SheetTuner { _ in })
         .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: { y in
             guard geometryInitialized else {
@@ -186,25 +187,12 @@ struct ImmersiveRootView: View {
         )) {
             detailSheet
         }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
-            guard !keyboardUp else { return }
-            keyboardUp = true
-            storedDetent = detent
-            detents = [.large]
-            detent = .large
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
-            guard keyboardUp else { return }
-            keyboardUp = false
-            // Restore the SET before the SELECTION, one runloop apart, so the
-            // sheet never briefly resolves against a set missing its selection.
-            detents = [.fraction(Self.restFraction), .large]
-            let restore = storedDetent
-            storedDetent = nil
-            DispatchQueue.main.async {
-                if let restore, !keyboardUp { detent = restore }
-            }
-        }
+        // No keyboard detent dance: the sheet controller drops selection changes
+        // issued during the keyboard's own presentation (verified empirically —
+        // the M38 "auto-expand" never actually moved the card; the old bar's
+        // hiding masked it). The system already keeps the focused field above
+        // the keyboard, the header stays visible and usable, and the card
+        // doesn't jump around while you type.
     }
 
     @ViewBuilder
@@ -223,18 +211,6 @@ struct ImmersiveRootView: View {
             .frame(width: 42, height: 5)
             .padding(.top, 8)
             .accessibilityHidden(true)
-    }
-
-    @ViewBuilder
-    private func bar(progress: CGFloat) -> some View {
-        let visibility = min(1, max(0, (progress - 0.8) / 0.2))
-        if !keyboardUp {
-            GlassTabBar(selection: $selection)
-                .opacity(visibility)
-                .offset(y: (1 - visibility) * 20)
-                .allowsHitTesting(barVisible)
-                .padding(.bottom, 10)
-        }
     }
 
     /// Only present detail for a LIVE item: a reminder for a since-removed (or

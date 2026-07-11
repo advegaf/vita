@@ -246,8 +246,14 @@ struct ChatView: View {
             inputBar
         }
         .padding(.horizontal, VT.sSection).padding(.top, 6).padding(.bottom, 8)
-        // No opaque fill: the input pill floats on the app canvas, so nothing is
-        // painted behind the keyboard (just the standard iOS keyboard + canvas).
+        // Solid canvas with a soft top dissolve: transcript text used to render
+        // straight through the floating pill (visible mess once the card sat
+        // higher). The fade keeps it reading as one surface, not a bar.
+        .background {
+            LinearGradient(stops: [.init(color: VT.canvas.opacity(0), location: 0),
+                                   .init(color: VT.canvas, location: 0.25)],
+                           startPoint: .top, endPoint: .bottom)
+        }
     }
 
     private var inputBar: some View {
