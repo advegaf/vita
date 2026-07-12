@@ -24,19 +24,18 @@ final class CardNavUITests: XCTestCase {
         start.press(forDuration: 0.15, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.1)
     }
 
-    func testIconPickerSwitchesViews() {
+    func testSwitcherMenuChangesViews() {
         app.launch()
-        let stackIcon = app.buttons["picker-stack"]
-        XCTAssertTrue(stackIcon.waitForExistence(timeout: 10), "icon picker should sit on the photo header")
-        XCTAssertTrue(stackIcon.isHittable, "picker must be tappable at rest")
-
-        stackIcon.tap()
+        let switcher = app.buttons["Switch view"]
+        XCTAssertTrue(switcher.waitForExistence(timeout: 10), "the \u{21d5} switcher should sit on the photo header")
+        switcher.tap()
+        sleep(1)
+        let stack = app.buttons.matching(NSPredicate(format: "label == 'Stack'")).allElementsBoundByIndex
+            .first(where: { $0.isHittable })
+        XCTAssertNotNil(stack, "menu should offer Stack")
+        stack?.tap()
         XCTAssertTrue(app.buttons["Add a peptide"].waitForExistence(timeout: 5),
-                      "picker tap should switch the card to Stack")
-
-        app.buttons["picker-chat"].tap()
-        XCTAssertTrue(app.textFields.firstMatch.waitForExistence(timeout: 5),
-                      "picker tap should switch the card to Chat")
+                      "menu pick should switch the card to Stack")
     }
 
     func testCardExpandsFromContentDragAndPickerFadesOut() {
@@ -52,9 +51,9 @@ final class CardNavUITests: XCTestCase {
         XCTAssertLessThan(yAfter, yBefore - 100,
                           "a passive-zone drag should expand the card (\(yBefore) -> \(yAfter))")
 
-        // The header (and its picker) fades out at the expanded detent.
-        let picker = app.buttons["picker-stack"]
-        XCTAssertFalse(picker.isHittable, "the faded header picker must not be a target while expanded")
+        // The header (and its switcher) fades out at the expanded detent.
+        let switcher = app.buttons["Switch view"]
+        XCTAssertFalse(switcher.isHittable, "the faded header switcher must not be a target while expanded")
     }
 
     func testCardCannotBeDismissed() {
@@ -79,8 +78,8 @@ final class CardNavUITests: XCTestCase {
         input.tap()
         sleep(1)
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5), "keyboard should appear")
-        XCTAssertTrue(app.buttons["picker-today"].isHittable,
-                      "the header picker stays available while typing at rest")
+        XCTAssertTrue(app.buttons["Switch view"].isHittable,
+                      "the header switcher stays available while typing at rest")
         input.typeText("hi")
         app.buttons["Send"].firstMatch.tap()
         sleep(2)

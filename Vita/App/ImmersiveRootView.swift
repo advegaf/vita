@@ -39,14 +39,19 @@ struct ImmersiveRootView: View {
             let progress = progress(in: geo)
             ZStack(alignment: .top) {
                 BackdropView(progress: progress)
-                VStack(alignment: .leading, spacing: 16) {
+                // The title block floats CENTERED between the brand pill and
+                // the resting card's top edge (the spacers split the leftover
+                // photo band evenly), instead of hugging the pill.
+                VStack(alignment: .leading, spacing: 0) {
                     TopBarPill(onMenu: { showSettings = true })
+                    Spacer(minLength: 8)
                     ImmersiveHeader(selection: $selection,
                                     eyebrow: eyebrow,
                                     subtitle: subtitle,
                                     progress: progress)
-                    Spacer(minLength: 0)
+                    Spacer(minLength: 8)
                 }
+                .frame(height: max(0, detentGeometry(in: geo).restY - geo.safeAreaInsets.top - 8))
                 .padding(.horizontal, VT.sSection)
                 .padding(.top, 8)
                 // opacity(0) does NOT stop hit-testing or accessibility: once
@@ -56,7 +61,7 @@ struct ImmersiveRootView: View {
                 .accessibilityHidden(progress > 0.6)
             }
             .sheet(isPresented: $cardPresented) {
-                cardHost()
+                cardHost(progress: progress)
             }
         }
         // The photo layer never moves for the keyboard — and the progress math
@@ -97,14 +102,19 @@ struct ImmersiveRootView: View {
 
     // MARK: Sheet progress (0 = rest, 1 = expanded; slight overshoot allowed)
 
-    /// Derived from the observed sheet top against the two detents' resolved
-    /// positions. The formula was validated against the spike's measured values
-    /// (rest 370 / large 62 on the 874pt canvas).
-    private func progress(in geo: GeometryProxy) -> CGFloat {
+    /// The two detents' resolved top-edge positions in global coordinates.
+    /// Formula validated against the spike's measured values (rest 370 /
+    /// large 62 on the 874pt canvas).
+    private func detentGeometry(in geo: GeometryProxy) -> (restY: CGFloat, largeY: CGFloat) {
         let safeTop = geo.safeAreaInsets.top
         let height = geo.size.height + safeTop + geo.safeAreaInsets.bottom
         let largeY = safeTop + 10
-        let restY = height - Self.restFraction * (height - largeY)
+        return (height - Self.restFraction * (height - largeY), largeY)
+    }
+
+    /// Sheet progress derived from the observed sheet top: 0 = rest, 1 = large.
+    private func progress(in geo: GeometryProxy) -> CGFloat {
+        let (restY, largeY) = detentGeometry(in: geo)
         guard restY > largeY + 1 else { return 0 }
         let raw = (restY - sheetTopY) / (restY - largeY)
         return min(1.2, max(-0.2, raw))
@@ -143,7 +153,7 @@ struct ImmersiveRootView: View {
     // MARK: Card
 
     @ViewBuilder
-    private func cardHost() -> some View {
+    private func cardHost(progress: CGFloat) -> some View {
         ZStack {
             ForEach(AppTab.allCases) { tab in
                 if mounted.contains(tab) {
@@ -157,6 +167,25 @@ struct ImmersiveRootView: View {
         }
         .safeAreaPadding(.top, 10)   // clear the notch
         .overlay(alignment: .top) { notch }
+        // At rest the card's fold sliced content raw (the diary chart "leaked"
+        // out the bottom edge): a soft canvas dissolve at the visible fold,
+        // gone once the card expands. Chat is exempt — its floating input
+        // footer carries its own fade and must not be washed out.
+        .overlay(alignment: .bottom) {
+            if selection != .chat {
+                // Offset past the home-indicator inset: the overlay aligns to
+                // the CONTENT bottom, and axis labels rendering inside the
+                // safe-area band below it escaped the first two attempts.
+                LinearGradient(stops: [.init(color: VT.canvas.opacity(0), location: 0),
+                                       .init(color: VT.canvas, location: 0.55)],
+                               startPoint: .top, endPoint: .bottom)
+                    .frame(height: 118)
+                    .offset(y: 34)
+                    .opacity(1 - min(1, max(0, progress)))
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            }
+        }
         .background(SheetTuner { _ in })
         .onGeometryChange(for: CGFloat.self) { $0.frame(in: .global).minY } action: { y in
             guard geometryInitialized else {

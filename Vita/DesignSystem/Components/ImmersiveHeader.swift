@@ -46,43 +46,27 @@ struct ImmersiveHeader: View {
         .accessibilityLabel("\(selection.title). \(subtitle ?? "")")
     }
 
-    /// The icon picker (M39): all four views as icons in one glass capsule —
-    /// with the tab bar gone, this IS the navigation. The selected icon sits
-    /// tinted in a subtle well; one tap switches directly.
+    /// The ⇕ capsule (restored per device feedback — the icon row read as
+    /// clutter next to the title): a menu of all four views, icons included.
     private var switcher: some View {
-        HStack(spacing: 2) {
+        Menu {
             ForEach(AppTab.allCases) { tab in
-                pickerIcon(tab)
+                Button {
+                    select(tab)
+                } label: {
+                    Label(tab.title, systemImage: tab == selection ? "checkmark" : tab.icon)
+                }
             }
-        }
-        .padding(.horizontal, 5)
-        .padding(.vertical, 4)
-        .background(.white.opacity(0.14), in: Capsule())
-        .overlay(Capsule().strokeBorder(.white.opacity(0.20), lineWidth: 1))
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("Switch view")
-    }
-
-    private func pickerIcon(_ tab: AppTab) -> some View {
-        let selected = tab == selection
-        return Button {
-            select(tab)
         } label: {
-            Image(systemName: tab.icon)
-                .font(.system(size: 15, weight: selected ? .semibold : .medium))
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(selected ? tab.tint : .white.opacity(0.72))
+            Image(systemName: "chevron.up.chevron.down")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(.white)
                 .frame(width: 40, height: 40)
-                .background(
-                    Circle().fill(selected ? AnyShapeStyle(.white.opacity(0.22))
-                                           : AnyShapeStyle(.clear))
-                )
-                .contentShape(Rectangle())
+                .background(.white.opacity(0.17), in: Circle())
+                .overlay(Circle().strokeBorder(.white.opacity(0.22), lineWidth: 1))
+                .contentShape(Circle().inset(by: -4))
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(tab.title)
-        .accessibilityIdentifier("picker-\(tab.rawValue)")
-        .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
+        .accessibilityLabel("Switch view")
     }
 
     /// Vertical flick on the header cycles views (down = next, up = previous —
