@@ -12,7 +12,6 @@ struct TodayView: View {
     private var items: [ProtocolItem]
     @Query private var logs: [DoseLog]
 
-    @State private var selectedBlock: String?
     @State private var editDraft: DoseDraft?
     @State private var showSettings = false
     @Query private var profiles: [UserProfile]
@@ -62,11 +61,6 @@ struct TodayView: View {
     var body: some View {
         TimelineView(.periodic(from: .now, by: 60)) { ctx in
             content(now: ctx.date)
-        }
-        .onAppear {
-            #if DEBUG
-            if let b = ProcessInfo.processInfo.environment["VITA_TODAY_BLOCK"] { selectedBlock = b }
-            #endif
         }
         .sheet(item: $editDraft) { d in DoseSetupSheet(draft: d) }
         .sheet(isPresented: $showSettings) { SettingsView() }
@@ -132,59 +126,53 @@ struct TodayView: View {
         let total = allOcc.count
         let acted = allOcc.filter { isActed($0, now: now) }.count
         let remaining = total - acted
-        let shownBlock = DayBlock(rawValue: selectedBlock.flatMap(blockIndex) ?? currentBlock.rawValue) ?? currentBlock
         let next = nextUnacted(in: allOcc, now: now)
         let restingByBlock = restingItemsByBlock(on: now)
-        let hasResting = restingByBlock.values.contains { !$0.isEmpty }
 
         return ScrollView {
             VStack(alignment: .leading, spacing: VT.sCardGap) {
                 greetingHeader(block: currentBlock)
-                    .padding(.bottom, 2)
+                    .padding(.bottom, 6)
                 if items.isEmpty {
                     emptyStack
                 } else {
-                    TodayHeroCard(snapshot: TodayRings.snapshot(items: items, logs: logs, asOf: now))
-                    Group {
-                        if total == 0 && !hasResting {
-                            RestDayCard()
-                        } else if total > 0 && remaining == 0 {
-                            DayCompleteCard()
-                        } else if let next {
-                            focusCard(next, now: now)
+                    // Editorial hero: one display headline carrying the day's state.
+                    TodayHero(state: heroState(next: next, total: total, remaining: remaining,
+                                               grouped: grouped, now: now))
+                        .id(remaining == 0 ? "done" : (next?.id ?? "rest"))
+                        .transition(reduceMotion ? .opacity
+                            : .asymmetric(insertion: .opacity.combined(with: .offset(y: 8)),
+                                          removal: .opacity))
+                        .padding(.bottom, 4)
+
+                    DateStrip(days: DateStrip.week(asOf: now, isDayDone: { isDayComplete($0) }))
+                        .padding(.bottom, 6)
+
+                    if let insight = insightLine(now: now) {
+                        InsightCard(text: insight, style: .dashed) {
+                            if lowVialLine != nil { NotificationRouter.shared.pendingTab = .stack }
                         }
                     }
-                    // The crescendo: the focus card dissolving into "All done" as the
-                    // last dose is logged. Identity swap drives an insert/remove.
-                    .id(remaining == 0 ? "complete" : (next?.id ?? "rest"))
-                    .transition(reduceMotion ? .opacity
-                        : .asymmetric(insertion: .opacity.combined(with: .scale(scale: 0.97, anchor: .top)),
-                                      removal: .opacity))
 
-                    if total > 0 || hasResting {
-                        CandySegmentedControl(
-                            segments: CandySegmentedControl.dayBlockSegments,
-                            selection: blockBinding(default: currentBlock)
-                        )
-                        .padding(.vertical, 2)
-
-                        blockPins(shownBlock, grouped[shownBlock] ?? [],
-                                  resting: restingByBlock[shownBlock] ?? [], now: now)
-                        // (DotMeter retired: the hero's rings + legend carry the
-                        // dose count and streak now.)
-                    }
-
-                    if let lowVialLine {
-                        Button { NotificationRouter.shared.pendingTab = .stack } label: {
-                            HStack(spacing: 4) {
-                                Text(lowVialLine)
-                                    .font(.system(size: 14, weight: .semibold)).foregroundStyle(VT.body)
-                                Image(systemName: "chevron.right")
-                                    .font(.system(size: 12, weight: .semibold)).foregroundStyle(VT.micro)
+                    // Journey timeline: every block stacked, gray group labels,
+                    // the NEXT pending dose as the black card.
+                    ForEach(DayBlock.allCases, id: \.self) { block in
+                        let occ = grouped[block] ?? []
+                        let resting = restingByBlock[block] ?? []
+                        if !occ.isEmpty || !resting.isEmpty {
+                            Text(block.title)
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundStyle(VT.micro)
+                                .padding(.top, 8).padding(.leading, 4)
+                            ForEach(occ) { o in
+                                if o.id == next?.id {
+                                    nextDoseCard(o, now: now)
+                                } else {
+                                    pin(o, now: now)
+                                }
                             }
-                            .frame(maxWidth: .infinity).frame(minHeight: 44).contentShape(Rectangle())
+                            ForEach(resting) { item in restingRow(item, now: now) }
                         }
-                        .buttonStyle(.plain)
                     }
 
                     if !prnItems.isEmpty { asNeededCard(now: now) }
@@ -196,53 +184,69 @@ struct TodayView: View {
         .background(VT.canvas)
     }
 
-    // MARK: Up next FocusCard
+    // MARK: Hero state + insight
 
-    private func focusCard(_ o: DoseOccurrence, now: Date) -> some View {
+    private func heroState(next: DoseOccurrence?, total: Int, remaining: Int,
+                           grouped: [DayBlock: [DoseOccurrence]], now: Date) -> TodayHero.State {
+        guard total > 0 else { return .restDay }
+        guard remaining > 0, let next else { return .allDone }
+        let item = items.first { $0.id == next.itemID }
+        let compound = item?.displayName ?? "dose"
+        let state = ScheduleService.state(itemID: next.itemID, minutes: next.minutes,
+                                          day: now, logs: logs, now: now)
+        if state == .overdue {
+            return .overdue(compound: compound, time: next.timeText)
+        }
+        let pendingInBlock = (grouped[next.block] ?? []).filter { !isActed($0, now: now) }.count
+        return .upNext(block: next.block.title, compound: compound,
+                       count: pendingInBlock, time: next.timeText)
+    }
+
+    /// Rule-based lavender insight: streak + supply, quiet and optional.
+    private func insightLine(now: Date) -> String? {
+        let streak = StreakService.currentStreak(items: items, logs: logs, asOf: now)
+        switch (streak >= 3, lowVialLine) {
+        case (true, let vial?):  return "You're \(streak) days consistent. \(vial)."
+        case (true, nil):        return "You're \(streak) days consistent. Keep it up."
+        case (false, let vial?): return "\(vial). Plan the refill ahead."
+        case (false, nil):       return nil
+        }
+    }
+
+    /// A past day is "complete" when every scheduled occurrence has a log.
+    private func isDayComplete(_ date: Date) -> Bool {
+        let start = Calendar.current.startOfDay(for: date)
+        var anyScheduled = false
+        for item in items {
+            for o in ScheduleService.occurrences(for: item, on: date) {
+                anyScheduled = true
+                if !logs.contains(where: {
+                    DoseLogger.matches($0, itemID: o.itemID, dayStart: start, minutes: o.minutes)
+                }) { return false }
+            }
+        }
+        return anyScheduled
+    }
+
+    // MARK: Next dose (the black card)
+
+    private func nextDoseCard(_ o: DoseOccurrence, now: Date) -> some View {
         let item = items.first { $0.id == o.itemID }
-        return FocusCard(
-            peptide: item?.displayName ?? "",
-            doseLine: doseLine(item, now: now),
-            due: dateFor(minutes: o.minutes),
+        let state = ScheduleService.state(itemID: o.itemID, minutes: o.minutes, day: now,
+                                          logs: logs, now: now)
+        return NextDoseCard(
+            name: item?.displayName ?? "",
+            doseLine: item?.doseWithDrawText(on: now) ?? "",
+            timeText: o.timeText,
             siteLine: item.flatMap { i in
                 i.isInjectable ? SiteRotation.next(for: i, logs: logs).map { "→ \($0.label)" } : nil
             },
+            category: item?.category ?? .other,
+            overdueText: state == .overdue
+                ? ScheduleService.overdueLabel(minutesLate: minutes(of: now) - o.minutes) : nil,
             onLog: { if let item { logAnimated(item, o, status: .taken) } },
             onOpenDetail: { if let item { openDetail(item) } }
         )
-    }
-
-    private func doseLine(_ item: ProtocolItem?, now: Date) -> String {
-        guard let item else { return "" }
-        return item.doseWithDrawText(on: now)
-    }
-
-    // MARK: Block pins (filtered to the selected block)
-
-    @ViewBuilder
-    private func blockPins(_ block: DayBlock, _ occ: [DoseOccurrence],
-                           resting: [ProtocolItem], now: Date) -> some View {
-        if occ.isEmpty && resting.isEmpty {
-            calmLine(block.emptyLine, peek: peekNext(after: block, now: now))
-        } else {
-            VStack(spacing: VT.sCardGap) {
-                ForEach(occ) { o in pin(o, now: now) }
-                ForEach(resting) { item in restingRow(item, now: now) }
-            }
-        }
-    }
-
-    private func calmLine(_ text: String, peek: (DayBlock, Int)?) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(text)
-                .font(.system(size: 17, weight: .semibold)).foregroundStyle(VT.ink)
-            if let (b, n) = peek {
-                Text("Next: \(b.title.lowercased()), \(n) to pin")
-                    .font(.system(size: 14)).foregroundStyle(VT.micro)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(VT.sCardPad).vtCard()
     }
 
     @ViewBuilder
@@ -395,63 +399,10 @@ struct TodayView: View {
             ?? pending.min { $0.minutes < $1.minutes }
     }
 
-    private func peekNext(after block: DayBlock, now: Date) -> (DayBlock, Int)? {
-        let grouped = occurrencesByBlock(on: now)
-        for b in DayBlock.allCases where b.rawValue > block.rawValue {
-            let pending = (grouped[b] ?? []).filter { !isActed($0, now: now) }
-            if !pending.isEmpty { return (b, pending.count) }
-        }
-        return nil
-    }
-
-    private func blockBinding(default current: DayBlock) -> Binding<String> {
-        Binding(get: { selectedBlock ?? blockID(current) }, set: { selectedBlock = $0 })
-    }
-
-    private func blockID(_ b: DayBlock) -> String {
-        switch b { case .morning: "morning"; case .midday: "midday"; case .night: "night" }
-    }
-    private func blockIndex(_ id: String) -> Int? {
-        switch id { case "morning": 0; case "midday": 1; case "night": 2; default: nil }
-    }
 
     private func minutes(of date: Date) -> Int {
         let c = Calendar.current.dateComponents([.hour, .minute], from: date)
         return (c.hour ?? 0) * 60 + (c.minute ?? 0)
     }
-    private func dateFor(minutes m: Int) -> Date {
-        Calendar.current.date(bySettingHour: m / 60, minute: m % 60, second: 0, of: Date()) ?? Date()
-    }
 }
 
-// MARK: - Day-complete + rest-day cards
-
-/// Shown when every scheduled dose is acted: warm cream wash + one brown bloom.
-private struct DayCompleteCard: View {
-    var body: some View {
-        VStack(spacing: 6) {
-            Text("All done for today.")
-                .font(VFont.display(20, weight: .bold, relativeTo: .title3)).foregroundStyle(VT.ink)
-            Text("Nicely done.")
-                .font(.system(size: 14)).foregroundStyle(VT.micro)
-        }
-        .padding(.vertical, 8)
-        .frame(maxWidth: .infinity)
-        .padding(VT.sCardPad)
-        .background(VT.why.opacity(0.06), in: RoundedRectangle(cornerRadius: VT.rCard, style: .continuous))
-    }
-}
-
-/// Shown on a rest day (nothing scheduled). Calm, distinct from the all-done card.
-private struct RestDayCard: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("Nothing scheduled today.")
-                .font(.system(size: 17, weight: .semibold)).foregroundStyle(VT.ink)
-            Text("A rest day.")
-                .font(.system(size: 14)).foregroundStyle(VT.micro)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(VT.sCardPad).vtCard()
-    }
-}
