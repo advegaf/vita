@@ -13,6 +13,7 @@ struct DiaryView: View {
     @Query private var labPanels: [LabPanel]
 
     @State private var showCheckIn = false
+    @State private var presetMood: Int?
     @State private var showBodyEntry = false
     @State private var trendMetric: DiaryMetric = .weight
     @State private var didBackfill = false
@@ -44,9 +45,9 @@ struct DiaryView: View {
                 ScreenHeader(eyebrow: "Diary",
                              title: (today?.isLogged ?? false) ? "Logged today." : "How are you today?")
                     .padding(.bottom, 2)
-                CheckInCard(entry: today, streak: streak) {
-                    showCheckIn = true
-                }
+                CheckInCard(entry: today, streak: streak,
+                            onTap: { presetMood = nil; showCheckIn = true },
+                            onMood: { presetMood = $0; showCheckIn = true })
                 WeightCard(metrics: metrics) { showBodyEntry = true }
                 TrendCard(metric: $trendMetric, entries: entries, metrics: metrics, now: now,
                           onEmptyAction: {
@@ -79,7 +80,7 @@ struct DiaryView: View {
             #endif
         }
         .sheet(isPresented: $showCheckIn) {
-            CheckInSheet(existing: today)
+            CheckInSheet(existing: today, presetMood: presetMood)
         }
         .sheet(isPresented: $showBodyEntry) {
             BodyEntrySheet()

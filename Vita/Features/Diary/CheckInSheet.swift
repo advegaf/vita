@@ -8,6 +8,8 @@ struct CheckInSheet: View {
     @Environment(\.modelContext) private var context
     @Environment(\.dismiss) private var dismiss
     let existing: DiaryEntry?
+    /// M40: the diary card's emoji mood row preseeds this before presenting.
+    var presetMood: Int? = nil
     var onSaved: () -> Void = {}
 
     @State private var energy = 5
@@ -86,13 +88,15 @@ struct CheckInSheet: View {
     }
 
     private func seed() {
-        guard let e = existing else { return }
-        energy = e.energy > 0 ? e.energy : 5
-        sleep = e.sleep > 0 ? e.sleep : 5
-        mood = e.mood > 0 ? e.mood : 5
-        libido = e.libido > 0 ? e.libido : 5
-        sideEffects = Set(e.sideEffects)
-        note = e.note
+        if let e = existing {
+            energy = e.energy > 0 ? e.energy : 5
+            sleep = e.sleep > 0 ? e.sleep : 5
+            mood = e.mood > 0 ? e.mood : 5
+            libido = e.libido > 0 ? e.libido : 5
+            sideEffects = Set(e.sideEffects)
+            note = e.note
+        }
+        if let presetMood { mood = presetMood }
     }
 
     private func save() {

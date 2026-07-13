@@ -8,28 +8,56 @@ struct CheckInCard: View {
     let entry: DiaryEntry?
     let streak: Int
     var onTap: () -> Void
+    /// M40: an emoji on the mood row opens the check-in with that mood preset.
+    var onMood: ((Int) -> Void)? = nil
 
     private var logged: Bool { entry?.isLogged ?? false }
 
     var body: some View {
-        Button(action: onTap) {
-            if let e = entry, e.isLogged { summary(e) } else { prompt }
+        if let e = entry, e.isLogged {
+            Button(action: onTap) { summary(e) }
+                .buttonStyle(.pressableCard)
+                .accessibilityElement(children: .combine)
+                .accessibilityAddTraits(.isButton)
+        } else {
+            prompt   // the mood row needs per-emoji buttons, so no outer button
         }
-        .buttonStyle(.pressableCard)
-        .accessibilityElement(children: .combine)
-        .accessibilityAddTraits(.isButton)
     }
 
+    /// The Lumina mood row: "How are you feeling today?" + big emoji quick-set.
+    private static let moods: [(emoji: String, label: String, rating: Int)] = [
+        ("😄", "Great", 9), ("🙂", "Good", 7), ("😐", "Okay", 5),
+        ("😕", "Low", 3), ("😣", "Rough", 1),
+    ]
+
     private var prompt: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            vtLead("Check in.", color: VT.dose)
-            Text("A minute on how today felt.")
-                .font(.system(size: 15)).foregroundStyle(VT.body)
-            Text("Check in")
-                .font(.system(size: 16, weight: .semibold)).foregroundStyle(VT.onInk)
-                .frame(maxWidth: .infinity).padding(.vertical, 14)
-                .background(VT.ink, in: Capsule())
-                .padding(.top, 2)
+        VStack(alignment: .leading, spacing: 12) {
+            Text("How are you feeling today?")
+                .font(.system(size: 18, weight: .bold)).foregroundStyle(VT.ink)
+            HStack(spacing: 6) {
+                ForEach(Self.moods, id: \.rating) { m in
+                    Button {
+                        Haptics.press()
+                        (onMood ?? { _ in onTap() })(m.rating)
+                    } label: {
+                        Text(m.emoji)
+                            .font(.system(size: 34))
+                            .frame(maxWidth: .infinity, minHeight: 56)
+                            .background(VT.aiTint.opacity(0.55),
+                                        in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Feeling \(m.label)")
+                }
+            }
+            Button(action: onTap) {
+                Text("Full check-in")
+                    .font(.system(size: 14, weight: .semibold)).foregroundStyle(VT.ink)
+                    .underline()
+                    .frame(minHeight: 36)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(VT.sCardPad).vtCard(radius: VT.rFocusCard)
