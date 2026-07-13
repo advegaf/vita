@@ -159,9 +159,14 @@ struct ChatView: View {
     @ViewBuilder
     private func assistantBubble(text: String, suggestions: [PendingSuggestion], streaming: Bool) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("vita")
-                .font(.system(size: 12, weight: .semibold)).tracking(0.4)
-                .textCase(.uppercase).foregroundStyle(VT.micro)
+            HStack(spacing: 5) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 11, weight: .semibold))
+                Text("vita")
+                    .font(.system(size: 12, weight: .semibold)).tracking(0.4)
+                    .textCase(.uppercase)
+            }
+            .foregroundStyle(VT.aiText)
             if streaming && text.isEmpty {
                 ThinkingDots(reduceMotion: reduceMotion, label: "vita is thinking")
             } else {
@@ -190,9 +195,9 @@ struct ChatView: View {
                 Image(systemName: s.action == "add" ? "plus.circle.fill" : "slider.horizontal.3")
                 Text(s.action == "add" ? "Add \(s.name)" : "Adjust \(s.name)")
             }
-            .font(.system(size: 14, weight: .semibold)).foregroundStyle(VT.dose)
+            .font(.system(size: 14, weight: .semibold)).foregroundStyle(VT.aiText)
             .padding(.horizontal, 12).padding(.vertical, 8)
-            .background(VT.dose.opacity(0.10), in: Capsule())
+            .background(VT.aiTint, in: Capsule())
         }
         .buttonStyle(.plain)
         .transition(reduceMotion ? .opacity : .scale.combined(with: .opacity))
