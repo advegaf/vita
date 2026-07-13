@@ -14,6 +14,7 @@ struct SettingsView: View {
     @Query private var profileList: [UserProfile]
 
     // Profile mirrors (loaded from the profile on appear; persisted on blur/Done).
+    @State private var nameText = ""
     @State private var ageText = ""
     @State private var sex = ""
     @State private var weightText = ""
@@ -116,6 +117,11 @@ struct SettingsView: View {
 
     private var profileCard: some View {
         card("Profile.", VT.dose) {
+            vtFieldShell("Name") {
+                TextField("What should vita call you?", text: $nameText).focused($editing)
+                    .font(.system(size: 17, weight: .semibold)).foregroundStyle(VT.ink)
+                    .textInputAutocapitalization(.words)
+            }
             vtPlainField("Age", text: $ageText, suffix: "yrs", keyboard: .numberPad, focus: $editing)
             VStack(alignment: .leading, spacing: 6) {
                 Text("Sex").font(.system(size: 13)).foregroundStyle(VT.micro)
@@ -558,6 +564,7 @@ struct SettingsView: View {
 
     private func loadProfile() {
         guard let p = profile else { return }
+        nameText = p.preferredName ?? ""
         if let b = p.birthDate {
             ageText = Calendar.current.dateComponents([.year], from: b, to: Date()).year.map(String.init) ?? ""
         }
@@ -573,6 +580,7 @@ struct SettingsView: View {
 
     private func persistProfile() {
         guard let p = profile else { return }
+        p.preferredName = nameText.nilIfEmpty
         if let age = Int(ageText), age > 0, age < 130 {
             p.birthDate = Calendar.current.date(byAdding: .year, value: -age, to: Date())
         }

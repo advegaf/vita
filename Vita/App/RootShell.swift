@@ -15,10 +15,10 @@ struct RootShell: View {
         // PER TAB (an inset on the TabView itself does not reach the pages' safe
         // areas, which would leave bottom content like Chat's input behind it).
         TabView(selection: $selection) {
-            Tab(value: AppTab.today) { withBar { TodayView() } } label: { EmptyView() }
-            Tab(value: AppTab.stack) { withBar { StackView() } } label: { EmptyView() }
-            Tab(value: AppTab.diary) { withBar { DiaryView() } } label: { EmptyView() }
-            Tab(value: AppTab.chat) { withBar { ChatView() } } label: { EmptyView() }
+            Tab(value: AppTab.today) { withBar(.today) { TodayView() } } label: { EmptyView() }
+            Tab(value: AppTab.stack) { withBar(.stack) { StackView() } } label: { EmptyView() }
+            Tab(value: AppTab.diary) { withBar(.diary) { DiaryView() } } label: { EmptyView() }
+            Tab(value: AppTab.chat) { withBar(.chat) { ChatView() } } label: { EmptyView() }
         }
         .tint(VT.ink)
         .onChange(of: router.pendingTab) { _, tab in
@@ -60,12 +60,18 @@ struct RootShell: View {
         }
     }
 
-    /// Hidden system bar + the floating pill bar, per tab.
-    private func withBar<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+    /// Hidden system bar + the floating pill bar, per tab. Every page hosts a
+    /// bar instance (a TabView-level inset never reaches page safe areas), so
+    /// only the ACTIVE page's bar may be visible to accessibility/hit-testing —
+    /// otherwise VoiceOver and UI tests see four bars.
+    private func withBar<Content: View>(_ tab: AppTab,
+                                        @ViewBuilder _ content: () -> Content) -> some View {
         content()
             .toolbarVisibility(.hidden, for: .tabBar)
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 FloatingTabBar(selection: $selection)
+                    .accessibilityHidden(selection != tab)
+                    .allowsHitTesting(selection == tab)
             }
     }
 

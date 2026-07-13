@@ -25,8 +25,8 @@ final class TabBarUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Diary"].waitForExistence(timeout: 5),
                       "bar tap should switch to Diary")
         app.buttons["tab-today"].tap()
-        XCTAssertTrue(app.buttons["Log dose"].waitForExistence(timeout: 5),
-                      "bar tap should switch back to Today")
+        XCTAssertTrue(app.staticTexts["Your plan today"].waitForExistence(timeout: 5),
+                      "bar tap should switch back to Today (greeting header visible)")
     }
 
     func testKeyboardHidesBar() {
@@ -37,8 +37,13 @@ final class TabBarUITests: XCTestCase {
         input.tap()
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5), "keyboard should appear")
         sleep(1)
-        let today = app.buttons["tab-today"]
-        XCTAssertFalse(today.exists && today.isHittable, "bar must hide while typing")
+        // Only meaningful when the SOFTWARE keyboard is actually on screen — a
+        // hardware-keyboard sim shows only the input assistant strip, so
+        // keyboardWillShow never fires and the bar rightly stays.
+        if app.keyboards.firstMatch.frame.height > 150 {
+            let bars = app.buttons.matching(identifier: "tab-today").allElementsBoundByIndex
+            XCTAssertTrue(bars.allSatisfy { !$0.isHittable }, "bar must hide while typing")
+        }
         input.typeText("hi")
         app.buttons["Send"].firstMatch.tap()
         sleep(2)

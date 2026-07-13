@@ -80,3 +80,15 @@ NAV-6,Card nav,Typing in Chat keeps the card steady with the input above the key
 NAV-7,Card nav,Deep links still work (notification tap; labs ask-vita),pendingTab onChange in root; detail + Settings sheets present from the card,Pass (code),ImmersiveRootView wiring; VITA_OPEN_DETAIL flag,Banner tap pending device
 NAV-8,Card nav,Today hero shows rings + status + legend,TodayRings engine + TodayHeroCard; replaces DotMeter,Pass (tests+shots),TodayRingsTests + m38/hero2-today-dark.png m38/reduce-motion-today.png (zero rings = track only after seed fix),
 NAV-9,Card nav,Reduced motion calms the card chrome,Crossfade-only switching; fade-only bar; VMotion.reduced throughout,Pass,m38/reduce-motion-today.png (rings land at final values; layout intact),
+M40-1,Design language,Every screen wears the user's language: warm-white canvas + white cards + black emphasis,Tokens retuned (canvas F7F5F2; ink 111113; radius 24/28); components rebuilt,Pass,m40/p1-today.png m40/p2-today.png m40/p4-diary.png m40/p5-chat.png,User-provided mockups are the reference
+M40-2,Navigation,Floating frosted bar with black selected pill switches views; hides for keyboard,FloatingTabBar (matchedGeometry pill) per tab via safeAreaInset,Pass (UI test+shots),TabBarUITests + m40 evidence,Replaces card navigation (M38/39 retired)
+M40-3,Today,Editorial hero states the day's next action in mixed ink/gray,TodayHero upNext/overdue/allDone/restDay from live schedule data,Pass,m40/p2-today.png (overdue variant) m40/p6-today-dark.png (allDone),
+M40-4,Today,Date strip shows week with checks and black today,DateStrip.week + isDayComplete over ScheduleService/DoseLogger,Pass,m40/p2-today.png m40/p6-today-dark.png,
+M40-5,Today,Next dose is a black card whose radio logs it,NextDoseCard onLog -> DoseLogger (same path as pins),Pass (shots+existing DoseLoggerTests),m40/p2-today.png,
+M40-6,Today,Rule-based lavender insight (streak + low vial) links to Stack,insightLine + InsightCard dashed,Pass,m40/p2-today.png,No API involved
+M40-7,Diary,Emoji mood row quick-sets mood into the check-in sheet,CheckInCard onMood -> CheckInSheet presetMood,Pass (shots+code),m40/p4-diary.png,Sheet save path unchanged (DiaryServiceTests)
+M40-8,Diary,Weight reads finance-style (big int + soft decimals); trends chart orange,WeightCard bigNumber + DiaryMetric body accent = VT.chart,Pass,m40/p4-diary.png,
+M40-9,Detail,Vial facts read as dotted key-value rows with underlined ink links,VialCard DottedKVRows,Pass,m40/p3-detail.png,
+M40-10,Chat,AI identity is lavender (sparkle VITA + aiTint chips); user bubble black,ChatView assistant header + suggestion chips,Pass,m40/p5-chat.png,
+M40-11,Settings,I can tell vita my name; the greeting uses it,UserProfile.preferredName + Settings Name field + Today greeting,Pass (code+build),SettingsView profileCard; greeting fallback when nil,Set-name tap-through pending device
+M40-12,Dark mode,The language inverts cleanly (white pill = current; deep plum AI),Dark token values carried from graphite system,Pass (spot check),m40/p6-today-dark.png m40/p6-diary-dark.png,Full dark retune deferred until light validated by user
