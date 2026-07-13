@@ -54,10 +54,6 @@ targets:
         # HTTPS-only traffic (Anthropic API): exempt encryption — skips the
         # per-build export-compliance question on TestFlight uploads.
         ITSAppUsesNonExemptEncryption: false
-        # M38: the photo backdrop sits behind the status area in both detents
-        # and appearances — status bar is light content, always.
-        UIViewControllerBasedStatusBarAppearance: false
-        UIStatusBarStyle: UIStatusBarStyleLightContent
         NSHealthShareUsageDescription: vita reads your recent sleep, HRV, heart rate, weight, and steps to ground its educational suggestions. Read-only, and you can skip it.
         # Required by App Store Connect whenever the HealthKit capability is present
         # (upload error ITMS-90683), even though the app never writes to Health.

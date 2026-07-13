@@ -41,6 +41,9 @@ struct DiaryView: View {
         let streak = DiaryStreak.current(entries: entries, asOf: now)
         return ScrollView {
             VStack(alignment: .leading, spacing: VT.sCardGap) {
+                ScreenHeader(eyebrow: "Diary",
+                             title: (today?.isLogged ?? false) ? "Logged today." : "How are you today?")
+                    .padding(.bottom, 2)
                 CheckInCard(entry: today, streak: streak) {
                     showCheckIn = true
                 }

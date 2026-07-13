@@ -100,6 +100,9 @@ final class UserProfile {
     var biologicalSexRaw: String?   // "female" | "male" | "other"
     var weightKg: Double?
     var heightCm: Double?
+    /// What the greeting calls you (M40). Optional — added post-1.0, so it must
+    /// stay optional for lightweight migration; nil falls back to a no-name greeting.
+    var preferredName: String?
     @Relationship(deleteRule: .cascade, inverse: \AppSettings.profile) var settings: AppSettings?
     @Relationship(deleteRule: .cascade, inverse: \ProtocolPlan.owner) var plans: [ProtocolPlan]?
     init() {}

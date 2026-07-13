@@ -14,6 +14,8 @@ struct TodayView: View {
 
     @State private var selectedBlock: String?
     @State private var editDraft: DoseDraft?
+    @State private var showSettings = false
+    @Query private var profiles: [UserProfile]
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var logger: DoseLogger { DoseLogger(context: context) }
@@ -67,6 +69,60 @@ struct TodayView: View {
             #endif
         }
         .sheet(item: $editDraft) { d in DoseSetupSheet(draft: d) }
+        .sheet(isPresented: $showSettings) { SettingsView() }
+        .task {
+            #if DEBUG
+            if ProcessInfo.processInfo.environment["VITA_OPEN_SETTINGS"] == "1" {
+                try? await Task.sleep(nanoseconds: 400_000_000)
+                showSettings = true
+            }
+            #endif
+        }
+    }
+
+    /// M40 mini-header (Lumina-style): avatar circle, gray greeting over the
+    /// user's name, and the settings control in a white circle.
+    private func greetingHeader(block: DayBlock) -> some View {
+        HStack(spacing: 12) {
+            avatarCircle
+            VStack(alignment: .leading, spacing: 0) {
+                Text("\(block.greeting.trimmingCharacters(in: CharacterSet(charactersIn: "."))) \(block.emoji)")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(VT.body)
+                Text(profiles.first?.preferredName?.nilIfEmpty ?? "Your plan today")
+                    .font(.system(size: 17, weight: .bold))
+                    .foregroundStyle(VT.ink)
+            }
+            Spacer()
+            Button { showSettings = true } label: {
+                Image(systemName: "gearshape")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(VT.ink)
+                    .frame(width: 40, height: 40)
+                    .background(VT.card, in: Circle())
+                    .shadow(color: VT.shadowColor, radius: 6, y: 3)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Settings")
+        }
+        .accessibilityElement(children: .contain)
+    }
+
+    private var avatarCircle: some View {
+        let initial = profiles.first?.preferredName?.nilIfEmpty.map { String($0.prefix(1)).uppercased() }
+        return Circle()
+            .fill(VT.card)
+            .frame(width: 42, height: 42)
+            .shadow(color: VT.shadowColor, radius: 6, y: 3)
+            .overlay {
+                if let initial {
+                    Text(initial).font(.system(size: 17, weight: .bold)).foregroundStyle(VT.ink)
+                } else {
+                    Image(systemName: "person.fill")
+                        .font(.system(size: 16)).foregroundStyle(VT.micro)
+                }
+            }
+            .accessibilityHidden(true)
     }
 
     private func content(now: Date) -> some View {
@@ -83,6 +139,8 @@ struct TodayView: View {
 
         return ScrollView {
             VStack(alignment: .leading, spacing: VT.sCardGap) {
+                greetingHeader(block: currentBlock)
+                    .padding(.bottom, 2)
                 if items.isEmpty {
                     emptyStack
                 } else {

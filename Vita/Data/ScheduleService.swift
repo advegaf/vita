@@ -14,6 +14,10 @@ enum DayBlock: Int, CaseIterable, Sendable {
     var symbol: String {
         switch self { case .morning: "sunrise.fill"; case .midday: "sun.max.fill"; case .night: "moon.fill" }
     }
+    /// M40 greeting emoji (the design language uses real emoji in greeting/hero contexts).
+    var emoji: String {
+        switch self { case .morning: "☀️"; case .midday: "🌤️"; case .night: "🌙" }
+    }
     /// Default clock time when this block is chosen (minutes-from-midnight).
     var defaultMinutes: Int {
         switch self { case .morning: 8 * 60; case .midday: 13 * 60; case .night: 21 * 60 }

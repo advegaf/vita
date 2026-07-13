@@ -81,26 +81,26 @@ struct ChatView: View {
         inputFocused = true
     }
 
-    // MARK: Header
-    // The view title lives on the photo header now (M38); the card keeps just
-    // the clear-chat overflow, and only once there's something to clear.
+    // MARK: Header (M40 Journey-style: big title + subtitle, clear-chat overflow)
 
-    @ViewBuilder private var header: some View {
-        if !messages.isEmpty {
-            HStack {
-                Spacer()
-                Menu {
-                    Button(role: .destructive, action: clearChat) {
-                        Label("Clear chat", systemImage: "trash")
-                    }
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.system(size: 15, weight: .semibold)).foregroundStyle(VT.micro)
-                        .frame(width: 34, height: 34).background(VT.card, in: Circle())
+    private var header: some View {
+        HStack(alignment: .top) {
+            ScreenHeader(eyebrow: "Chat", title: "Ask about your stack.")
+            Spacer()
+            Menu {
+                Button(role: .destructive, action: clearChat) {
+                    Label("Clear chat", systemImage: "trash")
                 }
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(VT.ink)
+                    .frame(width: 40, height: 40).background(VT.card, in: Circle())
+                    .shadow(color: VT.shadowColor, radius: 6, y: 3)
             }
-            .padding(.horizontal, VT.sSection).padding(.top, 2)
+            .disabled(messages.isEmpty)
+            .opacity(messages.isEmpty ? 0.4 : 1)
         }
+        .padding(.horizontal, VT.sSection).padding(.top, 8).padding(.bottom, 4)
     }
 
     // MARK: Transcript

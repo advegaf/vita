@@ -82,12 +82,24 @@ struct StackView: View {
         }
     }
 
-    // The view title lives on the photo header now (M38); the card keeps just
-    // the add action, aligned where the old header's + sat.
+    // M40 Journey-style header: big title + gray subtitle, black circular FAB.
     private var header: some View {
-        HStack {
+        HStack(alignment: .top) {
+            ScreenHeader(eyebrow: "Stack",
+                         title: items.isEmpty ? "Nothing added yet."
+                                              : (items.count == 1 ? "One compound."
+                                                                  : "\(items.count) compounds."))
             Spacer()
-            CircleIconButton(systemName: "plus", label: "Add a peptide") { showCatalog = true }
+            Button { showCatalog = true } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(VT.onInk)
+                    .frame(width: 44, height: 44)
+                    .background(VT.ink, in: Circle())
+                    .shadow(color: .black.opacity(0.16), radius: 10, y: 4)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Add a peptide")
         }
     }
 
