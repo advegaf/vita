@@ -15,7 +15,7 @@ struct FloatingTabBar: View {
     var body: some View {
         Group {
             if !keyboardUp {
-                HStack(spacing: 4) {
+                HStack(spacing: 0) {
                     ForEach(AppTab.allCases) { tab in
                         item(tab)
                     }
@@ -36,13 +36,17 @@ struct FloatingTabBar: View {
         }
     }
 
+    /// Equal fixed slots: the black pill slides between them and the label
+    /// crossfades INSIDE the pill — nothing else in the bar moves (the original
+    /// switch feel; the width-hugging pill made every item reflow, which read
+    /// as jumpy).
     @ViewBuilder
     private func item(_ tab: AppTab) -> some View {
         let selected = tab == selection
         Button {
             guard !selected else { return }
             Haptics.segment()
-            withAnimation(reduceMotion ? VMotion.reduced : .spring(response: 0.38, dampingFraction: 0.86)) {
+            withAnimation(reduceMotion ? VMotion.reduced : VMotion.segmentExpand) {
                 selection = tab
             }
         } label: {
@@ -52,14 +56,13 @@ struct FloatingTabBar: View {
                     .symbolRenderingMode(.hierarchical)
                 if selected {
                     Text(tab.title)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: 13, weight: .semibold))
                         .fixedSize()
-                        .transition(.opacity)
+                        .transition(.opacity.combined(with: .scale(scale: 0.85)))
                 }
             }
             .foregroundStyle(selected ? VT.onInk : VT.body)
-            .padding(.horizontal, selected ? 16 : 13)
-            .frame(minWidth: 44, minHeight: 44)
+            .frame(width: 84, height: 44)
             .background {
                 if selected {
                     Capsule().fill(VT.ink)

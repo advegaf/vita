@@ -1,19 +1,18 @@
 import SwiftUI
 import SwiftData
 
-/// The Diary dashboard (M8a). A calm, glanceable screen matching the Today tab's
-/// one-focus language: eyebrow + dynamic headline, then a compact Check-in card,
-/// a Weight card, and the hero Trend chart. Daily check-in is captured in a focused
-/// sheet; weight + measurements in another. Apple Health weight is backfilled
-/// read-only on first open. Replaces the M0 placeholder.
+/// The Diary dashboard (M42): the measured-data hub. Wearable metrics (sleep,
+/// HRV, resting HR, respiratory rate) read live from Apple Health where Oura /
+/// Whoop / Fitbit sync, plus weight (Health backfill or manual), body-metric
+/// trends, and lab results. The subjective check-in was removed by request.
 struct DiaryView: View {
     @Environment(\.modelContext) private var context
     @Query(sort: \DiaryEntry.dayStart, order: .reverse) private var entries: [DiaryEntry]
     @Query(sort: \BodyMetric.measuredAt, order: .reverse) private var metrics: [BodyMetric]
     @Query private var labPanels: [LabPanel]
 
-    @State private var showCheckIn = false
     @State private var showBodyEntry = false
+    @State private var vitals = VitalsSeries()
     @State private var trendMetric: DiaryMetric = .weight
     @State private var didBackfill = false
     @State private var debugOpenLabs = false
@@ -26,30 +25,34 @@ struct DiaryView: View {
             }
         }
         .task { await backfillOnce() }
-        .task {
-            #if DEBUG
-            if ProcessInfo.processInfo.environment["VITA_DIARY_SHEET"] == "1" {
-                try? await Task.sleep(nanoseconds: 500_000_000)
-                showCheckIn = true
-            }
-            #endif
+        .task { await loadVitals() }
+    }
+
+    /// Live wearable series: demo seed for screenshots, else a read-only
+    /// Apple Health fan-out (empty when unauthorized/no data).
+    private func loadVitals() async {
+        #if DEBUG
+        if ProcessInfo.processInfo.environment["VITA_DIARY_DEMO"] != nil {
+            vitals = .demo()
+            return
         }
+        #endif
+        vitals = await HealthKitService.shared.vitalsSeries(days: 30)
     }
 
     private func content(now: Date) -> some View {
-        let today = entries.first { Calendar.current.isDate($0.dayStart, inSameDayAs: now) }
-        let streak = DiaryStreak.current(entries: entries, asOf: now)
         return ScrollView {
             VStack(alignment: .leading, spacing: VT.sCardGap) {
-                header(logged: today?.isLogged ?? false)
-                CheckInCard(entry: today, streak: streak) {
-                    showCheckIn = true
-                }
+                header
+                WearablesSection(series: vitals, onConnect: {
+                    Task {
+                        _ = await HealthKitService.shared.requestAuthorization()
+                        await loadVitals()
+                    }
+                })
                 WeightCard(metrics: metrics) { showBodyEntry = true }
                 TrendCard(metric: $trendMetric, entries: entries, metrics: metrics, now: now,
-                          onEmptyAction: {
-                              if trendMetric.isRating { showCheckIn = true } else { showBodyEntry = true }
-                          })
+                          onEmptyAction: { showBodyEntry = true })
                 NavigationLink { LabsListView() } label: { LabsCard(panels: labPanels) }
                     .buttonStyle(.pressableCard)
             }
@@ -77,16 +80,13 @@ struct DiaryView: View {
             }
             #endif
         }
-        .sheet(isPresented: $showCheckIn) {
-            CheckInSheet(existing: today)
-        }
         .sheet(isPresented: $showBodyEntry) {
             BodyEntrySheet()
         }
     }
 
-    private func header(logged: Bool) -> some View {
-        ScreenHeader(eyebrow: "Diary", title: logged ? "Logged today." : "How are you today?")
+    private var header: some View {
+        ScreenHeader(eyebrow: "Diary", title: "Your body's numbers.")
             .padding(.bottom, 2)
     }
 

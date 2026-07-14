@@ -21,7 +21,8 @@ struct TrendCard: View {
     @AppStorage("vita.measureUnit") private var measureUnitRaw = MeasurementUnit.inch.rawValue
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    private let chips: [DiaryMetric] = [.weight, .energy, .sleep, .mood, .libido, .waist, .arm]
+    // M42: rating metrics removed with the check-in; body measurements only.
+    private let chips: [DiaryMetric] = [.weight, .waist, .arm]
     private let days = 30
     private var weightUnit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .lb }
     private var measureUnit: MeasurementUnit { MeasurementUnit(rawValue: measureUnitRaw) ?? .inch }
@@ -83,11 +84,11 @@ struct TrendCard: View {
     private func chart(_ pts: [Point]) -> some View {
         if pts.isEmpty {
             VStack(spacing: 10) {
-                Text("Your trend fills in as you check in.")
+                Text("Your trend fills in as you measure.")
                     .font(.system(size: 14)).foregroundStyle(VT.micro)
                     .multilineTextAlignment(.center)
                 if let onEmptyAction {
-                    Button(metric.isRating ? "Check in now →" : "Add a measurement →") {
+                    Button("Add a measurement →") {
                         onEmptyAction()
                     }
                     .font(.system(size: 15, weight: .semibold)).foregroundStyle(metric.accent)
@@ -126,6 +127,11 @@ struct TrendCard: View {
                     }
                 }
                 .frame(height: 170)
+                // The AreaMark's implicit y=0 baseline sits far below the clamped
+                // Y domain, and Swift Charts paints it OUTSIDE the plot (the fill
+                // visibly spilled out of the card and down the canvas). Hard-clip
+                // the chart to its own bounds.
+                .clipped()
                 .id(metric)                                         // replace, don't interpolate marks
                 .transition(.opacity)
                 .onChange(of: selectedDay) { _, _ in
