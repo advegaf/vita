@@ -83,12 +83,13 @@ struct StackView: View {
     }
 
     private var header: some View {
-        HStack(alignment: .firstTextBaseline) {
+        HStack(alignment: .top) {
             ScreenHeader(eyebrow: "Stack",
                          title: items.isEmpty ? "Your stack." : "\(items.count) in your stack.")
             Spacer()
-            CircleIconButton(systemName: "plus", label: "Add a peptide") { showCatalog = true }
+            HeaderActionCircle(systemName: "plus", label: "Add a peptide") { showCatalog = true }
         }
+        .padding(.bottom, 2)
     }
 
     private var emptyState: some View {

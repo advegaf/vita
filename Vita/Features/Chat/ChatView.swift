@@ -84,7 +84,7 @@ struct ChatView: View {
     // MARK: Header
 
     private var header: some View {
-        HStack(alignment: .firstTextBaseline) {
+        HStack(alignment: .top) {
             ScreenHeader(eyebrow: "Chat", title: "Ask about your stack.")
             Spacer()
             Menu {
@@ -92,14 +92,13 @@ struct ChatView: View {
                     Label("Clear chat", systemImage: "trash")
                 }
             } label: {
-                Image(systemName: "ellipsis")
-                    .font(.system(size: 17, weight: .semibold)).foregroundStyle(VT.ink)
-                    .frame(width: 38, height: 38).background(.regularMaterial, in: Circle())
+                HeaderActionGlyph(systemName: "ellipsis")
             }
             .disabled(messages.isEmpty)
             .opacity(messages.isEmpty ? 0.4 : 1)
+            .accessibilityLabel("Chat options")
         }
-        .padding(.horizontal, VT.sSection).padding(.top, 8).padding(.bottom, 4)
+        .padding(.horizontal, VT.sSection).padding(.top, 20).padding(.bottom, 2)
     }
 
     // MARK: Transcript

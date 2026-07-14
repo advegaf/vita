@@ -86,8 +86,14 @@ struct DiaryView: View {
     }
 
     private var header: some View {
-        ScreenHeader(eyebrow: "Diary", title: "Your body's numbers.")
-            .padding(.bottom, 2)
+        HStack(alignment: .top) {
+            ScreenHeader(eyebrow: "Diary", title: "Your body's numbers.")
+            Spacer()
+            HeaderActionCircle(systemName: "scalemass", label: "Log a measurement") {
+                showBodyEntry = true
+            }
+        }
+        .padding(.bottom, 2)
     }
 
     /// Read-only Health weight backfill, once per session. A no-op if Health is

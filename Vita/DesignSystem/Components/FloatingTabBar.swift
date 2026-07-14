@@ -15,7 +15,7 @@ struct FloatingTabBar: View {
     var body: some View {
         Group {
             if !keyboardUp {
-                HStack(spacing: 0) {
+                HStack(spacing: 2) {
                     ForEach(AppTab.allCases) { tab in
                         item(tab)
                     }
@@ -36,17 +36,18 @@ struct FloatingTabBar: View {
         }
     }
 
-    /// Equal fixed slots: the black pill slides between them and the label
-    /// crossfades INSIDE the pill — nothing else in the bar moves (the original
-    /// switch feel; the width-hugging pill made every item reflow, which read
-    /// as jumpy).
+    /// Compact items (M43): unselected = icon-only 48pt; selected = a hugging
+    /// black pill with icon + label. One critically-damped spring animates the
+    /// WHOLE bar's relayout, `.geometryGroup()` keeps each item's children from
+    /// jumping independently, and the label fades with the expansion instead of
+    /// popping in — calm, not jumpy, not sprawling.
     @ViewBuilder
     private func item(_ tab: AppTab) -> some View {
         let selected = tab == selection
         Button {
             guard !selected else { return }
             Haptics.segment()
-            withAnimation(reduceMotion ? VMotion.reduced : VMotion.segmentExpand) {
+            withAnimation(reduceMotion ? VMotion.reduced : .spring(duration: 0.35, bounce: 0)) {
                 selection = tab
             }
         } label: {
@@ -54,15 +55,16 @@ struct FloatingTabBar: View {
                 Image(systemName: tab.icon)
                     .font(.system(size: 16, weight: .semibold))
                     .symbolRenderingMode(.hierarchical)
-                if selected {
-                    Text(tab.title)
-                        .font(.system(size: 13, weight: .semibold))
-                        .fixedSize()
-                        .transition(.opacity.combined(with: .scale(scale: 0.85)))
-                }
+                Text(tab.title)
+                    .font(.system(size: 13, weight: .semibold))
+                    .fixedSize()
+                    .frame(width: selected ? nil : 0, alignment: .leading)
+                    .clipped()
+                    .opacity(selected ? 1 : 0)
             }
             .foregroundStyle(selected ? VT.onInk : VT.body)
-            .frame(width: 84, height: 44)
+            .padding(.horizontal, selected ? 15 : 12)
+            .frame(minWidth: 48, minHeight: 44)
             .background {
                 if selected {
                     Capsule().fill(VT.ink)
@@ -70,6 +72,7 @@ struct FloatingTabBar: View {
                 }
             }
             .contentShape(Capsule())
+            .geometryGroup()
         }
         .buttonStyle(.plain)
         .accessibilityLabel(tab.title)

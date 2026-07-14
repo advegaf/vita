@@ -10,16 +10,31 @@ struct RootShell: View {
     @Query private var items: [ProtocolItem]
     @Query private var compounds: [CatalogCompound]
 
+    @State private var mounted: Set<AppTab> = [AppTab.initialForScreenshots]
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     var body: some View {
-        // The system bar is hidden; FloatingTabBar replaces it. The bar is inset
-        // PER TAB (an inset on the TabView itself does not reach the pages' safe
-        // areas, which would leave bottom content like Chat's input behind it).
-        TabView(selection: $selection) {
-            Tab(value: AppTab.today) { withBar(.today) { TodayView() } } label: { EmptyView() }
-            Tab(value: AppTab.stack) { withBar(.stack) { StackView() } } label: { EmptyView() }
-            Tab(value: AppTab.diary) { withBar(.diary) { DiaryView() } } label: { EmptyView() }
-            Tab(value: AppTab.chat) { withBar(.chat) { ChatView() } } label: { EmptyView() }
+        // M43: a lazy-once ZStack instead of TabView — pages stay alive after
+        // first visit (stacks, scroll positions, chat state survive) and the
+        // switch is a calm crossfade + drift instead of TabView's hard cut.
+        // ONE FloatingTabBar instance insets the whole container.
+        ZStack {
+            ForEach(AppTab.allCases) { tab in
+                if mounted.contains(tab) {
+                    tabContent(tab)
+                        .opacity(tab == selection ? 1 : 0)
+                        .offset(y: tab == selection ? 0 : 8)
+                        .allowsHitTesting(tab == selection)
+                        .accessibilityHidden(tab != selection)
+                }
+            }
         }
+        .animation(reduceMotion ? VMotion.reduced : .spring(duration: 0.35, bounce: 0),
+                   value: selection)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            FloatingTabBar(selection: $selection)
+        }
+        .onChange(of: selection) { _, tab in mounted.insert(tab) }
         .tint(VT.ink)
         .onChange(of: router.pendingTab) { _, tab in
             if let tab { selection = tab; router.pendingTab = nil }
@@ -60,19 +75,14 @@ struct RootShell: View {
         }
     }
 
-    /// Hidden system bar + the floating pill bar, per tab. Every page hosts a
-    /// bar instance (a TabView-level inset never reaches page safe areas), so
-    /// only the ACTIVE page's bar may be visible to accessibility/hit-testing —
-    /// otherwise VoiceOver and UI tests see four bars.
-    private func withBar<Content: View>(_ tab: AppTab,
-                                        @ViewBuilder _ content: () -> Content) -> some View {
-        content()
-            .toolbarVisibility(.hidden, for: .tabBar)
-            .safeAreaInset(edge: .bottom, spacing: 0) {
-                FloatingTabBar(selection: $selection)
-                    .accessibilityHidden(selection != tab)
-                    .allowsHitTesting(selection == tab)
-            }
+    @ViewBuilder
+    private func tabContent(_ tab: AppTab) -> some View {
+        switch tab {
+        case .today: TodayView()
+        case .stack: StackView()
+        case .diary: DiaryView()
+        case .chat:  ChatView()
+        }
     }
 
     /// The catalog compound for a reminder's item, or a placeholder from the item.
