@@ -23,7 +23,8 @@ struct RootShell: View {
                 if mounted.contains(tab) {
                     tabContent(tab)
                         .opacity(tab == selection ? 1 : 0)
-                        .offset(y: tab == selection ? 0 : 8)
+                        // No drift: any vertical motion read as the window
+                        // "pulling down" on switch (device feedback, M43b).
                         .allowsHitTesting(tab == selection)
                         .accessibilityHidden(tab != selection)
                 }
