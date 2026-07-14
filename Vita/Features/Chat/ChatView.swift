@@ -81,10 +81,10 @@ struct ChatView: View {
         inputFocused = true
     }
 
-    // MARK: Header (M40 Journey-style: big title + subtitle, clear-chat overflow)
+    // MARK: Header
 
     private var header: some View {
-        HStack(alignment: .top) {
+        HStack(alignment: .firstTextBaseline) {
             ScreenHeader(eyebrow: "Chat", title: "Ask about your stack.")
             Spacer()
             Menu {
@@ -93,9 +93,8 @@ struct ChatView: View {
                 }
             } label: {
                 Image(systemName: "ellipsis")
-                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(VT.ink)
-                    .frame(width: 40, height: 40).background(VT.card, in: Circle())
-                    .shadow(color: VT.shadowColor, radius: 6, y: 3)
+                    .font(.system(size: 17, weight: .semibold)).foregroundStyle(VT.ink)
+                    .frame(width: 38, height: 38).background(.regularMaterial, in: Circle())
             }
             .disabled(messages.isEmpty)
             .opacity(messages.isEmpty ? 0.4 : 1)
@@ -159,14 +158,9 @@ struct ChatView: View {
     @ViewBuilder
     private func assistantBubble(text: String, suggestions: [PendingSuggestion], streaming: Bool) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 5) {
-                Image(systemName: "sparkles")
-                    .font(.system(size: 11, weight: .semibold))
-                Text("vita")
-                    .font(.system(size: 12, weight: .semibold)).tracking(0.4)
-                    .textCase(.uppercase)
-            }
-            .foregroundStyle(VT.aiText)
+            Text("vita")
+                .font(.system(size: 12, weight: .semibold)).tracking(0.4)
+                .textCase(.uppercase).foregroundStyle(VT.micro)
             if streaming && text.isEmpty {
                 ThinkingDots(reduceMotion: reduceMotion, label: "vita is thinking")
             } else {
@@ -195,9 +189,9 @@ struct ChatView: View {
                 Image(systemName: s.action == "add" ? "plus.circle.fill" : "slider.horizontal.3")
                 Text(s.action == "add" ? "Add \(s.name)" : "Adjust \(s.name)")
             }
-            .font(.system(size: 14, weight: .semibold)).foregroundStyle(VT.aiText)
+            .font(.system(size: 14, weight: .semibold)).foregroundStyle(VT.dose)
             .padding(.horizontal, 12).padding(.vertical, 8)
-            .background(VT.aiTint, in: Capsule())
+            .background(VT.dose.opacity(0.10), in: Capsule())
         }
         .buttonStyle(.plain)
         .transition(reduceMotion ? .opacity : .scale.combined(with: .opacity))
@@ -251,14 +245,8 @@ struct ChatView: View {
             inputBar
         }
         .padding(.horizontal, VT.sSection).padding(.top, 6).padding(.bottom, 8)
-        // Solid canvas with a soft top dissolve: transcript text used to render
-        // straight through the floating pill (visible mess once the card sat
-        // higher). The fade keeps it reading as one surface, not a bar.
-        .background {
-            LinearGradient(stops: [.init(color: VT.canvas.opacity(0), location: 0),
-                                   .init(color: VT.canvas, location: 0.25)],
-                           startPoint: .top, endPoint: .bottom)
-        }
+        // No opaque fill: the input pill floats on the app canvas, so nothing is
+        // painted behind the keyboard (just the standard iOS keyboard + canvas).
     }
 
     private var inputBar: some View {

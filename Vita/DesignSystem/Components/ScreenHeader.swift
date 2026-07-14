@@ -1,31 +1,19 @@
 import SwiftUI
 
-extension String {
-    /// nil when the string is empty/whitespace — for optional-chaining fallbacks
-    /// ("preferredName?.nilIfEmpty ?? default").
-    var nilIfEmpty: String? {
-        let t = trimmingCharacters(in: .whitespacesAndNewlines)
-        return t.isEmpty ? nil : t
-    }
-}
-
-/// The standard screen header (M40, Journey-style): a huge bold title with a
-/// calm gray subtitle underneath. The single source for the title+subtitle
+/// The standard screen header — a tiny UPPERCASE eyebrow over a period-punctuated
+/// Inter Tight headline, left-aligned. The single source for the eyebrow+headline
 /// pattern used by Stack / Diary / Chat / the entry sheets (Today keeps its
-/// greeting mini-header + editorial hero; onboarding keeps StepScaffold).
+/// TopBarPill + count; onboarding keeps StepScaffold).
 struct ScreenHeader: View {
-    let eyebrow: String   // the view/section name — rendered as the BIG title
-    let title: String     // the status/descriptor sentence — rendered as the gray subtitle
+    let eyebrow: String
+    let title: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 2) {
             Text(eyebrow)
-                .font(VFont.display(32, weight: .bold, relativeTo: .largeTitle))
-                .tracking(-0.6)
-                .foregroundStyle(VT.ink)
-            Text(title)
-                .font(.system(size: 15))
-                .foregroundStyle(VT.body)
+                .font(.system(size: 12, weight: .medium)).tracking(0.4)
+                .textCase(.uppercase).foregroundStyle(VT.micro)
+            Text(title).vtHeadlineStyle()
         }
         .accessibilityElement(children: .combine)
     }

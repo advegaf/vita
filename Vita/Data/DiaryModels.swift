@@ -97,15 +97,14 @@ enum DiaryMetric: String, CaseIterable, Identifiable, Sendable {
     }
     /// Short label for grounding lines ("energy 4/10").
     var groundingLabel: String { rawValue }
-    /// Locked palette assignment (M40: body metrics chart in the warm orange
-    /// chart accent, per the finance mockup's spending line).
+    /// Locked palette assignment.
     var accent: Color {
         switch self {
         case .energy: VT.dose       // cyan
         case .sleep:  VT.catPurple  // violet
         case .mood:   VT.timing     // yellow
         case .libido: VT.catPink    // pink
-        case .weight, .waist, .arm: VT.chart   // warm orange (body group)
+        case .weight, .waist, .arm: VT.why   // brown (body group)
         }
     }
     /// True for the four 1...10 ratings (vs a body measurement value).

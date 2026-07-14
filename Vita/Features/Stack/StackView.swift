@@ -82,24 +82,12 @@ struct StackView: View {
         }
     }
 
-    // M40 Journey-style header: big title + gray subtitle, black circular FAB.
     private var header: some View {
-        HStack(alignment: .top) {
+        HStack(alignment: .firstTextBaseline) {
             ScreenHeader(eyebrow: "Stack",
-                         title: items.isEmpty ? "Nothing added yet."
-                                              : (items.count == 1 ? "One compound."
-                                                                  : "\(items.count) compounds."))
+                         title: items.isEmpty ? "Your stack." : "\(items.count) in your stack.")
             Spacer()
-            Button { showCatalog = true } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(VT.onInk)
-                    .frame(width: 44, height: 44)
-                    .background(VT.ink, in: Circle())
-                    .shadow(color: .black.opacity(0.16), radius: 10, y: 4)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Add a peptide")
+            CircleIconButton(systemName: "plus", label: "Add a peptide") { showCatalog = true }
         }
     }
 

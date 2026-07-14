@@ -94,16 +94,13 @@ struct VialCard: View {
 
     // MARK: Secondary lines
 
-    /// M40: the vial's facts as dotted key-value rows (confirm-sheet pattern).
-    @ViewBuilder
     private func contentsLine(_ s: VialEngine.Status) -> some View {
-        VStack(spacing: 0) {
-            DottedKVRow("Vial", "\(vtFormatNumber(vial.vialMg)) mg")
-            DottedKVRow("Water", "\(vtFormatNumber(vial.waterMl)) mL")
-            if let u = item.effectiveDrawUnits(on: .now) {
-                DottedKVRow("Draw", "\(vtFormatUnits(u)) units")
-            }
+        var parts = ["\(vtFormatNumber(vial.vialMg)) mg + \(vtFormatNumber(vial.waterMl)) mL"]
+        if let u = item.effectiveDrawUnits(on: .now) {
+            parts.append("draw \(vtFormatUnits(u))u")
         }
+        return Text(parts.joined(separator: " • "))
+            .font(.system(size: 13)).vtTabular().foregroundStyle(VT.body)
     }
 
     @ViewBuilder
@@ -123,15 +120,13 @@ struct VialCard: View {
         HStack {
             Button { showNewVialConfirm = true } label: {
                 Text("Start new vial")
-                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(VT.ink)
-                    .underline()
+                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(VT.dose)
                     .frame(minHeight: 44).contentShape(Rectangle())
             }.buttonStyle(.plain)
             Spacer()
             Button(action: onOpenCalculator) {
                 Text("Open calculator →")
-                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(VT.ink)
-                    .underline()
+                    .font(.system(size: 15, weight: .semibold)).foregroundStyle(VT.dose)
                     .frame(minHeight: 44).contentShape(Rectangle())
             }.buttonStyle(.plain)
         }

@@ -17,8 +17,7 @@ struct WeightCard: View {
                 vtLead("Weight.", color: VT.why)
                 if let kg = DiarySeries.latest(.weight, metrics: metrics) {
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
-                        // Finance-mockup number: big integer, lighter smaller decimals.
-                        bigNumber(display(kg))
+                        Text(display(kg)).font(.vtDose).vtTabular().foregroundStyle(VT.ink)
                             .contentTransition(.numericText())
                         Button { weightUnitRaw = (unit == .kg ? WeightUnit.lb : .kg).rawValue } label: {
                             Text(unit.rawValue).font(.system(size: 15, weight: .semibold)).foregroundStyle(VT.dose)
@@ -61,18 +60,5 @@ struct WeightCard: View {
 
     private func display(_ kg: Double) -> String {
         Units.trim(unit == .lb ? Units.kgToLb(kg) : kg)
-    }
-
-    /// "179.6" → big bold "179" + smaller, softer ".6" (finance-mockup style).
-    private func bigNumber(_ value: String) -> Text {
-        let parts = value.split(separator: ".", maxSplits: 1)
-        let whole = Text(String(parts.first ?? ""))
-            .font(VFont.value(34, relativeTo: .title))
-            .foregroundStyle(VT.ink)
-        guard parts.count == 2 else { return whole }
-        let fraction = Text(".\(parts[1])")
-            .font(VFont.value(22, relativeTo: .title3))
-            .foregroundStyle(VT.inkSoft)
-        return Text("\(whole)\(fraction)")
     }
 }

@@ -25,8 +25,8 @@ final class TabBarUITests: XCTestCase {
         XCTAssertTrue(app.staticTexts["Diary"].waitForExistence(timeout: 5),
                       "bar tap should switch to Diary")
         app.buttons["tab-today"].tap()
-        XCTAssertTrue(app.staticTexts["Your plan today"].waitForExistence(timeout: 5),
-                      "bar tap should switch back to Today (greeting header visible)")
+        XCTAssertTrue(app.buttons["Log dose"].waitForExistence(timeout: 5),
+                      "bar tap should switch back to Today (focus card visible)")
     }
 
     func testKeyboardHidesBar() {

@@ -43,43 +43,25 @@ enum VT {
     // The warm accents keep their identity but are slightly softened in dark so they
     // sit naturally on the cool base instead of glowing against it.
 
-    // M40: the user's design language — warm-white canvas, pure white cards,
-    // BLACK as the emphasis color (selected pill / current task / CTA),
-    // editorial gray-vs-black headlines, lavender = AI. Light-first; dark
-    // values carry over from the graphite system until the Phase-6 dark pass.
-
     // Surfaces
-    static let canvas   = Color(light: "F7F5F2", dark: "121214") // app background (never a card)
+    static let canvas   = Color(light: "F1EEE9", dark: "121214") // app background (never a card)
     static let card     = Color(light: "FFFFFF", dark: "1E1E20") // every card / sheet
-    static let hairline = Color(light: "ECEAE5", dark: "33333A") // divider / dark card border
+    static let hairline = Color(light: "EAE6DF", dark: "33333A") // divider / dark card border
 
     // Text
-    static let ink   = Color(light: "111113", dark: "F5F5F7") // headlines, black pill/card, bolded terms
+    static let ink   = Color(light: "1A1A1A", dark: "F5F5F7") // headlines, charcoal pill, bolded terms
     /// Label/glyph color sitting ON a filled surface (the ink pill, a selected toggle,
     /// the done checkmark): white in light, near-black in dark — because every
     /// dark-mode fill (ink, accents) is a light tone, so a dark label reads on all.
     static let onInk = Color(light: "FFFFFF", dark: "121214")
     static let body  = Color(light: "6E6E6E", dark: "AEAEB4") // body copy
-    static let micro = Color(light: "97928A", dark: "94949B") // disclaimers, captions (>=4.5 on card)
-    /// Editorial de-emphasis INSIDE a hero headline ("It's almost time *for your*"):
-    /// lighter than body on purpose — it must recede next to ink at display sizes.
-    static let inkSoft = Color(light: "ADAAA4", dark: "6E6E74")
+    static let micro = Color(light: "9A958C", dark: "94949B") // disclaimers, captions (>=4.5 on dark card)
 
     // Accents (semantic — each does double duty as dimension + day-state)
     static let dose   = Color(light: "2BB3F3", dark: "4FC3F7") // Dose  + "due-now / action"
-    static let timing = Color(light: "FFC22E", dark: "F5C554") // Timing + "upcoming"
-    static let why    = Color(light: "3E2B22", dark: "CFB4A0") // Why + "logged / done"
-    static let overdue = Color(light: "C0593F", dark: "D08066") // overdue ONLY
-
-    // M40 language accents
-    /// AI surface fill (Lumina-style insight cards, chat identity) — soft lavender.
-    static let aiTint = Color(light: "F1EAFB", dark: "2A2433")
-    /// AI text/icon on aiTint or card — purple.
-    static let aiText = Color(light: "8B5CF6", dark: "B79CFA")
-    /// Positive delta / completed-day check — green, used sparingly.
-    static let delta  = Color(light: "1FA05A", dark: "4CC38A")
-    /// Chart line accent (trend charts) — warm orange.
-    static let chart  = Color(light: "F2703F", dark: "F58B62")
+    static let timing = Color(light: "FFC22E", dark: "F5C554") // Timing + "upcoming" (softened on graphite)
+    static let why    = Color(light: "3E2B22", dark: "CFB4A0") // Why + "logged / done" (muted latte on graphite)
+    static let overdue = Color(light: "C0593F", dark: "D08066") // overdue ONLY (softened terracotta)
 
     // Category tints — matched to the vial render hues (one per category, closed set)
     static let catBlue   = Color(light: "3FA9E0", dark: "5CB8ED")  // Weight Loss
@@ -93,16 +75,15 @@ enum VT {
     /// assert each resolves distinctly light vs dark and meets contrast on text.
     static let allColorTokens: [(name: String, color: Color)] = [
         ("canvas", canvas), ("card", card), ("hairline", hairline),
-        ("ink", ink), ("body", body), ("micro", micro), ("inkSoft", inkSoft),
+        ("ink", ink), ("body", body), ("micro", micro),
         ("dose", dose), ("timing", timing), ("why", why), ("overdue", overdue),
-        ("aiTint", aiTint), ("aiText", aiText), ("delta", delta), ("chart", chart),
         ("catBlue", catBlue), ("catPurple", catPurple), ("catBrown", catBrown),
         ("catPink", catPink), ("catYellow", catYellow), ("catGray", catGray),
     ]
 
-    // Radii (M40: the mockups run softer/rounder than the old system)
-    static let rCard: CGFloat       = 24
-    static let rFocusCard: CGFloat  = 28
+    // Radii
+    static let rCard: CGFloat       = 20
+    static let rFocusCard: CGFloat  = 24
     static let segmentCircle: CGFloat = 44
 
     // Spacing (4pt base)
