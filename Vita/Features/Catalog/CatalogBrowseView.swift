@@ -140,10 +140,18 @@ struct CatalogRowView: View {
                 }
                 .contentShape(Rectangle())
                 .accessibilityElement(children: .combine)
-                .accessibilityLabel(compound.subtitle.isEmpty ? compound.name : "\(compound.name), \(compound.subtitle)")
+                .accessibilityLabel({
+                    var label = compound.name
+                    if compound.rxStatus == .rx { label += ", prescription" }
+                    if !compound.subtitle.isEmpty { label += ", \(compound.subtitle)" }
+                    return label
+                }())
             }
             .buttonStyle(.plain)
 
+            // Trailing zone, user-tuned (M50c): the badge sits vertically
+            // centered in the row, with the HStack's even 12pt gaps giving
+            // name-block | Rx | + knob its rhythm.
             if compound.rxStatus == .rx {
                 RxBadge()
             }

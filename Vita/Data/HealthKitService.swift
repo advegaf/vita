@@ -48,10 +48,21 @@ actor HealthKitService {
         return t
     }
 
+    /// True once the authorization sheet has been requested at least once.
+    /// HealthKit deliberately hides read-grant status, so this flag is the only
+    /// way to tell "never asked" apart from "asked but toggles left off" - the
+    /// latter needs a Settings deep link, not another (silently no-op) request.
+    static var authRequested: Bool {
+        UserDefaults.standard.bool(forKey: "healthAuthRequested")
+    }
+
     func requestAuthorization() async -> Bool {
         guard Self.isAvailable else { return false }
         return await withCheckedContinuation { cont in
-            store.requestAuthorization(toShare: [], read: readTypes) { ok, _ in cont.resume(returning: ok) }
+            store.requestAuthorization(toShare: [], read: readTypes) { ok, _ in
+                UserDefaults.standard.set(true, forKey: "healthAuthRequested")
+                cont.resume(returning: ok)
+            }
         }
     }
 

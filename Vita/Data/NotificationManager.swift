@@ -14,6 +14,10 @@ final class NotificationRouter: NSObject, UNUserNotificationCenterDelegate {
     /// Prefills the chat input (never auto-sends) — set by cross-links like the
     /// lab marker's "Ask vita" alongside `pendingTab = .chat`.
     var pendingChatPrompt: String?
+    /// Chat owns the focus source, while the root owns the floating navigation.
+    /// Keeping this transient signal in the shared router makes tab-bar hiding
+    /// deterministic even when UIKit keyboard notifications are delayed.
+    var isChatInputFocused = false
     var container: ModelContainer?
 
     func register() {
@@ -60,12 +64,20 @@ final class NotificationRouter: NSObject, UNUserNotificationCenterDelegate {
             try? await UNUserNotificationCenter.current().add(req)
         case UNNotificationDefaultActionIdentifier:
             await MainActor.run {
-                if let id = itemID.flatMap(UUID.init(uuidString:)) { pendingDetailItemID = id }
-                else { pendingTab = .today }
+                if let id = NotificationRouter.detailItemID(fromUserInfoItemID: itemID) {
+                    pendingDetailItemID = id
+                } else { pendingTab = .today }
             }
         default:
             break
         }
+    }
+
+    /// Pure, testable parse of a reminder's deep-link target. RootShell applies
+    /// the resulting pending id only once the scene is active (the sheet must
+    /// never present mid-foreground-transition; device crash, M47).
+    nonisolated static func detailItemID(fromUserInfoItemID raw: String?) -> UUID? {
+        raw.flatMap(UUID.init(uuidString:))
     }
 
     private func handleLog(action: String, occ: (itemID: UUID, minutes: Int, day: Date)?) {

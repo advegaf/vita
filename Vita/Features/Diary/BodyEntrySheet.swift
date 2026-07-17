@@ -16,29 +16,41 @@ struct BodyEntrySheet: View {
     @State private var waistText = ""
     @State private var armText = ""
     @FocusState private var editing: Bool
+    @State private var detent: PresentationDetent = .medium
 
     private var weightUnit: WeightUnit { WeightUnit(rawValue: weightUnitRaw) ?? .lb }
     private var measureUnit: MeasurementUnit { MeasurementUnit(rawValue: measureUnitRaw) ?? .inch }
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: VT.sSection) {
-                title
-                entriesCard
-                if HealthKitService.isAvailable {
-                    Text("Apple Health weight syncs automatically.")
-                        .font(.system(size: 13)).foregroundStyle(VT.micro)
-                        .frame(maxWidth: .infinity, alignment: .center)
+        ScrollViewReader { proxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: VT.sSection) {
+                    title
+                    entriesCard.id("entries")
+                    if HealthKitService.isAvailable {
+                        Text("Apple Health weight syncs automatically.")
+                            .font(.system(size: 13)).foregroundStyle(VT.micro)
+                            .frame(maxWidth: .infinity, alignment: .center)
+                    }
+                    CharcoalPillButton(title: "Save", action: save).padding(.top, 4)
                 }
-                CharcoalPillButton(title: "Save", action: save).padding(.top, 4)
+                .padding(VT.sSection)
             }
-            .padding(VT.sSection)
+            // Same keyboard rescue as the dose sheet (M50): the medium detent
+            // pinches focused fields under the keyboard.
+            .onChange(of: editing) { _, focused in
+                guard focused else { return }
+                detent = .large
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                    withAnimation { proxy.scrollTo("entries", anchor: .center) }
+                }
+            }
         }
         .scrollIndicators(.hidden)
         .scrollDismissesKeyboard(.interactively)
         .background(VT.canvas)
         .dismissesKeyboardOnTap()
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.medium, .large], selection: $detent)
         .presentationDragIndicator(.visible)
     }
 

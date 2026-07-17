@@ -11,6 +11,7 @@ struct TodayView: View {
     @Query(sort: [SortDescriptor(\ProtocolItem.sortIndex), SortDescriptor(\ProtocolItem.addedAt)])
     private var items: [ProtocolItem]
     @Query private var logs: [DoseLog]
+    @Query private var profiles: [UserProfile]
 
     @State private var selectedBlock: String?
     @State private var showSettings = false
@@ -105,7 +106,7 @@ struct TodayView: View {
                             Text(countLine(remaining: remaining))
                                 .contentTransition(.numericText())
                         }
-                        Text(currentBlock.greeting)
+                        Text(greetingLine(currentBlock))
                     }
                     .vtHeadlineStyle()
                 }
@@ -166,6 +167,7 @@ struct TodayView: View {
             .padding(VT.sSection)
         }
         .scrollIndicators(.hidden)
+        .contentMargins(.bottom, 12, for: .scrollContent)
         .background(VT.canvas)
     }
 
@@ -173,10 +175,15 @@ struct TodayView: View {
 
     private func focusCard(_ o: DoseOccurrence, now: Date) -> some View {
         let item = items.first { $0.id == o.itemID }
+        let state = ScheduleService.state(itemID: o.itemID, minutes: o.minutes, day: now,
+                                          logs: logs, now: now)
         return FocusCard(
             peptide: item?.displayName ?? "",
             doseLine: doseLine(item, now: now),
             due: dateFor(minutes: o.minutes),
+            overdueText: state == .overdue
+                ? ScheduleService.overdueLabel(minutesLate: minutes(of: now) - o.minutes)
+                : nil,
             siteLine: item.flatMap { i in
                 i.isInjectable ? SiteRotation.next(for: i, logs: logs).map { "→ \($0.label)" } : nil
             },
@@ -375,6 +382,16 @@ struct TodayView: View {
             if !pending.isEmpty { return (b, pending.count) }
         }
         return nil
+    }
+
+    /// "Good evening." with the saved name folded in when present ("Good evening, Alex.").
+    /// Empty or whitespace-only names fall back to the plain greeting.
+    private func greetingLine(_ block: DayBlock) -> String {
+        let base = block.greeting
+        let name = (profiles.first?.preferredName ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return base }
+        let stem = base.hasSuffix(".") ? String(base.dropLast()) : base
+        return "\(stem), \(name)."
     }
 
     private func countLine(remaining: Int) -> String {

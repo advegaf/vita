@@ -36,7 +36,7 @@ struct HealthConnectView: View {
                             .font(.system(size: 12, weight: .medium)).tracking(0.4)
                             .textCase(.uppercase).foregroundStyle(VT.micro)
                         Text("Connect Apple Health?").vtHeadlineStyle()
-                        Text("vita can factor in your sleep, HRV, and weight when it suggests a plan. Read-only, and you can skip.")
+                        Text("Vita can factor in your sleep, HRV, and weight when it suggests a plan. Read-only, and you can skip.")
                             .font(.system(size: 16)).foregroundStyle(VT.body).padding(.top, 2)
                     }
                     .padding(.top, 8)
@@ -45,6 +45,9 @@ struct HealthConnectView: View {
                     profileCard
                 }
                 .padding(VT.sSection)
+                // The docked Continue pill sits below the scroll; give the last
+                // field (Height) room to clear it at rest instead of tucking under.
+                .padding(.bottom, VT.sSection)
             }
             .scrollIndicators(.hidden)
             .scrollDismissesKeyboard(.interactively)

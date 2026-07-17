@@ -107,8 +107,13 @@ enum LabSeries {
     static func yDomain(points: [LabTrendPoint], refLow: Double?, refHigh: Double?) -> ClosedRange<Double> {
         var lo = points.map(\.value).min() ?? 0
         var hi = points.map(\.value).max() ?? 1
-        if let refLow { lo = Swift.min(lo, refLow) }
-        if let refHigh { hi = Swift.max(hi, refHigh) }
+        // Include BOTH ref bounds in BOTH directions: a whole series can sit above
+        // (or below) its range (e.g. LDL 110-140 vs a ref high of 100), and the
+        // band still has to be on-screen, so widen down as well as up.
+        for bound in [refLow, refHigh].compactMap({ $0 }) {
+            lo = Swift.min(lo, bound)
+            hi = Swift.max(hi, bound)
+        }
         let minSpan = Swift.max(Swift.max(abs(lo), abs(hi)) * 0.1, 0.5)
         return TrendDomain.padded(min: lo, max: hi, minSpan: minSpan)
     }

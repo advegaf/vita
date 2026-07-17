@@ -119,7 +119,7 @@ struct ReconCalculatorView: View {
 
     private var vialCard: some View {
         VStack(alignment: .leading, spacing: 12) {
-            vtLead("Vial.", color: VT.timing)
+            vtLead("Vial.", color: VT.dose)
             numberRow("Vial size", value: $vialMg, suffix: "mg", step: 1, field: .vial)
             numberRow("Bac. water", value: $waterMl, suffix: "mL", step: 0.5, field: .water)
             HStack(spacing: 8) {

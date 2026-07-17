@@ -31,7 +31,7 @@ struct DoseSetupSheet: View {
                 VStack(alignment: .leading, spacing: VT.sSection) {
                     title
                     if let about, !about.isEmpty { aboutSection(about) }
-                    doseSection
+                    doseSection.id("dose")
                     if draft.doseUnit.supportsUnitTracking { vialSection }
                     frequencySection
                     if draft.frequency == .weekly { weekdaySection }
@@ -60,7 +60,23 @@ struct DoseSetupSheet: View {
                         withAnimation { proxy.scrollTo("advanced", anchor: .top) }
                     }
                 }
+                if ProcessInfo.processInfo.environment["VITA_DOSE_FOCUS"] == "1" {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { beginTyping() }
+                }
                 #endif
+            }
+            // Typing on the half-height sheet pinched the field under the
+            // decimal pad (device, M50): promote to the large detent and ride
+            // the field above the keyboard once its animation starts.
+            .onChange(of: doseFocused) { _, focused in
+                if focused {
+                    detent = .large
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                        withAnimation { proxy.scrollTo("dose", anchor: .center) }
+                    }
+                } else if typing {
+                    commitTyped()                          // blur commits
+                }
             }
         }
         .scrollIndicators(.hidden)
@@ -68,9 +84,6 @@ struct DoseSetupSheet: View {
         .background(VT.canvas)
         .contentShape(Rectangle())
         .onTapGesture { if typing { commitTyped() } else { hideKeyboard() } }  // tap outside commits + dismisses
-        .onChange(of: doseFocused) { _, focused in
-            if !focused && typing { commitTyped() }       // blur commits
-        }
         .presentationDetents([.medium, .large], selection: $detent)
         .presentationDragIndicator(.visible)
         .sheet(isPresented: $showCalculator) {
@@ -337,10 +350,10 @@ struct DoseSetupSheet: View {
 
     private var timesSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            vtLead("Timing.", color: VT.why)
+            vtLead("Timing.", color: VT.timing)
             HStack(spacing: 8) {
                 ForEach(DayBlock.allCases, id: \.self) { block in
-                    PillToggle(title: block.title, isOn: draft.blocks.contains(block), onColor: VT.why) {
+                    PillToggle(title: block.title, isOn: draft.blocks.contains(block), onColor: VT.timing) {
                         var b = draft.blocks
                         if b.contains(block) { b.remove(block) } else { b.insert(block) }
                         draft.blocks = b
@@ -388,8 +401,7 @@ struct DoseSetupSheet: View {
     }
 
     private func step(_ dir: Double) {
-        let inc: Double = switch draft.doseUnit { case .mcg: 50; case .mg: 0.25; case .iu: 0.5 }
-        draft.doseAmount = max(0, draft.doseAmount + dir * inc)
+        draft.doseAmount = max(0, draft.doseAmount + dir * doseInc)
     }
 
     private func commitTyped() {
@@ -413,7 +425,13 @@ struct DoseSetupSheet: View {
 
     // MARK: Advanced (cycle + titration, M9)
 
-    private var doseInc: Double { switch draft.doseUnit { case .mcg: 50; case .mg: 0.25; case .iu: 0.5 } }
+    /// Range-aware stepper increment (M50): a 200-600 mcg compound steps by 50,
+    /// not by the tiny fixed tick. Falls back to per-unit defaults when the
+    /// catalog has no educational range (custom compounds).
+    private var doseInc: Double {
+        Units.doseStep(lo: catalog?.typicalDoseLow, hi: catalog?.typicalDoseHigh,
+                       unit: draft.doseUnit)
+    }
     private var hairline: some View { Rectangle().fill(VT.hairline).frame(height: 1).padding(.vertical, 2) }
 
     /// Compact, always-fits-one-line summary for the collapsed disclosure header

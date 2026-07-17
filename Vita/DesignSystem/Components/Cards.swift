@@ -67,6 +67,9 @@ struct FocusCard: View {
     var peptide: String
     var doseLine: String         // "250 mcg • 10u"
     var due: Date
+    /// When the focused dose is overdue, the parent passes the same "1h 16m late"
+    /// framing the pins use; it replaces the live countdown in the terracotta style.
+    var overdueText: String? = nil
     /// "→ right abdomen" rotation suggestion (injectables only).
     var siteLine: String? = nil
     var onLog: () -> Void = {}
@@ -78,9 +81,15 @@ struct FocusCard: View {
         VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 6) {
                 vtLead("Up next.", color: VT.dose, size: 14)
-                CountdownText(target: due)
-                    .font(.system(size: 14, weight: .semibold)).vtTabular()
-                    .foregroundStyle(VT.body)
+                if let overdueText {
+                    Text(overdueText)
+                        .font(.system(size: 14, weight: .semibold)).vtTabular()
+                        .foregroundStyle(VT.overdue)
+                } else {
+                    CountdownText(target: due)
+                        .font(.system(size: 14, weight: .semibold)).vtTabular()
+                        .foregroundStyle(VT.body)
+                }
             }
             VStack(alignment: .leading, spacing: 10) {
                 Text(peptide).font(.vtPicker).foregroundStyle(VT.ink)

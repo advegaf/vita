@@ -8,6 +8,8 @@ struct AdherenceGrid: View {
     let days: [AdherenceDay]
     var perRow: Int = 15
 
+    @Environment(\.colorScheme) private var scheme
+
     private var rows: [[AdherenceDay]] {
         stride(from: 0, to: days.count, by: perRow).map {
             Array(days[$0..<min($0 + perRow, days.count)])
@@ -37,7 +39,9 @@ struct AdherenceGrid: View {
         case .missed:
             Circle().fill(VT.overdue.opacity(0.35)).frame(width: 7, height: 7)
         case .notScheduled:
-            Circle().fill(VT.ink.opacity(0.06)).frame(width: 7, height: 7)
+            // Dark graphite swallows a 0.06 white dot; lift the floor so empty vs
+            // filled stays legible there. Light (ink is near-black) is unchanged.
+            Circle().fill(VT.ink.opacity(scheme == .dark ? 0.18 : 0.06)).frame(width: 7, height: 7)
         }
     }
 }

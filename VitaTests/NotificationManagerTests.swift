@@ -332,4 +332,31 @@ final class NotificationManagerTests: XCTestCase {
         let plan = NotificationManager.plan(for: [it], logs: [], from: noon, calendar: cal)
         XCTAssertTrue(plan.first?.body.contains("0.5 mg") ?? false)
     }
+
+    // MARK: - Notification-tap deep link (M47)
+
+    func testDetailItemIDParsesValidUUIDAndRejectsGarbage() {
+        let id = UUID()
+        XCTAssertEqual(NotificationRouter.detailItemID(fromUserInfoItemID: id.uuidString), id)
+        XCTAssertNil(NotificationRouter.detailItemID(fromUserInfoItemID: "not-a-uuid"))
+        XCTAssertNil(NotificationRouter.detailItemID(fromUserInfoItemID: ""))
+        XCTAssertNil(NotificationRouter.detailItemID(fromUserInfoItemID: nil))
+    }
+
+    /// Source guard: the detail sheet must be driven by RootShell's scene-gated
+    /// copy, never directly by the router's pending id (the direct binding
+    /// presented mid-foreground-transition and crashed on device, M47).
+    func testRootShellGatesDetailSheetOnScenePhase() throws {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+        let source = try String(
+            contentsOf: root.appendingPathComponent("Vita/App/RootShell.swift"),
+            encoding: .utf8)
+        XCTAssertTrue(source.contains("presentedItemID != nil"),
+                      "Sheet must bind to the scene-gated presentedItemID.")
+        XCTAssertFalse(source.contains("get: { router.pendingDetailItemID != nil }"),
+                       "Sheet must not bind directly to the router's pending id.")
+        XCTAssertTrue(source.contains("scenePhase == .active"),
+                      "Pending deep links must wait for an active scene.")
+    }
 }

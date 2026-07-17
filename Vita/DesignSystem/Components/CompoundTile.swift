@@ -6,6 +6,7 @@ import SwiftUI
 struct CompoundTile: View {
     let category: PeptideCategory
     var size: CGFloat = 44
+    @Environment(\.colorScheme) private var colorScheme
 
     // Apple's home-screen icon superellipse: corner radius ≈ 22.37% of the side.
     private var shape: RoundedRectangle {
@@ -19,6 +20,10 @@ struct CompoundTile: View {
             .frame(width: size, height: size)
             .background(VT.card)
             .clipShape(shape)
+            // The vial renders carry a baked-in near-white studio backdrop that
+            // pops bright on graphite. In dark mode, drop a canvas-toned scrim so
+            // the tile settles onto the card instead of glaring off it.
+            .overlay { if colorScheme == .dark { shape.fill(VT.canvas).opacity(0.5) } }
             .overlay(shape.strokeBorder(VT.hairline, lineWidth: 1))
             .accessibilityHidden(true)
     }

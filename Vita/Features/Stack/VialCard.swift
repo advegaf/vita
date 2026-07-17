@@ -67,7 +67,7 @@ struct VialCard: View {
             }
             .animation(reduceMotion ? .none : VMotion.reduced, value: s.dosesRemaining)
 
-            SupplyBar(fraction: s.fractionRemaining)
+            SupplyBar(fraction: s.fractionRemaining, isLow: s.isLow)
                 .animation(reduceMotion ? .none : .spring(response: 0.35, dampingFraction: 0.85),
                            value: s.fractionRemaining)
 

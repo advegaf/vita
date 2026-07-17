@@ -7,16 +7,21 @@ import SwiftData
 struct RootShell: View {
     @State private var selection: AppTab = AppTab.initialForScreenshots
     private var router = NotificationRouter.shared
+    @Environment(\.scenePhase) private var scenePhase
+    @Environment(\.modelContext) private var context
     @Query private var items: [ProtocolItem]
     @Query private var compounds: [CatalogCompound]
 
     @State private var mounted: Set<AppTab> = [AppTab.initialForScreenshots]
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-
+    /// The detail sheet is driven by this scene-gated copy of the router's
+    /// pending id: presenting a modal while the foreground transition from a
+    /// notification tap is still in flight crashes on device (M47), so the
+    /// pending id is applied only once the scene is active, one runloop later.
+    @State private var presentedItemID: UUID?
     var body: some View {
-        // M43: a lazy-once ZStack instead of TabView — pages stay alive after
-        // first visit (stacks, scroll positions, chat state survive) and the
-        // switch is a calm crossfade + drift instead of TabView's hard cut.
+        // A lazy-once ZStack keeps pages alive after first visit, preserving
+        // stacks, scroll positions, and chat state. Tab selection itself is
+        // immediate: navigation must never animate the whole app window.
         // ONE FloatingTabBar instance insets the whole container.
         ZStack {
             ForEach(AppTab.allCases) { tab in
@@ -30,15 +35,22 @@ struct RootShell: View {
                 }
             }
         }
-        .animation(reduceMotion ? VMotion.reduced : .spring(duration: 0.35, bounce: 0),
-                   value: selection)
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            FloatingTabBar(selection: $selection)
+            FloatingTabBar(selection: $selection, hidesForChatInput: router.isChatInputFocused)
         }
-        .onChange(of: selection) { _, tab in mounted.insert(tab) }
+        .onChange(of: selection) { _, tab in
+            mounted.insert(tab)
+            // Always-mounted tabs never fire ChatView.onDisappear, so the
+            // chat-input flag (which hides the bar) is cleared here instead.
+            if tab != .chat { router.isChatInputFocused = false }
+        }
         .tint(VT.ink)
         .onChange(of: router.pendingTab) { _, tab in
             if let tab { selection = tab; router.pendingTab = nil }
+        }
+        .onChange(of: router.pendingDetailItemID) { _, id in applyPendingDetail(id) }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { applyPendingDetail(router.pendingDetailItemID) }
         }
         .task {
             #if DEBUG
@@ -50,20 +62,20 @@ struct RootShell: View {
             #endif
         }
         .sheet(isPresented: Binding(
-            get: { router.pendingDetailItemID != nil },
-            set: { if !$0 { router.pendingDetailItemID = nil } }
+            get: { presentedItemID != nil },
+            set: { if !$0 { presentedItemID = nil } }
         )) {
             // Only present for a LIVE item: a reminder for a since-removed (or
             // mid-delete, faulted) item must never reach CompoundDetailView, whose
             // dose card reads item.schedule and would trap in SwiftData (the M26
-            // titrationDayStarts crash). If it can't resolve, clear the pending id.
-            if let id = router.pendingDetailItemID,
-               let item = items.first(where: { $0.id == id }), !item.isDeleted {
+            // titrationDayStarts crash). Resolved with a fresh fetch because the
+            // @Query array may not be populated yet on a cold-start tap.
+            if let id = presentedItemID, let item = fetchItem(id), !item.isDeleted {
                 NavigationStack {
                     CompoundDetailView(compound: detailCompound(item), item: item)
                         .toolbar {
                             ToolbarItem(placement: .confirmationAction) {
-                                Button("Done") { router.pendingDetailItemID = nil }
+                                Button("Done") { presentedItemID = nil }
                                     .foregroundStyle(VT.ink)
                             }
                         }
@@ -71,9 +83,26 @@ struct RootShell: View {
                 .presentationDetents([.large])
                 .presentationDragIndicator(.visible)
             } else {
-                Color.clear.onAppear { router.pendingDetailItemID = nil }
+                Color.clear.onAppear { presentedItemID = nil }
             }
         }
+    }
+
+    /// Applies a pending deep-link only while the scene is active, deferring
+    /// by one runloop turn so the sheet never presents mid-transition.
+    private func applyPendingDetail(_ id: UUID?) {
+        guard let id, scenePhase == .active else { return }
+        Task { @MainActor in
+            presentedItemID = id
+            router.pendingDetailItemID = nil
+        }
+    }
+
+    /// Launch-safe item resolve (the lazy @Query can lag a cold-start tap).
+    private func fetchItem(_ id: UUID) -> ProtocolItem? {
+        var d = FetchDescriptor<ProtocolItem>(predicate: #Predicate { $0.id == id })
+        d.fetchLimit = 1
+        return (try? context.fetch(d))?.first
     }
 
     @ViewBuilder

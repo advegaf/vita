@@ -223,8 +223,8 @@ struct ReviewView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: VT.sCardGap) {
                     VStack(alignment: .leading, spacing: 4) {
-                        ScreenHeader(eyebrow: "Review",
-                                     title: items.isEmpty ? "Your plan." : "Your plan: \(items.count).")
+                        ScreenHeader(eyebrow: items.isEmpty ? "Review" : "\(items.count) compound\(items.count == 1 ? "" : "s")",
+                                     title: "Your plan.")
                         Text("Tap to adjust. Everything is editable later, too.")
                             .font(.system(size: 15)).foregroundStyle(VT.body).padding(.top, 2)
                         // The refining state lives in the charcoal pill below.
@@ -271,10 +271,10 @@ struct ReviewView: View {
                                         d.frequency = s.frequency
                                         d.weekdays = s.weekdays
                                         d.times = s.times
-                                        suggestedNote = "vita suggests this for your goals."
+                                        suggestedNote = "Vita suggests this for your goals."
                                         editDraft = d
                                     } label: {
-                                        Text("vita suggests \(vtFormatNumber(s.doseAmount)) \(s.doseUnit.label), \(s.frequency.label) →")
+                                        Text("Vita suggests \(vtFormatNumber(s.doseAmount)) \(s.doseUnit.label), \(s.frequency.label) →")
                                             .font(.system(size: 13, weight: .semibold))
                                             .foregroundStyle(VT.dose)
                                     }
