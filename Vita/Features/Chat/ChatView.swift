@@ -26,6 +26,7 @@ struct ChatView: View {
     // moment the user browsed another tab).
     @State private var session = ChatSession.shared
     @State private var health: HealthSnapshot?
+    @State private var ouraSummary: OuraDailySummary?
     @State private var editDraft: DoseDraft?
     @State private var suggestedNote: String?
     @FocusState private var inputFocused: Bool
@@ -53,13 +54,29 @@ struct ChatView: View {
                            aiSuggestedNote: suggestedNote)
         }
         .onAppear { consumePendingPrompt() }
+        .onDisappear { router.isChatInputFocused = false }
         .onChange(of: router.pendingChatPrompt) { _, _ in consumePendingPrompt() }
+        .onChange(of: inputFocused) { _, focused in
+            router.isChatInputFocused = focused
+        }
         .task {
             // Unconditional refresh: connecting Apple Health in Settings or
             // onboarding must reach the very next message, not the next relaunch.
             if HealthKitService.isAvailable {
                 health = await HealthKitService.shared.snapshot()
             }
+            // Ring data for grounding (M49): a week is plenty for one line.
+            #if DEBUG
+            if ProcessInfo.processInfo.environment["VITA_OURA_DEMO"] == "1" {
+                ouraSummary = .demo(days: 7)
+            } else if WearableAuthStore.isConnected(.oura) {
+                ouraSummary = try? await OuraService().dailySummary(days: 7)
+            }
+            #else
+            if WearableAuthStore.isConnected(.oura) {
+                ouraSummary = try? await OuraService().dailySummary(days: 7)
+            }
+            #endif
             #if DEBUG
             if ProcessInfo.processInfo.environment["VITA_CHAT_DEMO"] == "1", messages.isEmpty {
                 send("What can I add for better tanning?")
@@ -124,6 +141,7 @@ struct ChatView: View {
             .dismissesKeyboardOnTap()
             .onChange(of: messages.count) { _, _ in scrollToBottom(proxy) }
             .onChange(of: session.streamingText) { _, _ in scrollToBottom(proxy) }
+            .onAppear { proxy.scrollTo("bottom", anchor: .bottom) }
         }
     }
 
@@ -244,8 +262,15 @@ struct ChatView: View {
             inputBar
         }
         .padding(.horizontal, VT.sSection).padding(.top, 6).padding(.bottom, 8)
-        // No opaque fill: the input pill floats on the app canvas, so nothing is
-        // painted behind the keyboard (just the standard iOS keyboard + canvas).
+        // Canvas fade under the footer: scrolled transcript dims out beneath the
+        // disclaimer/input instead of bleeding through at full strength, while
+        // the top edge stays soft so the pill still reads as floating.
+        .background {
+            LinearGradient(stops: [.init(color: VT.canvas.opacity(0), location: 0),
+                                   .init(color: VT.canvas, location: 0.35)],
+                           startPoint: .top, endPoint: .bottom)
+                .ignoresSafeArea()
+        }
     }
 
     private var inputBar: some View {
@@ -336,9 +361,11 @@ struct ChatView: View {
         context.insert(userMsg)
         context.saveLogged("ChatView")
 
-        let diaryLine = DiaryGrounding.summaryLine(
-            entries: diaryEntries, metrics: bodyMetrics,
-            weightUnit: WeightUnit(rawValue: weightUnitRaw) ?? .lb)
+        let diaryParts = [DiaryGrounding.summaryLine(
+                              entries: diaryEntries, metrics: bodyMetrics,
+                              weightUnit: WeightUnit(rawValue: weightUnitRaw) ?? .lb),
+                          OuraGrounding.summaryLine(ouraSummary)].compactMap(\.self)
+        let diaryLine = diaryParts.isEmpty ? nil : diaryParts.joined(separator: " ")
         let labsLine = LabGrounding.summaryLine(panels: LabService(context: context).panels())
         let chatInput = ChatInput(turns: turns, catalog: summaries(), goals: goals,
                                   stackLines: stackLines(), profile: profileInput(), health: health,

@@ -7,25 +7,59 @@ import SwiftData
 /// trends, and lab results. The subjective check-in was removed by request.
 struct DiaryView: View {
     @Environment(\.modelContext) private var context
+    @Environment(\.scenePhase) private var scenePhase
     @Query(sort: \DiaryEntry.dayStart, order: .reverse) private var entries: [DiaryEntry]
     @Query(sort: \BodyMetric.measuredAt, order: .reverse) private var metrics: [BodyMetric]
     @Query private var labPanels: [LabPanel]
 
     @State private var showBodyEntry = false
     @State private var vitals = VitalsSeries()
+    @State private var oura: OuraDailySummary?
     @State private var trendMetric: DiaryMetric = .weight
     @State private var didBackfill = false
     @State private var debugOpenLabs = false
     @State private var debugOpenMarker: String?
 
     var body: some View {
+        // NavigationStack { ScrollView } directly, like StackView: interposing
+        // TimelineView here broke the automatic bottom safe-area content inset
+        // and rebuilt the ScrollView every minute, pinning the LabsCard under
+        // the floating bar (device, M50). The clock now wraps only TrendCard.
         NavigationStack {
-            TimelineView(.everyMinute) { ctx in
-                content(now: ctx.date)
-            }
+            content()
         }
         .task { await backfillOnce() }
         .task { await loadVitals() }
+        .task { await loadOura() }
+        .onChange(of: scenePhase) { _, phase in
+            // Granting Health toggles (or Oura) in iOS Settings happens out of
+            // process; re-read on return so data appears without a relaunch.
+            guard phase == .active else { return }
+            Task { await loadVitals() }
+            Task { await loadOura() }
+        }
+    }
+
+    /// Oura API summary: demo seed for screenshots, else a fetch only when the
+    /// user connected Oura (OAuth sign-in). Not connected and no demo flag ->
+    /// no-op (no network, no new cards), leaving the Diary exactly as before.
+    private func loadOura() async {
+        #if DEBUG
+        if ProcessInfo.processInfo.environment["VITA_OURA_DEMO"] == "1" {
+            oura = .demo()
+            return
+        }
+        #endif
+        guard WearableAuthStore.isConnected(.oura) else { oura = nil; return }
+        oura = try? await OuraService().dailySummary(days: 30)
+    }
+
+    /// The four wearable cards prefer Oura's own vitals when the ring is
+    /// connected (no Health permissions needed, M48); Apple Health is the
+    /// fallback source for everyone else.
+    private var displaySeries: VitalsSeries {
+        if let ouraVitals = oura?.vitals, !ouraVitals.isEmpty { return ouraVitals }
+        return vitals
     }
 
     /// Live wearable series: demo seed for screenshots, else a read-only
@@ -40,25 +74,38 @@ struct DiaryView: View {
         vitals = await HealthKitService.shared.vitalsSeries(days: 30)
     }
 
-    private func content(now: Date) -> some View {
+    private func content() -> some View {
         return ScrollView {
             VStack(alignment: .leading, spacing: VT.sCardGap) {
                 header
-                WearablesSection(series: vitals, onConnect: {
+                WearablesSection(series: displaySeries, onConnect: {
                     Task {
                         _ = await HealthKitService.shared.requestAuthorization()
                         await loadVitals()
                     }
+                }, onOpenHealthSettings: {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(url)
+                    }
+                }, oura: oura, onConnectVendor: { vendor in
+                    Task {
+                        try? await WearableConnector.shared.connect(vendor)
+                        await loadOura()
+                    }
                 })
                 WeightCard(metrics: metrics) { showBodyEntry = true }
-                TrendCard(metric: $trendMetric, entries: entries, metrics: metrics, now: now,
-                          onEmptyAction: { showBodyEntry = true })
+                // Only the trend chart needs a live clock; scoping the timeline
+                // here keeps the ScrollView stable (see body comment, M50).
+                TimelineView(.everyMinute) { ctx in
+                    TrendCard(metric: $trendMetric, entries: entries, metrics: metrics,
+                              now: ctx.date, onEmptyAction: { showBodyEntry = true })
+                }
                 NavigationLink { LabsListView() } label: { LabsCard(panels: labPanels) }
                     .buttonStyle(.pressableCard)
             }
             .padding(VT.sSection)
-            .padding(.bottom, 24)   // clear the floating Liquid Glass tab bar
         }
+        .contentMargins(.bottom, 12, for: .scrollContent)
         .scrollIndicators(.hidden)
         .background(VT.canvas)
         .navigationDestination(isPresented: $debugOpenLabs) { LabsListView() }

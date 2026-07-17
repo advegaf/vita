@@ -46,6 +46,8 @@ targets:
       properties:
         CFBundleDisplayName: Vita
         ANTHROPIC_API_KEY: $(ANTHROPIC_API_KEY)
+        OURA_CLIENT_ID: $(OURA_CLIENT_ID)
+        OURA_CLIENT_SECRET: $(OURA_CLIENT_SECRET)
         # Portrait-only, declared in the plist itself: the INFOPLIST_KEY_ build
         # setting is NOT merged when a source Info.plist is used (verified in the
         # built product), so the app silently supported every orientation.

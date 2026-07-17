@@ -14,6 +14,7 @@ struct SettingsView: View {
     @Query private var profileList: [UserProfile]
 
     // Profile mirrors (loaded from the profile on appear; persisted on blur/Done).
+    @State private var nameText = ""
     @State private var ageText = ""
     @State private var sex = ""
     @State private var weightText = ""
@@ -26,9 +27,11 @@ struct SettingsView: View {
     @AppStorage("vita.measureUnit") private var storedMeasureUnit = MeasurementUnit.inch.rawValue
     @AppStorage("vita.heightUnit") private var heightUnitRaw = HeightUnit.ftIn.rawValue
 
-    // Apple Health
+    // Wearables (Apple Health + Oura)
     @State private var healthConnecting = false
     @State private var healthNote: String?
+    /// Bumped after an Oura connect/disconnect so the card re-reads Keychain state.
+    @State private var ouraTick = 0
     // Notifications
     @State private var notifDenied = false
     // AI
@@ -62,7 +65,7 @@ struct SettingsView: View {
                     ScreenHeader(eyebrow: "Settings", title: "Your setup.")
                         .padding(.bottom, 2)
                     profileCard
-                    if HealthKitService.isAvailable { healthCard }
+                    wearablesCard
                     appearanceCard
                     unitsCard
                     notificationsCard
@@ -116,6 +119,11 @@ struct SettingsView: View {
 
     private var profileCard: some View {
         card("Profile.", VT.dose) {
+            vtFieldShell("Name") {
+                TextField("", text: $nameText).focused($editing)
+                    .font(.system(size: 17, weight: .semibold)).foregroundStyle(VT.ink)
+                    .textInputAutocapitalization(.words).autocorrectionDisabled()
+            }
             vtPlainField("Age", text: $ageText, suffix: "yrs", keyboard: .numberPad, focus: $editing)
             VStack(alignment: .leading, spacing: 6) {
                 Text("Sex").font(.system(size: 13)).foregroundStyle(VT.micro)
@@ -156,25 +164,94 @@ struct SettingsView: View {
         }
     }
 
-    // MARK: Apple Health
+    // MARK: Wearables (Apple Health + Oura)
 
-    private var healthCard: some View {
-        card("Apple Health.", VT.why) {
-            Text("Read-only. Pulls weight, sleep, and HRV to ground your plan.")
+    /// One card manages every measured-data source. Apple Health: connect /
+    /// re-sync, plus the permission deep link when HealthKit hides its grant.
+    /// Oura: OAuth connect, live "Connected" state, and Disconnect.
+    private var wearablesCard: some View {
+        card("Wearables.", VT.why) {
+            let _ = ouraTick   // re-read Keychain after connect / disconnect
+            if HealthKitService.isAvailable {
+                healthRow
+                Rectangle().fill(VT.hairline).frame(height: 1).padding(.vertical, 2)
+            }
+            ouraRow
+        }
+    }
+
+    @ViewBuilder
+    private var healthRow: some View {
+        Text("Apple Health").font(.system(size: 15, weight: .semibold)).foregroundStyle(VT.ink)
+        Text("Read-only. Pulls weight, sleep, and HRV to ground your plan.")
+            .font(.system(size: 13)).foregroundStyle(VT.micro)
+        Button(action: resync) {
+            HStack(spacing: 8) {
+                if healthConnecting { ProgressView().tint(VT.dose) }
+                Text(healthConnecting ? "Syncing…"
+                     : (HealthKitService.authRequested ? "Re-sync now" : "Connect"))
+                    .font(.system(size: 16, weight: .semibold)).foregroundStyle(VT.dose)
+            }
+            .frame(maxWidth: .infinity).padding(.vertical, 12)
+            .background(VT.dose.opacity(0.10), in: Capsule())
+        }
+        .buttonStyle(.plain).allowsHitTesting(!healthConnecting)
+        // HealthKit hides read-grant status, so once asked we cannot tell data
+        // apart from a denied toggle; offer the permission deep link either way.
+        if HealthKitService.authRequested {
+            Text("No data yet. Check Health permissions for Vita.")
                 .font(.system(size: 13)).foregroundStyle(VT.micro)
-            Button(action: resync) {
-                HStack(spacing: 8) {
-                    if healthConnecting { ProgressView().tint(VT.dose) }
-                    Text(healthConnecting ? "Syncing…" : "Re-sync now")
-                        .font(.system(size: 16, weight: .semibold)).foregroundStyle(VT.dose)
+            Button("Open Settings") {
+                if let url = URL(string: UIApplication.openSettingsURLString) {
+                    UIApplication.shared.open(url)
                 }
-                .frame(maxWidth: .infinity).padding(.vertical, 12)
-                .background(VT.dose.opacity(0.10), in: Capsule())
             }
-            .buttonStyle(.plain).allowsHitTesting(!healthConnecting)
-            if let healthNote {
-                Text(healthNote).font(.system(size: 13)).foregroundStyle(VT.micro)
+            .font(.system(size: 15, weight: .semibold)).foregroundStyle(VT.dose).buttonStyle(.plain)
+        }
+        if let healthNote {
+            Text(healthNote).font(.system(size: 13)).foregroundStyle(VT.micro)
+        }
+    }
+
+    @ViewBuilder
+    private var ouraRow: some View {
+        let connected = WearableAuthStore.isConnected(.oura)
+        HStack {
+            Text("Oura").font(.system(size: 15, weight: .semibold)).foregroundStyle(VT.ink)
+            Spacer()
+            if connected {
+                HStack(spacing: 6) {
+                    Circle().fill(VT.why).frame(width: 7, height: 7)
+                    Text("Connected").font(.system(size: 14, weight: .semibold)).foregroundStyle(VT.ink)
+                }
             }
+        }
+        if connected {
+            Button("Disconnect", role: .destructive) {
+                WearableAuthStore.disconnect(.oura)
+                ouraTick += 1
+            }
+            .font(.system(size: 15, weight: .semibold)).foregroundStyle(VT.overdue).buttonStyle(.plain)
+        } else if WearableVendor.oura.isConfigured {
+            Text("Sleep, readiness, and temperature from your Oura ring.")
+                .font(.system(size: 13)).foregroundStyle(VT.micro)
+            Button(action: connectOura) {
+                Text("Connect")
+                    .font(.system(size: 16, weight: .semibold)).foregroundStyle(VT.dose)
+                    .frame(maxWidth: .infinity).padding(.vertical, 12)
+                    .background(VT.dose.opacity(0.10), in: Capsule())
+            }
+            .buttonStyle(.plain)
+        } else {
+            Text("Needs a one-time developer app setup.")
+                .font(.system(size: 13)).foregroundStyle(VT.micro)
+        }
+    }
+
+    private func connectOura() {
+        Task {
+            try? await WearableConnector.shared.connect(.oura)
+            await MainActor.run { ouraTick += 1 }
         }
     }
 
@@ -558,6 +635,7 @@ struct SettingsView: View {
 
     private func loadProfile() {
         guard let p = profile else { return }
+        nameText = p.preferredName ?? ""
         if let b = p.birthDate {
             ageText = Calendar.current.dateComponents([.year], from: b, to: Date()).year.map(String.init) ?? ""
         }
@@ -573,6 +651,8 @@ struct SettingsView: View {
 
     private func persistProfile() {
         guard let p = profile else { return }
+        let trimmedName = nameText.trimmingCharacters(in: .whitespacesAndNewlines)
+        p.preferredName = trimmedName.isEmpty ? nil : trimmedName
         if let age = Int(ageText), age > 0, age < 130 {
             p.birthDate = Calendar.current.date(byAdding: .year, value: -age, to: Date())
         }

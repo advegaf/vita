@@ -16,6 +16,9 @@ enum Keychain {
     @discardableResult
     static func setAPIKey(_ key: String) -> Bool { set(key, for: apiKeyAccount) }
 
+    // Wearable OAuth tokens (access/refresh/expiry per vendor) use the generic
+    // accessors below with WearableVendor's account names; see WearableAuth.swift.
+
     // MARK: - Generic accessors
 
     static func value(for account: String) -> String? {

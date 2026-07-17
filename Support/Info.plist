@@ -32,6 +32,10 @@
 	<string>Vita does not write any data to Apple Health. This permission is required by the HealthKit capability; all access is read-only.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Vita reads a lab-report photo you choose to extract its values. Educational only.</string>
+	<key>OURA_CLIENT_ID</key>
+	<string>$(OURA_CLIENT_ID)</string>
+	<key>OURA_CLIENT_SECRET</key>
+	<string>$(OURA_CLIENT_SECRET)</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>InterTight.ttf</string>
