@@ -53,6 +53,14 @@ Tap a marker (e.g. glucose) → see its value across **all** saved panels over t
 
 Roughly ordered by leverage. Effort/risk are rough.
 
+### 0. Fitbit + Whoop OAuth (deferred from M46)
+M46 shipped the "Connect your wearables" OAuth hub with Oura. Fitbit was built the
+same day (PKCE public client, sleep efficiency + resting HR cards) and then removed
+from support by request; Whoop was deferred because its developer program has an
+approval queue (developer.whoop.com). The hub and the `WearableAuth` engine already
+generalize: a new vendor is one `WearableVendor` case (endpoints/scopes/config key),
+a service actor mirroring `OuraService`, and a card set. *Effort: small. Risk: low.*
+
 ### 1. Distribution & security (highest leverage)
 The Anthropic key is embedded per-device (seeded from a gitignored xcconfig into the Keychain). **This is fine for personal/TestFlight use but cannot ship publicly** — a distributed binary's key is extractable. For any real release:
 - Stand up a thin **proxy backend** (e.g. a serverless function) that holds the key and forwards Messages API calls; the app calls the proxy. Add auth/rate-limiting.

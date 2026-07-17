@@ -1,0 +1,113 @@
+ID,Area,User story,Expected behavior (from code),Status,Evidence,Notes
+ON-1,Onboarding,As a new user I see a welcome and can start setup,Fresh install shows OnboardingWizard (profile.onboardedAt nil gates AppRootView),Pass,ON-1-light.png ON-1-dark.png,Wordmark + disclaimer + continue CTA; dark parity clean
+ON-2,Onboarding,I can pick my goals,Goals step writes selectedGoalKinds; PillToggle grid,Pass,ON-2-light.png,Continue disabled until a goal picked (canContinue)
+ON-3,Onboarding,I can pick starting peptides,OnboardingPeptidesStep lists catalog; picks seed the draft plan; compound detail pushable,Pass,ON-3-light.png,Searchable grouped catalog + Rx badges + add knobs
+ON-4,Onboarding,I can connect Apple Health for profile fill,HealthConnectView requests read auth; profileVitals fills profile; skip path continues,Needs device,ON-4-light.png,Card + skip + About You form verified on sim; auth needs device
+ON-5,Onboarding,I get a starter plan even without an API key,No key -> rule-based StarterSuggester; stub plan with VITA_CLAUDE_STUB; catalog-validated,Pass,ON-5-light.png,Stub produced validated 3-item clamped plan; StarterSuggesterTests
+ON-6,Onboarding,I can scan labs during onboarding or skip,Labs step embeds LabScanFlow; skip continues wizard,Pass,ON-6-light.png,Camera itself Needs device
+ON-7,Onboarding,I can enable notifications at the end,Notifications step requests auth; NotificationManager.rebuild on finish; onboardedAt set,Pass,ON-7-light.png,
+TB-1,Tab bar,The floating bar is real Liquid Glass with equal fixed slots,GlassEffectContainer + glassEffect(.regular in capsule); four 84x44 slots; constant bar width,Pass,2026-07-13-m45/dark-today.png + light shots,M45; equal slots replace compact hugging (end-tab translation artifact)
+TB-2,Tab bar,Selecting a tab glides the ink pill between stationary slots,matchedGeometryEffect pill; VMotion.tabSelect spring 0.3s bounce 0; label crossfades INSIDE the pill; nothing reflows,Pass,2026-07-13-m45/glide-frame-0.png glide-frame-1.png,Mid-flight frames prove icons + bar edges stationary; UI test pins slot frame
+TB-3,Tab bar,The page itself never animates on switch,RootShell lazy-once ZStack; instant opacity flip; no .animation(value: selection),Pass,TabBarUITests drift test + TabSelectionMotionTests,
+TB-4,Tab bar,Reduce Motion calms the pill glide to a fade,withAnimation(reduceMotion ? VMotion.reduced : tabSelect),Pass,TabSelectionMotionTests source guard,
+TB-5,Tab bar,The bar hides while typing and for chat input focus,LOCAL keyboards only (keyboardIsLocalUserInfoKey guard); scene-active reset; chat flag cleared on tab change,Fixed,testKeyboardHidesBar + testTabBarIgnoresRemoteKeyboards,Was stuck hidden after OAuth sheet's remote keyboard (device); user re-validation pending
+TB-6,Tab bar,Tab items give tactile press feedback,TabPressStyle scale 0.96 0.16s ease-out; rigid haptic on switch,Pass,FloatingTabBar source,
+TD-1,Today,I see how many doses remain and a greeting,countLine + block greeting; numericText transition; preferredName used when set,Pass,TD-1-light.png TD-1-dark.png,Greeting-name part lands with UX-SETTINGS-1 fix
+TD-2,Today,I see my next dose with a countdown and can log it,FocusCard dose•units + site line + countdown; commit haptic + animated swap,Pass,TD-1-light.png TD-1-dark.png,
+TD-3,Today,I can log/skip/undo a dose from its pin,Knob logs (ring+check); context menu Skip/Undo; undo restores,Pass,TD-11-morning.png + DoseLoggerTests,Context menu needs interaction harness
+TD-4,Today,Injectables suggest a rotated site and I can override,Pin "-> site" from rotation; Log-at-site override menu; stamped site after,Pass,TD-1-light.png TD-10-morning.png + SiteRotationTests,Override menu needs interaction harness
+TD-5,Today,Overdue doses are calm but visible,.overdue -> terracotta time + "Nh late",Pass,TD-1-light.png TD-10-morning.png,
+TD-6,Today,I can switch Morning/Midday/Night blocks,CandySegmentedControl filters pins,Pass,TD-1-light.png TD-10-morning.png,
+TD-7,Today,I see progress dots and my streak,DotMeter filled/total + streak note; dot bloom on log,Pass,TD-11-morning.png TD-8-light.png,See UX-TODAY-1 (at-rest clipping)
+TD-8,Today,I am told when a vial runs low,lowVialLine -> Stack tab,Pass,TD-8-light.png,
+TD-9,Today,PRN items live in an As-needed card,asNeededCard; log appends; "logged Nh ago",Pass,TD-11-morning.png,
+TD-10,Today,Cycled-off items show as resting,restingRow quiet resting-until copy,Pass,TD-10-morning.png TD-10-light.png,Cycle chip + titrated dose also verified
+TD-11,Today,Finishing the day feels rewarding,Focus card dissolves into DayCompleteCard,Untested,,Needs interaction harness or VITA_TODAY_STATE flag
+TD-12,Today,A rest day is a calm state,RestDayCard when nothing scheduled,Untested,,Not producible with existing demo flags
+TD-13,Today,Empty stack points me to add,emptyStack CTA into Stack/Catalog,Untested,,No onboarded-empty seed flag
+TD-14,Today,Tapping a peptide opens its detail,Content tap -> pendingDetailItemID -> router sheet,Pass,TD-14-light.png,Via VITA_OPEN_DETAIL=bpc-157
+TD-15,Today,Settings opens from the header,TopBarPill ellipsis -> Settings sheet,Pass,TD-15-light.png,Via VITA_OPEN_SETTINGS=1
+ST-1,Stack,I see my compounds at a glance,Row: 2-line name + dose•units + short cadence + cycle chip + low-supply,Pass,ST-1-light.png ST-1-dark.png,
+ST-2,Stack,I can add a compound from the catalog,+ -> CatalogBrowseView -> DoseSetupSheet,Pass,ST-1-light.png + CatalogStoreTests.testAddSeedsDoseAndSchedule,Sheet behind tap
+ST-3,Stack,I can remove a compound,Context menu Remove; logs relink on re-add,Pass,StackServiceTests.testReAddRelinksDoseHistory,
+ST-4,Stack,Cycle status shows Week x/y or Rest,Capitalized quiet CycleChip,Pass,ST-4-cycle-light-retest.png,Week 3/8 + Rest chips verified after store reset
+CT-1,Catalog,I can browse and search the full catalog,CatalogBrowseView searchable grouped ~58 compounds,Pass,ON-3-light.png + CatalogStoreTests.testSeedLoadsCatalogAndGoals,Verified via onboarding step render
+CT-2,Catalog,Rx-only compounds are labeled,Rx badge from catalog + overrides,Pass,ON-3-light.png + CatalogStoreTests.testRxOverrideAppliesAndToleratesOrphans,
+CT-3,Catalog,Adding from catalog opens dose setup,Add knob -> DoseSetupSheet; reused by Onboarding,Pass,CatalogStoreTests.testAddSeedsDoseAndSchedule,
+DS-1,Dose sheet,I can set dose by stepping or typing,Range-aware stepper (Units.doseStep: 200-600 -> 50); tap-to-type promotes to large detent + scrolls field above keyboard; commit on blur,Fixed,2026-07-16-m50/dose-keyboard-light.png + UnitsTests doseStep suite,M50; was pinched under keyboard at medium detent
+UX-DS-2,UX finding,Typing a dose keeps the field visible above the keyboard,Focus -> detent .large + scrollTo(dose); same recipe in BodyEntrySheet,Fixed,2026-07-16-m50/dose-keyboard-light.png,Device re-validation pending
+UX-DI-1,UX finding,Diary scrolls fully to its last card,TimelineView scoped to TrendCard only; contentMargins(.bottom 12) replaces manual padding,Fixed,DiaryUITests.testDiaryScrollsToLabsCard attachment,Was NavigationStack{TimelineView{ScrollView}} breaking the bottom inset
+DS-2,Dose sheet,I pick vial size from real catalog sizes,Chips + Custom; water seeded; recon note,Pass,DoseSetupSheet add-flow source,Add flow behind catalog tap
+DS-3,Dose sheet,Editing cannot silently reset supply,Fixed size row + hint; commit preserves reconstitutedAt,Pass,DS-1-basic-light.png + StackServiceTests.testCommitVialSetsBUDAndKeepsReconOnEdit,
+DS-4,Dose sheet,IU compounds get draw math with caveat,supportsUnitTracking + 3 IU/mg caption,Pass,DoseSetupSheet source + ReconstitutionCalculatorTests IU suite,Demo item is mcg so caption not on-screen
+DS-5,Dose sheet,I can set frequency/weekdays/times,Pills + weekday circles + time rows,Pass,DS-6-advanced-light.png,
+DS-6,Dose sheet,I can configure cycles,Advanced cycle values + anchor; round-trips through StackService,Pass,DS-6-advanced-light.png + StackServiceTests.testCommitCycleTitrationRoundTrip,Cycle content needs cycle-demo store
+DS-7,Dose sheet,I can configure titration steps,Ladder rows; commit round-trips; activeDose(on:) derives,Pass,StackServiceTests + ScheduleServiceTests.testTitrationLadder,
+CD-1,Compound detail,I see dose and protocol clearly,doseCard + protocol + ladder + cycle ribbon,Pass,CD-2-vial-light.png CD-1-dark.png,Ladder/ribbon need cycle-demo store
+CD-2,Compound detail,I see my vial supply and can act,VialCard dotted KV rows + start-new-vial dialog + calculator,Pass,CD-2-vial-light.png,See UX-CD-2 (bar urgency)
+CD-3,Compound detail,I see adherence history,30d grid + summary,Pass,CD-2-vial-light.png + AdherenceTests,See UX-CD-3 (dark dot contrast)
+CD-4,Compound detail,I see rotation guidance,rotationCard next site + history,Pass,CD-2-vial-light.png + SiteRotationTests,
+CD-5,Compound detail,Blends clarify total dose,isBlend caption,Pass,CompoundDetailView source,No blend in demo stack
+RC-1,Calculator,Compute draw from vial+water+dose,Live "draw to X units" result (U-100/50/40) + calm warnings,Pass,RC-1-calc-light.png RC-1-calc-dark.png,
+RC-2,Calculator,Flip mg/IU,3 IU/mg toggle both directions,Pass,RC-1-calc-light.png + ReconstitutionCalculatorTests IU round-trip,
+RC-3,Calculator,Save result to my item,onSave -> StackService vial write-back,Pass,RC-1-calc-light.png + StackServiceTests,
+RC-4,Calculator,Custom vial size and water values behave,Custom entry clamps; result updates live,Pass,RC-1-calc-light.png + ReconstitutionCalculatorTests clamps,
+RC-5,Calculator,Impossible draws warn calmly,Over-syringe / tiny-draw warnings show without alarm styling,Pass,ReconstitutionCalculatorTests warning suite,Not visible at valid seed values
+VL-1,Vial lifecycle,Logging decrements supply,Derived consumption from stamped logs,Pass,VialEngineTests + CD-2-vial-light.png,
+VL-2,Vial lifecycle,Undo restores supply,Log deletion self-heals derivation,Pass,DoseLoggerTests.testUndoRestoresDerivedConsumption,
+VL-3,Vial lifecycle,Start new vial resets tracking,startNewVial resets reconstitutedAt,Pass,StackServiceTests + CD-2-vial-light.png,
+VL-4,Vial lifecycle,One low-supply + one BUD notice,Deterministic vial- ids + budget reserve,Pass,NotificationManagerTests.testVialNoticesLowAndBUDFireOnce,
+DI-1,Diary,Diary is my wearables hub,WearablesSection sleep/HRV/resting HR/breath read-only from Apple Health,Pass,DI-1-diary-hub-light.png DK-1-diary-dark.png,Real Oura/watch data Needs device
+DI-2,Diary,No wearable data offers the Health connect flow,3-state: never asked -> Connect sheet; asked-but-empty -> permission hint + Open Settings deep link; reload on scene-active,Fixed,2026-07-14-m47 evidence,HealthKit hides read grants; re-ask is a silent no-op (trap removed). Device re-validation pending
+DI-3,Diary,Log weight and body metrics,scalemass header action -> BodyEntrySheet -> canonical units,Pass,DI-1-diary-hub-light.png + DiaryServiceTests,Sheet behind tap
+DI-4,Diary,Weight reads finance-style with 30-day trends,WeightCard big number + TrendCard chips + chart + scrub; chart clipped to card,Pass,DI-1-diary-hub-light.png + DiarySeriesTests,
+DI-5,Diary,Health weight syncs in,weightSamples dedup by healthUUID,Needs device,,
+DI-6,Diary,Labs are reachable from Diary,LabsCard -> LabsListView,Pass,LB-3-labs-list-light.png,
+OU-1,Oura,I can sign into Oura and allow access (OAuth),Diary hub Connect -> ASWebAuthenticationSession -> PKCE code exchange -> Keychain tokens; auto-refresh; Disconnect in row menu,Needs device,WearableAuthTests + 2026-07-14-m46/hub-unconfigured-light.png,M46 replaces PAT. Live sign-in needs OURA_CLIENT_ID/SECRET registration
+OU-2,Oura,Readiness / sleep score / temperature show in Diary,WearablesSection Oura cards when connected or VITA_OURA_DEMO=1,Pass,2026-07-14-m48 evidence,Caption removed M47
+OU-4,Oura,Sleep / HRV / resting HR / breath pull straight from my ring,Oura sleep-periods endpoint -> per-day vitals (hours summed; rates from longest period; implausible dropped); Diary cards prefer Oura vitals when connected with Health fallback,Pass,2026-07-14-m48 evidence + OuraServiceTests aggregation suite,M48; no Health permissions needed for these cards
+OU-3,Oura,Not connected means zero change,No network calls and no new UI without connection/demo flag,Pass,DiaryView.loadOura guard + OuraServiceTests noToken tests,
+FB-1,Fitbit,Fitbit support,Removed from support by user request same day it was built (M46); implementation shelved; ROADMAP lists it with Whoop for later,Out of scope,,Shelved copy in session scratchpad
+WB-1,Wearables hub,Hub lists only unconnected sources and vanishes when all connected,Rows drop out as sources connect; no Disconnect in hub; whole card gone when Health has data + Oura connected; management in Settings Wearables card,Pass,2026-07-14-m47 evidence,M47 per device feedback; via-Oura caption removed
+WB-2,Wearables hub,I manage connections in Settings,Settings Wearables card: Health connect/re-sync + Open Settings permission link; Oura connect/Connected+Disconnect/needs-setup,Pass,2026-07-14-m47 evidence,Replaces the old Apple Health re-sync card
+CH-1,Chat,Grounded answers about my stack,Streaming + full grounding block (stack/goals/profile/Health/diary/labs/Oura),Pass,CH-1-chat-transcript-light.png,Stub on sim
+CH-6,Chat,The AI sees my ring data,OuraGrounding one-liner (sleep/HRV/RHR/breath/readiness/sleep score/temp) appended to the diary grounding when Oura connected; 7d fetch on chat open,Pass,OuraGroundingTests,M49; live answer quality Needs device
+CH-2,Chat,Useful without a key,Rule-based fallback,Pass,ChatTests fallback,
+CH-3,Chat,Suggested changes appear as chips,Validated ADD/ADJUST chips -> DoseSetupSheet confirm; never auto-applied,Pass,CH-1-chat-transcript-light.png,
+CH-4,Chat,Starter prompts help me begin,starterChips from stack/goals,Pass,CH-4-starter-chips-light.png,"Try asking" chips derived from stack verified on empty thread
+CH-5,Chat,Chat input hides the tab bar and keeps the field above the keyboard,isChatInputFocused router flag + safeAreaInset footer,Pass,CH-5-chat-focus-keyboard-light.png,
+LB-1,Labs,Scan a lab report with consent,Consent gate -> camera/photo/PDF -> vision -> review; EXIF stripped,Needs device,LabVisionRequestTests,Consent tap not sim-drivable; camera device-only
+LB-2,Labs,Review parsed values before saving,Editable rows; deterministic high/low flags; qualitative read-only,Pass,LB-3-labs-list-light.png + LabServiceTests + LabPanelDTOTests,Edit rows behind scan-flow tap
+LB-3,Labs,See panels and marker details,List + detail ordered out-of-range first; vs-last delta; QuickLook original,Pass,LB-3-labs-list-light.png DK-1-labs-dark.png,
+LB-4,Labs,See a marker's trend,Chart + ref band + ask-vita prefill into Chat,Pass,LB-4-marker-trend-light.png,See UX-LABS-1 (band visibility)
+SE-1,Settings,Edit profile and units,Name field + unit toggles persist; greeting uses preferredName,Fixed,SE-1-name-field-light.png,Name row restored as first Profile field; greeting folds name in
+SE-2,Settings,Pick appearance,System/Light/Dark live switch,Pass,SE-1-settings-top-light.png DK-1-settings-dark.png + AppearanceTests,
+SE-3,Settings,Quiet hours + reminder depth,Toggles/pickers rebuild notifications,Pass,SettingsView source + NotificationManagerTests,
+SE-4,Settings,Manage my API key,Keychain save/test/remove,Needs device,,Never live-test with user key (spend guard)
+SE-5,Settings,Override Rx status,RxOverridesView persists,Pass,SE-5-rx-overrides-light.png,
+SE-6,Settings,Export a backup,JSON+CSV share sheet,Pass,SE-3-settings-scrolled-light.png + DataExportTests,
+SE-7,Settings,Share a physician report,Paginated PDF forced-light,Pass,SE-3-settings-scrolled-light.png + ReportBuilderTests,PDF render behind tap
+SE-8,Settings,Danger zone clears data safely,Confirm dialogs wipe stores,Pass,SE-3-settings-scrolled-light.png + SettingsActionsTests,
+NT-1,Notifications,Reminders clear when I log,plan() excludes acted; log removes pending+delivered,Pass,NotificationManagerTests,
+NT-2,Notifications,Log/Skip/Snooze from banner,DOSE_REMINDER actions via DoseLogger,Needs device,NotificationManagerTests routing,
+NT-3,Notifications,Quiet hours shift advisory only,dose- never shifts; others shift; pre/late drop,Pass,NotificationManagerTests quiet-window suite,
+NT-4,Notifications,Pre-dose lead + overdue follow-up,pre-/late- ids; leftover budget only,Pass,NotificationManagerTests,
+NT-5,Notifications,Tapping a reminder deep-links to the dose detail,Scene-gated: pending id applied only when scene active + next runloop; item re-fetched via FetchDescriptor (launch-safe),Fixed,NotificationManagerTests M47 tests,Was crashing on device (modal mid-foreground-transition); user re-validation pending
+WG-1,Widgets,Widget shows doses and can log,Snapshot slots; intent ledger reconciles on launch,Untested,WidgetSnapshotTests,Gallery add + tap-log need device/harness
+DK-1,Dark mode,Every surface as good in dark as light,Warm graphite palette (Style B; canvas 141312) + parity/WCAG tests,Pass,2026-07-13-m45/dark-{today;stack;diary-oura;chat;settings;detail;labs}.png,M45 re-sweep on warm graphite; accents harmonize; thumbnails/dots still calm
+DK-2,Dark mode,No color conflicts anywhere,onInk on all light-flipping fills (warm near-black 141312),Pass,same seven m45 dark shots,
+HD-1,Headers,Every tab wears the same header anatomy,ScreenHeader eyebrow+headline + 38pt HeaderActionCircle; Today keeps TopBarPill,Pass,DI-1 TB-2 CH-1 TB-1 shots,
+UX-CHAT-1,UX finding,Transcript must not bleed at full strength under the input footer,Canvas fade behind footer; last message clears input; bar strip dims,Fixed,UX-CHAT-1-fixed-light.png UX-CHAT-1-fixed-dark.png,High. Verified: transcript fades under footer; last message clears input
+UX-SETTINGS-1,UX finding,Name field + personalized greeting restored (M41 regression),Settings profileCard Name row -> profile.preferredName -> Today greeting,Fixed,SE-1-name-field-light.png,Medium. Verified; typing-through persists via persistProfile on blur
+UX-TODAY-1,UX finding,DotMeter/streak clear the tab bar at rest,12pt bottom content margin on Today scroll,Fixed,UX-TODAY-1-2-fixed-light.png,Polish. Verified: meter + low-vial line clear the bar at rest
+UX-TODAY-2,UX finding,Focus card and pins agree on overdue framing,Focus card shows late copy when overdue instead of "now",Fixed,UX-TODAY-1-2-fixed-light.png,Polish. Verified: "14h 33m late" in terracotta on focus card
+UX-LABS-1,UX finding,Marker trend ref band visible even when series fully out of range,Y-domain unions series and ref bounds,Fixed,UX-LABS-1-fixed-marker.png,Polish. Verified: LDL axis now includes the 100 threshold
+UX-DARK-1,UX finding,Vial thumbnails calm in dark mode (Stack + catalog),Canvas scrim over baked-in white backdrop in dark (CompoundTile),Fixed,UX-DARK-1-fixed-stack-dark.png,Polish. Verified: tiles sit muted on graphite
+UX-ONB-1,UX finding,Brand casing consistent in onboarding prose,Prose says "Vita" matching wordmark,Fixed,3 strings in HealthConnectView + OnboardingPeptidesStep,Polish. CopyGuardTests green
+UX-ONB-2,UX finding,Plan headline reads clean,"Your plan." headline; count moves to eyebrow,Fixed,UX-ONB-2-fixed-review.png,Polish. Verified; eyebrow shows N compounds (Review fallback when empty)
+UX-ONB-3,UX finding,About You card clears the Continue bar at rest,Bottom inset on Health step scroll content,Fixed,UX-ONB-3-fixed-health.png,Polish. sSection bottom pad added
+UX-ONB-4,UX finding,Rx badge centered in the catalog row's trailing zone,Badge vertically centered with even 12pt gaps (text block | Rx | + knob); a11y label says prescription,Fixed,2026-07-16-m50/rx-badge-centered.png,M50c user-tuned (after M46 top-float and M50b inline iterations)
+UX-DS-1,UX finding,Section eyebrow tints consistent across dose sheet + calculator,One tint rule (semantic by category); Timing. gets its tint,Fixed,DoseSetupSheet + ReconCalculatorView diffs,Polish. Timing.->VT.timing; calculator Vial.->VT.dose
+UX-CD-2,UX finding,Vial progress bar carries urgency when low,Thicker track + terracotta fill at/below low threshold,Fixed,UX-CD-2-3-fixed-detail-dark.png,Medium. Verified. NOTE: reverses SupplyBar's documented single-accent intent
+UX-CD-3,UX finding,Adherence empty dots visible in dark,Empty-dot opacity 0.18 in dark (0.06 light unchanged),Fixed,UX-CD-2-3-fixed-detail-dark.png,Polish. Verified
+UX-ST-2,UX finding,Stack row vertical rhythm with/without supply line,Considered; current 2/3-line rows accepted as informative,Out of scope,ST-1-light.png,By design for now
