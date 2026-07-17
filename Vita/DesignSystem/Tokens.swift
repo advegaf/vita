@@ -39,29 +39,30 @@ extension Color {
 
 enum VT {
 
-    // Dark = neutral graphite (user-chosen from a 4-variant screenshot experiment).
-    // The warm accents keep their identity but are slightly softened in dark so they
-    // sit naturally on the cool base instead of glowing against it.
+    // Dark = warm graphite ("Style B", restored by user request): a barely-warm
+    // near-neutral (canvas 141312). Neutral enough to avoid the brown-soup feel,
+    // warm enough that the warm accent family (why latte, overdue terracotta,
+    // timing tan) harmonizes instead of glowing.
 
     // Surfaces
-    static let canvas   = Color(light: "F1EEE9", dark: "121214") // app background (never a card)
-    static let card     = Color(light: "FFFFFF", dark: "1E1E20") // every card / sheet
-    static let hairline = Color(light: "EAE6DF", dark: "33333A") // divider / dark card border
+    static let canvas   = Color(light: "F1EEE9", dark: "141312") // app background (never a card)
+    static let card     = Color(light: "FFFFFF", dark: "1E1C1A") // every card / sheet
+    static let hairline = Color(light: "EAE6DF", dark: "34302C") // divider / dark card border
 
     // Text
-    static let ink   = Color(light: "1A1A1A", dark: "F5F5F7") // headlines, charcoal pill, bolded terms
+    static let ink   = Color(light: "1A1A1A", dark: "F3EEE7") // headlines, charcoal pill, bolded terms
     /// Label/glyph color sitting ON a filled surface (the ink pill, a selected toggle,
-    /// the done checkmark): white in light, near-black in dark — because every
+    /// the done checkmark): white in light, warm near-black in dark — because every
     /// dark-mode fill (ink, accents) is a light tone, so a dark label reads on all.
-    static let onInk = Color(light: "FFFFFF", dark: "121214")
-    static let body  = Color(light: "6E6E6E", dark: "AEAEB4") // body copy
-    static let micro = Color(light: "9A958C", dark: "94949B") // disclaimers, captions (>=4.5 on dark card)
+    static let onInk = Color(light: "FFFFFF", dark: "141312")
+    static let body  = Color(light: "6E6E6E", dark: "B5AEA5") // body copy
+    static let micro = Color(light: "9A958C", dark: "989187") // disclaimers, captions (>=4.5 on dark card)
 
     // Accents (semantic — each does double duty as dimension + day-state)
     static let dose   = Color(light: "2BB3F3", dark: "4FC3F7") // Dose  + "due-now / action"
-    static let timing = Color(light: "FFC22E", dark: "F5C554") // Timing + "upcoming" (softened on graphite)
-    static let why    = Color(light: "3E2B22", dark: "CFB4A0") // Why + "logged / done" (muted latte on graphite)
-    static let overdue = Color(light: "C0593F", dark: "D08066") // overdue ONLY (softened terracotta)
+    static let timing = Color(light: "FFC22E", dark: "FFCB4D") // Timing + "upcoming"
+    static let why    = Color(light: "3E2B22", dark: "DDB9A4") // Why + "logged / done" (flips to light on dark)
+    static let overdue = Color(light: "C0593F", dark: "D97E63") // overdue ONLY (never iOS error-red)
 
     // Category tints — matched to the vial render hues (one per category, closed set)
     static let catBlue   = Color(light: "3FA9E0", dark: "5CB8ED")  // Weight Loss

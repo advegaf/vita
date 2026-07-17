@@ -11,6 +11,10 @@ enum VMotion {
     /// The 1–10 slider's release: a small, classy overshoot (damping < 0.8).
     static let sliderSettle  = Animation.spring(response: 0.30, dampingFraction: 0.62)
 
+    /// Tab selection: the ink pill's glide between items. Short and
+    /// critically damped so it reads as weight, never as bounce.
+    static let tabSelect = Animation.spring(duration: 0.3, bounce: 0)
+
     /// Reduce-Motion fallback: a single 0.2s opacity fade.
     static let reduced = Animation.easeOut(duration: 0.2)
 
