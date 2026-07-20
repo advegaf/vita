@@ -10,7 +10,7 @@ settings:
   base:
     SWIFT_VERSION: "6.0"
     MARKETING_VERSION: "1.0.0"
-    CURRENT_PROJECT_VERSION: "2"
+    CURRENT_PROJECT_VERSION: "3"
     # DEVELOPMENT_TEAM is supplied per-developer via Config/Secrets.xcconfig
     # (see Config/Secrets.example.xcconfig) so no team ID lives in the repo.
     CODE_SIGN_STYLE: Automatic
@@ -45,6 +45,11 @@ targets:
       path: Support/Info.plist
       properties:
         CFBundleDisplayName: Vita
+        # XcodeGen writes literal "1.0"/"1" defaults into a source Info.plist,
+        # ignoring the build settings; route the real numbers through instead
+        # (caught by the /testflight archive check: build 3 baked as "1").
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         ANTHROPIC_API_KEY: $(ANTHROPIC_API_KEY)
         OURA_CLIENT_ID: $(OURA_CLIENT_ID)
         OURA_CLIENT_SECRET: $(OURA_CLIENT_SECRET)
@@ -90,6 +95,10 @@ targets:
       path: Support/VitaWidget-Info.plist
       properties:
         CFBundleDisplayName: Vita
+        # Same literal-default trap as the app plist: route the real numbers
+        # through, or App Store Connect warns on every upload (build 3 did).
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
         NSExtension:
           NSExtensionPointIdentifier: com.apple.widgetkit-extension
 
