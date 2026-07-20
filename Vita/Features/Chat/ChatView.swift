@@ -79,7 +79,7 @@ struct ChatView: View {
             #endif
             #if DEBUG
             if ProcessInfo.processInfo.environment["VITA_CHAT_DEMO"] == "1", messages.isEmpty {
-                send("What can I add for better tanning?")
+                send("How is my recovery looking this week?")
             }
             if ProcessInfo.processInfo.environment["VITA_CHAT_FOCUS"] == "1" {
                 try? await Task.sleep(nanoseconds: 400_000_000)

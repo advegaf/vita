@@ -374,6 +374,25 @@ struct StubClaudeService: ClaudeServiceProviding {
             return r.filter { inCatalog.contains($0) }
         }()
 
+        // Screenshot exchange (M52): a grounded, purely educational answer with no
+        // suggestion chips, so marketing shots never show the app recommending a
+        // compound. Values mirror the VITA_OURA_DEMO diary so the set stays consistent.
+        if q.contains("recovery") {
+            let reply = "Your ring makes this easy to read. Sleep averaged 7.9 hours this week with HRV around 58 ms, and both are trending gently up. That is a supportive backdrop for the recovery goals behind your stack. Keep in mind the research on these peptides is still early and largely preclinical, so treat this as educational context and discuss any changes with your clinician."
+            return AsyncThrowingStream { continuation in
+                let task = Task {
+                    for word in reply.split(separator: " ", omittingEmptySubsequences: false) {
+                        try? await Task.sleep(nanoseconds: 28_000_000)
+                        if Task.isCancelled { continuation.finish(); return }
+                        continuation.yield(.text(String(word) + " "))
+                    }
+                    continuation.yield(.finished)
+                    continuation.finish()
+                }
+                continuation.onTermination = { _ in task.cancel() }
+            }
+        }
+
         let reply = recommend.isEmpty
             ? "Happy to talk it through. Tell me a goal and I will point you at what is worth a look."
             : "For that, a couple of options worth a look. Tap one to set it up and you can tweak the dose before it lands in your stack."
