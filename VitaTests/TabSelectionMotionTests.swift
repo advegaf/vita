@@ -45,10 +45,12 @@ final class TabSelectionMotionTests: XCTestCase {
     func testTabBarKeepsEqualFixedSlots() throws {
         let source = try sourceFile("Vita/DesignSystem/Components/FloatingTabBar.swift")
 
-        XCTAssertTrue(source.contains("frame(width: 84, height: 44)"),
-                      "Items keep fixed equal slots so the bar never reflows or re-centers.")
+        XCTAssertTrue(source.contains("frame(width: 48, height: 44)"),
+                      "Items keep fixed equal icon slots so the bar never reflows or re-centers.")
         XCTAssertFalse(source.contains("width: selected ? nil : 0"),
                        "The width-hugging label reveal must not return; end tabs translate with it.")
+        XCTAssertFalse(source.contains("Text(tab.title)"),
+                       "The bar is icon-only (M51); visible labels must not creep back.")
     }
 
     func testTabSelectMotionTokenStaysCalm() throws {

@@ -57,11 +57,11 @@ struct FloatingTabBar: View {
         }
     }
 
-    /// Equal fixed slots: every item is 84x44 regardless of selection, so the bar's
-    /// total width is constant — nothing reflows or re-centers. The ink pill glides
-    /// between the stationary slots via matched geometry and the label crossfades
-    /// INSIDE the pill; page content is not animated. (Width-hugging items made the
-    /// end tabs translate ~35pt on selection, which read as "out of thin air".)
+    /// Icon-only equal slots (M51): every item is a fixed 48x44 regardless of
+    /// selection, so the bar stays a compact ~204pt pill and nothing reflows or
+    /// re-centers. The ink pill glides between the stationary slots via matched
+    /// geometry; page content is not animated. VoiceOver carries the tab names
+    /// through the accessibility labels (there is no visible text by design).
     @ViewBuilder
     private func item(_ tab: AppTab) -> some View {
         let selected = tab == selection
@@ -72,19 +72,11 @@ struct FloatingTabBar: View {
                 selection = tab
             }
         } label: {
-            HStack(spacing: 6) {
-                Image(systemName: tab.icon)
-                    .font(.system(size: 16, weight: .semibold))
-                    .symbolRenderingMode(.hierarchical)
-                if selected {
-                    Text(tab.title)
-                        .font(.system(size: 13, weight: .semibold))
-                        .fixedSize()
-                        .transition(.opacity.combined(with: .scale(scale: 0.85)))
-                }
-            }
+            Image(systemName: tab.icon)
+                .font(.system(size: 16, weight: .semibold))
+                .symbolRenderingMode(.hierarchical)
             .foregroundStyle(selected ? VT.onInk : VT.body)
-            .frame(width: 84, height: 44)
+            .frame(width: 48, height: 44)
                 .background {
                     if selected {
                         Capsule()
