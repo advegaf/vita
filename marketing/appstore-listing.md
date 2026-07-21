@@ -13,7 +13,20 @@ Everything to paste into App Store Connect, field by field. Screenshots live in
 | Subtitle | `Track doses, vials and labs` |
 | Primary category | Health & Fitness |
 | Secondary category | Education |
-| Age rating | "Medical/Treatment Information: Infrequent/Mild" — everything else None |
+| Age rating | see questionnaire answers below |
+
+### Age rating questionnaire
+
+- Violence / profanity / mature themes / horror / gambling / sexual content / contests: **None**
+- Unrestricted Web Access / real-money gambling: **No**
+- **Medical or Treatment Information: Infrequent** ("Frequent" is for apps whose core
+  content is treatment guidance; it drags the rating to 17+/18+ and contradicts the
+  educational positioning)
+- **Health or Wellness Topics: Yes** (the app presents health/wellness content throughout)
+- **Alcohol, Tobacco, or Drug Use or References: None** (that category is about
+  depicting recreational/illegal drug use; the medical question covers this app)
+- AI chat, if asked: AI-generated content, not user-to-user; no shared user-generated content
+- Expected computed rating: 12+/13+ — if it computes higher, an answer got over-declared
 
 ## Previews and Screenshots
 
@@ -69,9 +82,9 @@ self-administration of unapproved substances — rejection surface, no search va
 
 | Field | Value |
 |---|---|
-| Support URL | REQUIRED — publish a support page first (e.g. GitHub Pages) |
+| Support URL | `https://advegaf.com` |
 | Marketing URL | leave blank |
-| Privacy Policy URL (in App Privacy) | REQUIRED — same page or a sibling |
+| Privacy Policy URL (in App Privacy) | `https://advegaf.com/privacy` |
 
 ## Version / Copyright
 
