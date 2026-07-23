@@ -6,7 +6,7 @@ import SwiftData
 /// architecture, removed per the user's design language.)
 struct RootShell: View {
     @State private var selection: AppTab = AppTab.initialForScreenshots
-    private var router = NotificationRouter.shared
+    @State private var router = NotificationRouter.shared
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.modelContext) private var context
     @Query private var items: [ProtocolItem]
@@ -18,6 +18,12 @@ struct RootShell: View {
     /// notification tap is still in flight crashes on device (M47), so the
     /// pending id is applied only once the scene is active, one runloop later.
     @State private var presentedItemID: UUID?
+    /// scenePhase == .active is NOT a proxy for "the root view is in the window":
+    /// on a cold launch from a notification tap the scene reports active before
+    /// UIKit attaches the hosting controller, and presenting the sheet then
+    /// crashes on device (M53). This flag flips only after first onAppear plus a
+    /// short settle, and the presentation guard requires BOTH signals.
+    @State private var uiReady = false
     var body: some View {
         // A lazy-once ZStack keeps pages alive after first visit, preserving
         // stacks, scroll positions, and chat state. Tab selection itself is
@@ -51,6 +57,21 @@ struct RootShell: View {
         .onChange(of: router.pendingDetailItemID) { _, id in applyPendingDetail(id) }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { applyPendingDetail(router.pendingDetailItemID) }
+        }
+        .onAppear {
+            // Cold-launch rescue (M53): the pending id is usually set BEFORE this
+            // view subscribes, so neither onChange above fires for it. Flip
+            // uiReady after a short settle; the onChange below re-checks the
+            // pending id. (The re-check must NOT happen inside this Task: the
+            // closure captures a stale view value whose scenePhase still reads
+            // pre-activation, and the guard would skip forever.)
+            Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 350_000_000)
+                uiReady = true
+            }
+        }
+        .onChange(of: uiReady) { _, ready in
+            if ready { applyPendingDetail(router.pendingDetailItemID) }
         }
         .task {
             #if DEBUG
@@ -88,10 +109,13 @@ struct RootShell: View {
         }
     }
 
-    /// Applies a pending deep-link only while the scene is active, deferring
-    /// by one runloop turn so the sheet never presents mid-transition.
+    /// Applies a pending deep-link only while the scene is active AND the root
+    /// view has settled in the window (uiReady), deferring one more runloop turn
+    /// so the sheet never presents mid-transition. Three callers converge here
+    /// (pending onChange, scenePhase onChange, onAppear settle); whichever signal
+    /// lands last wins, and none can present early.
     private func applyPendingDetail(_ id: UUID?) {
-        guard let id, scenePhase == .active else { return }
+        guard let id, scenePhase == .active, uiReady else { return }
         Task { @MainActor in
             presentedItemID = id
             router.pendingDetailItemID = nil

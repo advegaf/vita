@@ -35,41 +35,62 @@ final class NotificationRouter: NSObject, UNUserNotificationCenterDelegate {
         center.setNotificationCategories([category, decision])
     }
 
+    // NOTE (M53): these delegate methods must use the completionHandler variants,
+    // NOT the async ones. With `nonisolated async`, Swift resumes UIKit's implicit
+    // completion on a background executor, and UIKit's follow-up snapshot /
+    // state-restoration work (_updateStateRestorationArchive...) asserts off-main
+    // and aborts: SIGABRT on EVERY notification tap, cold or warm. The handlers
+    // below hop to the main actor and invoke the completion there.
+
     // Show banners even while the app is foregrounded.
     nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
-        willPresent notification: UNNotification
-    ) async -> UNNotificationPresentationOptions {
-        [.banner, .sound]
+        willPresent notification: UNNotification,
+        withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void
+    ) {
+        // The imported ObjC block is not @Sendable; it is a one-shot heap block,
+        // safe to invoke once from the main actor.
+        nonisolated(unsafe) let done = completionHandler
+        Task { @MainActor in done([.banner, .sound]) }
     }
 
     nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter,
-        didReceive response: UNNotificationResponse
-    ) async {
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
         let action = response.actionIdentifier
         let userInfo = response.notification.request.content.userInfo
         // Resolve the Sendable occurrence (dayKey-aware) before hopping actors.
         let occ = NotificationManager.occurrence(from: userInfo)
         let itemID = userInfo["itemID"] as? String
 
-        switch action {
-        case "LOG_DOSE", "SKIP_DOSE":
-            await MainActor.run { handleLog(action: action, occ: occ) }
-        case "SNOOZE_15":
-            // UNUserNotificationCenter is thread-safe; reuse the fired content, +15m.
+        // Snooze reuses the fired (non-Sendable) content; UNUserNotificationCenter
+        // is thread-safe, so schedule here rather than carry it across the hop.
+        if action == "SNOOZE_15" {
             let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 15 * 60, repeats: false)
             let req = UNNotificationRequest(identifier: "snooze-\(UUID().uuidString)",
                                             content: response.notification.request.content, trigger: trigger)
-            try? await UNUserNotificationCenter.current().add(req)
-        case UNNotificationDefaultActionIdentifier:
-            await MainActor.run {
+            UNUserNotificationCenter.current().add(req)
+        }
+
+        // Same one-shot ObjC block situation as willPresent above.
+        nonisolated(unsafe) let done = completionHandler
+        Task { @MainActor in
+            switch action {
+            case "LOG_DOSE", "SKIP_DOSE":
+                handleLog(action: action, occ: occ)
+            case UNNotificationDefaultActionIdentifier:
                 if let id = NotificationRouter.detailItemID(fromUserInfoItemID: itemID) {
                     pendingDetailItemID = id
-                } else { pendingTab = .today }
+                } else {
+                    pendingTab = .today
+                }
+            default:
+                break
             }
-        default:
-            break
+            // On main: UIKit runs snapshot/state work when this fires.
+            done()
         }
     }
 
@@ -482,4 +503,38 @@ enum NotificationManager {
             #endif
         }
     }
+
+    #if DEBUG
+    /// UI-test hook (M53): fire a real DOSE_REMINDER n seconds from now for the
+    /// first stack item, so the Springboard tap test does not wait out a calendar
+    /// minute boundary. Requests permission itself because the demo seeds skip
+    /// onboarding (where the real prompt lives). Env: VITA_NOTIF_TEST_SECONDS=<n>.
+    /// The identifier carries no managed prefix, so rebuild sweeps ignore it.
+    static func scheduleDebugTapReminder(context: ModelContext) {
+        guard let raw = ProcessInfo.processInfo.environment["VITA_NOTIF_TEST_SECONDS"],
+              let seconds = Double(raw), seconds > 0,
+              let item = (try? context.fetch(FetchDescriptor<ProtocolItem>()))?.first else { return }
+        let itemID = item.id
+        let title = item.displayName
+        Task { @MainActor in
+            _ = await NotificationService.requestPermission()
+            let calendar = Calendar.current
+            let today = calendar.startOfDay(for: Date())
+            let content = UNMutableNotificationContent()
+            content.title = "\(title) time"
+            content.body = "Tap-test reminder (debug)."
+            content.sound = .default
+            content.categoryIdentifier = categoryID
+            content.userInfo = [
+                "itemID": itemID.uuidString,
+                "minutes": 8 * 60,
+                "day": today.timeIntervalSince1970,
+                "dayKey": dayKey(today, calendar),
+            ]
+            let trigger = UNTimeIntervalNotificationTrigger(timeInterval: seconds, repeats: false)
+            try? await UNUserNotificationCenter.current().add(
+                UNNotificationRequest(identifier: "debug-tap-test", content: content, trigger: trigger))
+        }
+    }
+    #endif
 }

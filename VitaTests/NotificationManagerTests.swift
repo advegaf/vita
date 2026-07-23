@@ -359,4 +359,24 @@ final class NotificationManagerTests: XCTestCase {
         XCTAssertTrue(source.contains("scenePhase == .active"),
                       "Pending deep links must wait for an active scene.")
     }
+
+    /// Source guard (M53): scenePhase alone is not enough — on a cold launch the
+    /// scene reports .active before the root view is in the window, and the sheet
+    /// presentation crashed on device. The guard must ALSO require uiReady (set
+    /// after first onAppear settles), the onAppear rescue must re-check the
+    /// pending id (onChange misses values set before subscription), and the
+    /// router must be @State for stable observation.
+    func testRootShellRequiresUIReadyBeforePresenting() throws {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+        let source = try String(
+            contentsOf: root.appendingPathComponent("Vita/App/RootShell.swift"),
+            encoding: .utf8)
+        XCTAssertTrue(source.contains("scenePhase == .active, uiReady"),
+                      "Presentation guard must require BOTH an active scene and a settled root view.")
+        XCTAssertTrue(source.contains(".onAppear"),
+                      "Cold-launch pending ids predate the onChange subscriptions; onAppear must re-check.")
+        XCTAssertTrue(source.contains("@State private var router"),
+                      "The router must be @State so Observation survives view identity refreshes.")
+    }
 }

@@ -21,6 +21,7 @@ struct VitaApp: App {
         if ProcessInfo.processInfo.environment["VITA_LABS_DEMO"] == "1" {
             LabDemoSeed.populate(c.mainContext)
         }
+        NotificationManager.scheduleDebugTapReminder(context: c.mainContext)
         #endif
         container = c
         NotificationRouter.shared.container = c
