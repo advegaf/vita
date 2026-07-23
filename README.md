@@ -46,7 +46,7 @@ See **[ARCHITECTURE.md](ARCHITECTURE.md)** for how it's built and **[ROADMAP.md]
 - **[XcodeGen](https://github.com/yonohub/XcodeGen)** — the `.xcodeproj` is generated from `project.yml` (and gitignored).
 - **Claude Opus 4.8** via the Anthropic Messages API (raw `URLSession`, no SDK): forced tool-use for structured output, vision for labs, SSE streaming for chat.
 - **HealthKit** (read-only), **Swift Charts**, **PDFKit**, local **UserNotifications**.
-- ~12k lines of Swift, **159 unit tests** (pure-logic engines + services).
+- ~16k lines of Swift, **321 unit tests** (pure-logic engines + services).
 
 ---
 
