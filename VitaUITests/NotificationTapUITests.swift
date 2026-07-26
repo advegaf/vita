@@ -46,33 +46,36 @@ final class NotificationTapUITests: XCTestCase {
         XCTFail("dose-reminder banner never appeared on Springboard")
     }
 
-    private func assertAppAliveWithDetail() {
+    private func assertAppAliveOnToday() {
         XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10),
                       "tap must foreground the app")
-        // The deep-linked compound detail sheet shows a Done toolbar button.
-        XCTAssertTrue(app.buttons["Done"].waitForExistence(timeout: 10),
-                      "notification tap should present the compound detail sheet")
-        // The crash reproduces as an immediate termination: hold a beat and
+        // M55: a dose reminder's tap lands on Today, the LOG surface — never
+        // the compound-detail editing sheet.
+        XCTAssertTrue(app.staticTexts["TODAY"].waitForExistence(timeout: 10),
+                      "notification tap should land on the Today tab")
+        XCTAssertFalse(app.buttons["Done"].exists,
+                       "no detail sheet may cover the log surface")
+        // The old crash reproduced as an immediate termination: hold a beat and
         // re-assert the process is still foreground and responsive.
         sleep(2)
-        XCTAssertEqual(app.state, .runningForeground, "app must survive the presentation")
+        XCTAssertEqual(app.state, .runningForeground, "app must survive the tap")
     }
 
-    func testColdLaunchNotificationTapOpensDetail() {
+    func testColdLaunchNotificationTapOpensToday() {
         app.launch()
         allowNotificationsIfAsked()
         sleep(2)                       // let the debug reminder get scheduled
         app.terminate()                // cold: the tap must START the process
         waitForBannerAndTap()
-        assertAppAliveWithDetail()
+        assertAppAliveOnToday()
     }
 
-    func testWarmResumeNotificationTapOpensDetail() {
+    func testWarmResumeNotificationTapOpensToday() {
         app.launch()
         allowNotificationsIfAsked()
         sleep(2)
         XCUIDevice.shared.press(.home) // warm: app stays resident in background
         waitForBannerAndTap()
-        assertAppAliveWithDetail()
+        assertAppAliveOnToday()
     }
 }

@@ -61,6 +61,7 @@ final class NotificationRouter: NSObject, UNUserNotificationCenterDelegate {
     ) {
         let action = response.actionIdentifier
         let userInfo = response.notification.request.content.userInfo
+        let category = response.notification.request.content.categoryIdentifier
         // Resolve the Sendable occurrence (dayKey-aware) before hopping actors.
         let occ = NotificationManager.occurrence(from: userInfo)
         let itemID = userInfo["itemID"] as? String
@@ -81,10 +82,9 @@ final class NotificationRouter: NSObject, UNUserNotificationCenterDelegate {
             case "LOG_DOSE", "SKIP_DOSE":
                 handleLog(action: action, occ: occ)
             case UNNotificationDefaultActionIdentifier:
-                if let id = NotificationRouter.detailItemID(fromUserInfoItemID: itemID) {
-                    pendingDetailItemID = id
-                } else {
-                    pendingTab = .today
+                switch NotificationRouter.defaultTapRoute(category: category, itemID: itemID) {
+                case .today: pendingTab = .today
+                case .detail(let id): pendingDetailItemID = id
                 }
             default:
                 break
@@ -99,6 +99,22 @@ final class NotificationRouter: NSObject, UNUserNotificationCenterDelegate {
     /// never present mid-foreground-transition; device crash, M47).
     nonisolated static func detailItemID(fromUserInfoItemID raw: String?) -> UUID? {
         raw.flatMap(UUID.init(uuidString:))
+    }
+
+    /// Where the body tap of a notification lands (M55). Dose reminders go to
+    /// Today — that is the LOG surface (focus card + Log button); the compound
+    /// detail sheet is an editing surface and wrong for "time to take a dose."
+    /// Only review-a-change notices (titration step-up, cycle resume, vial
+    /// beyond-use) deep-link into the detail sheet.
+    enum DefaultTapRoute: Equatable {
+        case today
+        case detail(UUID)
+    }
+
+    nonisolated static func defaultTapRoute(category: String, itemID: String?) -> DefaultTapRoute {
+        guard category == NotificationManager.decisionCategoryID,
+              let id = detailItemID(fromUserInfoItemID: itemID) else { return .today }
+        return .detail(id)
     }
 
     private func handleLog(action: String, occ: (itemID: UUID, minutes: Int, day: Date)?) {
@@ -203,7 +219,7 @@ enum NotificationManager {
 
     // MARK: Change notices (review-only: titration step-up + cycle resume)
 
-    static let decisionCategoryID = "DOSE_DECISION"
+    nonisolated static let decisionCategoryID = "DOSE_DECISION"
 
     struct PlannedNotice: Equatable {
         var id: String

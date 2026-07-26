@@ -343,6 +343,23 @@ final class NotificationManagerTests: XCTestCase {
         XCTAssertNil(NotificationRouter.detailItemID(fromUserInfoItemID: nil))
     }
 
+    /// M55: a dose reminder's body tap lands on Today (the log surface), NEVER
+    /// the compound-detail editing sheet — even with a perfectly valid itemID.
+    /// Only review-a-change notices (DOSE_DECISION) deep-link to detail.
+    func testDefaultTapRouteSendsDoseRemindersToTodayAndNoticesToDetail() {
+        let id = UUID()
+        XCTAssertEqual(NotificationRouter.defaultTapRoute(
+            category: NotificationManager.categoryID, itemID: id.uuidString), .today)
+        XCTAssertEqual(NotificationRouter.defaultTapRoute(
+            category: NotificationManager.decisionCategoryID, itemID: id.uuidString), .detail(id))
+        // Garbage or missing ids always degrade to Today, never a broken sheet.
+        XCTAssertEqual(NotificationRouter.defaultTapRoute(
+            category: NotificationManager.decisionCategoryID, itemID: "not-a-uuid"), .today)
+        XCTAssertEqual(NotificationRouter.defaultTapRoute(
+            category: NotificationManager.decisionCategoryID, itemID: nil), .today)
+        XCTAssertEqual(NotificationRouter.defaultTapRoute(category: "", itemID: id.uuidString), .today)
+    }
+
     /// Source guard: the detail sheet must be driven by RootShell's scene-gated
     /// copy, never directly by the router's pending id (the direct binding
     /// presented mid-foreground-transition and crashed on device, M47).
