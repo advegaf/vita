@@ -1,9 +1,10 @@
 import SwiftUI
 import SwiftData
 
-/// M40 root: standard tabbed screens on the warm-white canvas with the
-/// floating black-pill tab bar. (Replaces the M38/M39 immersive photo/card
-/// architecture, removed per the user's design language.)
+/// M54 root: native iOS 26 TabView with the system Liquid Glass bar
+/// (labels, scroll-edge effects, scroll-to-minimize). Replaces the M40-M51
+/// custom floating pill as a try-it-on; FloatingTabBar.swift stays in the
+/// repo for an easy revert.
 struct RootShell: View {
     @State private var selection: AppTab = AppTab.initialForScreenshots
     @State private var router = NotificationRouter.shared
@@ -12,7 +13,6 @@ struct RootShell: View {
     @Query private var items: [ProtocolItem]
     @Query private var compounds: [CatalogCompound]
 
-    @State private var mounted: Set<AppTab> = [AppTab.initialForScreenshots]
     /// The detail sheet is driven by this scene-gated copy of the router's
     /// pending id: presenting a modal while the foreground transition from a
     /// notification tap is still in flight crashes on device (M47), so the
@@ -25,29 +25,20 @@ struct RootShell: View {
     /// short settle, and the presentation guard requires BOTH signals.
     @State private var uiReady = false
     var body: some View {
-        // A lazy-once ZStack keeps pages alive after first visit, preserving
-        // stacks, scroll positions, and chat state. Tab selection itself is
-        // immediate: navigation must never animate the whole app window.
-        // ONE FloatingTabBar instance insets the whole container.
-        ZStack {
+        // Native TabView keeps delivered pages alive itself; the system bar
+        // owns hide-behind-keyboard and scroll-edge behavior, so the custom
+        // hidesForChatInput plumbing is not wired here.
+        TabView(selection: $selection) {
             ForEach(AppTab.allCases) { tab in
-                if mounted.contains(tab) {
+                Tab(tab.title, systemImage: tab.icon, value: tab) {
                     tabContent(tab)
-                        .opacity(tab == selection ? 1 : 0)
-                        // No drift: any vertical motion read as the window
-                        // "pulling down" on switch (device feedback, M43b).
-                        .allowsHitTesting(tab == selection)
-                        .accessibilityHidden(tab != selection)
                 }
             }
         }
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            FloatingTabBar(selection: $selection, hidesForChatInput: router.isChatInputFocused)
-        }
+        .tabBarMinimizeBehavior(.onScrollDown)
         .onChange(of: selection) { _, tab in
-            mounted.insert(tab)
-            // Always-mounted tabs never fire ChatView.onDisappear, so the
-            // chat-input flag (which hides the bar) is cleared here instead.
+            // ChatView.onDisappear may lag a tab switch; clear the flag so the
+            // focus state never leaks into other tabs.
             if tab != .chat { router.isChatInputFocused = false }
         }
         .tint(VT.ink)

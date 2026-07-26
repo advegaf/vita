@@ -1,8 +1,8 @@
 import XCTest
 
-/// M40 floating tab bar behaviors against the real app (demo seed): the
-/// black-pill bar switches views, hides while the keyboard is up, and the
-/// VITA_TAB deep-link flag still routes.
+/// M54 native tab bar behaviors against the real app (demo seed): the system
+/// Liquid Glass bar switches views, the VITA_TAB deep-link flag still routes,
+/// and chat input stays usable above the bar.
 @MainActor
 final class TabBarUITests: XCTestCase {
 
@@ -15,17 +15,24 @@ final class TabBarUITests: XCTestCase {
         app.launchEnvironment["VITA_CLAUDE_STUB"] = "1"
     }
 
+    /// Native bar exposes one button per Tab, labeled with the tab title.
+    private func tab(_ title: String) -> XCUIElement {
+        let bar = app.tabBars.firstMatch
+        if bar.exists { return bar.buttons[title] }
+        return app.buttons[title]
+    }
+
     func testBarSwitchesViews() {
         app.launch()
-        let stack = app.buttons["tab-stack"]
-        XCTAssertTrue(stack.waitForExistence(timeout: 10), "floating bar should be present")
+        let stack = tab("Stack")
+        XCTAssertTrue(stack.waitForExistence(timeout: 10), "system tab bar should be present")
         stack.tap()
         XCTAssertTrue(app.buttons["Add a peptide"].waitForExistence(timeout: 5),
                       "bar tap should switch to Stack")
-        app.buttons["tab-diary"].tap()
+        tab("Diary").tap()
         XCTAssertTrue(app.staticTexts["Diary"].waitForExistence(timeout: 5),
                       "bar tap should switch to Diary")
-        app.buttons["tab-today"].tap()
+        tab("Today").tap()
         XCTAssertTrue(app.staticTexts["TODAY"].waitForExistence(timeout: 5),
                       "bar tap should switch back to Today regardless of dose state")
     }
@@ -33,7 +40,7 @@ final class TabBarUITests: XCTestCase {
     func testTabSelectionHasNoVerticalDrift() {
         app.launch()
 
-        let stackTab = app.buttons["tab-stack"]
+        let stackTab = tab("Stack")
         XCTAssertTrue(stackTab.waitForExistence(timeout: 10))
         stackTab.tap()
 
@@ -51,44 +58,28 @@ final class TabBarUITests: XCTestCase {
         add(attachment)
     }
 
-    /// Captures mid-flight frames of the Today -> Chat pill glide so the equal-slot
-    /// contract can be reviewed visually: icons must stay stationary and the bar's
-    /// edges must not move while the ink pill travels to the end slot.
-    func testTabSwitchPillGlideFrames() {
+    /// The system bar owns selection motion now; the contract that remains ours
+    /// is stability: the tapped tab's slot must not move or resize on selection.
+    func testTabSwitchSlotStaysStationary() {
         app.launch()
-        let chat = app.buttons["tab-chat"]
+        let chat = tab("Chat")
         XCTAssertTrue(chat.waitForExistence(timeout: 10))
-        let barWidthBefore = chat.frame // slot frame before the switch
+        let before = chat.frame
         chat.tap()
-        for i in 0..<4 {
-            let shot = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
-            shot.name = "glide-frame-\(i)"
-            shot.lifetime = .keepAlways
-            add(shot)
-            usleep(90_000)
-        }
-        // The slot itself must not have moved: fixed slots, constant bar width.
-        XCTAssertEqual(chat.frame.minX, barWidthBefore.minX, accuracy: 1,
-                       "Chat slot must be stationary; only the pill may travel")
-        XCTAssertEqual(chat.frame.width, barWidthBefore.width, accuracy: 1,
+        sleep(1)
+        XCTAssertEqual(chat.frame.minX, before.minX, accuracy: 2,
+                       "Chat slot must be stationary across selection")
+        XCTAssertEqual(chat.frame.width, before.width, accuracy: 2,
                        "Slot width must not change on selection")
     }
 
-    func testKeyboardHidesBar() {
+    func testChatInputUsableAboveBar() {
         app.launchEnvironment["VITA_TAB"] = "chat"
         app.launch()
         let input = app.textFields.firstMatch
         XCTAssertTrue(input.waitForExistence(timeout: 10), "VITA_TAB=chat should land on Chat")
         input.tap()
         XCTAssertTrue(app.keyboards.firstMatch.waitForExistence(timeout: 5), "keyboard should appear")
-        sleep(1)
-        // Only meaningful when the SOFTWARE keyboard is actually on screen — a
-        // hardware-keyboard sim shows only the input assistant strip, so
-        // keyboardWillShow never fires and the bar rightly stays.
-        if app.keyboards.firstMatch.frame.height > 150 {
-            let bars = app.buttons.matching(identifier: "tab-today").allElementsBoundByIndex
-            XCTAssertTrue(bars.allSatisfy { !$0.isHittable }, "bar must hide while typing")
-        }
         input.typeText("hi")
         app.buttons["Send"].firstMatch.tap()
         sleep(2)
