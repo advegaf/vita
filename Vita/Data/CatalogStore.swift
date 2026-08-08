@@ -23,6 +23,16 @@ struct CatalogSeed: Codable {
     var mechanismBlurb: String?
     var about: String?
     var cycleGuidance: String?
+    var sources: [SeedSource]?
+}
+
+/// A citation for the compound's educational content (App Review 1.4.1:
+/// medical information must link to its sources). URLs are deterministic
+/// searches on authoritative databases (PubMed, DailyMed, ClinicalTrials.gov),
+/// never hand-picked article links that could rot.
+struct SeedSource: Codable, Equatable {
+    var title: String
+    var url: String
 }
 
 /// Resolves the bundle that actually contains catalog.json (app vs. test host).
@@ -30,7 +40,7 @@ final class VitaBundleMarker {}
 
 @MainActor
 enum CatalogStore {
-    static let seedVersion = 3   // v3: + Vial entity in schema
+    static let seedVersion = 4   // v4: + per-compound source citations (1.4.1)
 
     /// Idempotent first-launch bootstrap: singletons, goals, catalog, RX overrides.
     static func bootstrap(_ context: ModelContext) {
@@ -140,6 +150,8 @@ enum CatalogStore {
         c.mechanismBlurb = s.mechanismBlurb
         c.about = s.about
         c.cycleGuidance = s.cycleGuidance
+        c.sourceTitles = (s.sources ?? []).map(\.title)
+        c.sourceURLs = (s.sources ?? []).map(\.url)
         c.educationalOnly = true
     }
 

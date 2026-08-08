@@ -33,6 +33,11 @@ final class CatalogCompound {
     var mechanismBlurb: String?
     var about: String?            // 2-3 sentence educational description
     var cycleGuidance: String?
+    /// Parallel citation arrays (title[i] links url[i]) for the 1.4.1 Sources
+    /// card. Parallel [String]s instead of a codable struct array keeps the
+    /// SwiftData schema additive (no new entity, no migration).
+    var sourceTitles: [String] = []
+    var sourceURLs: [String] = []
     var educationalOnly: Bool = true
 
     init(slug: String = "") { self.slug = slug }

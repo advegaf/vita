@@ -29,7 +29,21 @@
     ],
     "mechanismBlurb": "GLP-1 receptor agonist that slows gastric emptying and reduces appetite.",
     "cycleGuidance": "Titrate the dose up slowly over several weeks.",
-    "about": "A GLP-1 receptor agonist originally developed for type 2 diabetes and weight management. It slows how fast the stomach empties and reduces appetite signaling, which tends to lower overall food intake. Typically dosed once weekly with a slow upward titration to ease nausea."
+    "about": "A GLP-1 receptor agonist originally developed for type 2 diabetes and weight management. It slows how fast the stomach empties and reduces appetite signaling, which tends to lower overall food intake. Typically dosed once weekly with a slow upward titration to ease nausea.",
+    "sources": [
+      {
+        "title": "FDA DailyMed: official prescribing information for Semaglutide",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/search.cfm?query=Semaglutide"
+      },
+      {
+        "title": "PubMed: published research on Semaglutide",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=Semaglutide"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of Semaglutide",
+        "url": "https://clinicaltrials.gov/search?term=Semaglutide"
+      }
+    ]
   },
   {
     "slug": "tirzepatide",
@@ -64,7 +78,21 @@
     ],
     "mechanismBlurb": "Dual GIP/GLP-1 agonist for appetite and glucose control.",
     "cycleGuidance": "Titrate up over weeks to limit GI side effects.",
-    "about": "A dual GIP and GLP-1 receptor agonist studied for blood sugar control and weight loss. Acting on two gut-hormone pathways, it influences appetite and how the body handles glucose. Usually taken once weekly, increased gradually over several weeks."
+    "about": "A dual GIP and GLP-1 receptor agonist studied for blood sugar control and weight loss. Acting on two gut-hormone pathways, it influences appetite and how the body handles glucose. Usually taken once weekly, increased gradually over several weeks.",
+    "sources": [
+      {
+        "title": "FDA DailyMed: official prescribing information for Tirzepatide",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/search.cfm?query=Tirzepatide"
+      },
+      {
+        "title": "PubMed: published research on Tirzepatide",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=Tirzepatide"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of Tirzepatide",
+        "url": "https://clinicaltrials.gov/search?term=Tirzepatide"
+      }
+    ]
   },
   {
     "slug": "retatrutide",
@@ -98,7 +126,21 @@
     ],
     "mechanismBlurb": "Triple GIP/GLP-1/glucagon agonist (investigational).",
     "cycleGuidance": "Titrate up slowly; investigational compound.",
-    "about": "An investigational triple agonist hitting GIP, GLP-1, and glucagon receptors. Early research focuses on substantial weight reduction and metabolic effects. It is dosed weekly and is still being studied, so data is limited compared with approved agents."
+    "about": "An investigational triple agonist hitting GIP, GLP-1, and glucagon receptors. Early research focuses on substantial weight reduction and metabolic effects. It is dosed weekly and is still being studied, so data is limited compared with approved agents.",
+    "sources": [
+      {
+        "title": "FDA DailyMed: official prescribing information for Retatrutide",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/search.cfm?query=Retatrutide"
+      },
+      {
+        "title": "PubMed: published research on Retatrutide",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=Retatrutide"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of Retatrutide",
+        "url": "https://clinicaltrials.gov/search?term=Retatrutide"
+      }
+    ]
   },
   {
     "slug": "cagrilintide",
@@ -126,7 +168,17 @@
     ],
     "mechanismBlurb": "Long-acting amylin analog supporting satiety (investigational).",
     "cycleGuidance": "Often paired with a GLP-1; titrate up.",
-    "about": "A long-acting amylin analog that supports feelings of fullness after eating. It is frequently paired with a GLP-1 to complement appetite effects. Investigational and dosed weekly with gradual increases."
+    "about": "A long-acting amylin analog that supports feelings of fullness after eating. It is frequently paired with a GLP-1 to complement appetite effects. Investigational and dosed weekly with gradual increases.",
+    "sources": [
+      {
+        "title": "PubMed: published research on Cagrilintide",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=Cagrilintide"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of Cagrilintide",
+        "url": "https://clinicaltrials.gov/search?term=Cagrilintide"
+      }
+    ]
   },
   {
     "slug": "cagrilintide-semaglutide",
@@ -151,7 +203,25 @@
     ],
     "mechanismBlurb": "Combination amylin + GLP-1 agonist (investigational).",
     "cycleGuidance": "Titrate up slowly.",
-    "about": "A combination of the amylin analog cagrilintide and the GLP-1 agonist semaglutide, studied together for appetite and weight. The two work on different satiety pathways. It is investigational and taken once weekly."
+    "about": "A combination of the amylin analog cagrilintide and the GLP-1 agonist semaglutide, studied together for appetite and weight. The two work on different satiety pathways. It is investigational and taken once weekly.",
+    "sources": [
+      {
+        "title": "FDA DailyMed: official prescribing information for Cagrilintide",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/search.cfm?query=Cagrilintide"
+      },
+      {
+        "title": "PubMed: published research on Cagrilintide + Semaglutide",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=Cagrilintide"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of Cagrilintide",
+        "url": "https://clinicaltrials.gov/search?term=Cagrilintide"
+      },
+      {
+        "title": "PubMed: published research on Semaglutide",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=Semaglutide"
+      }
+    ]
   },
   {
     "slug": "survodutide",
@@ -173,7 +243,21 @@
     ],
     "mechanismBlurb": "GLP-1/glucagon dual agonist (investigational).",
     "cycleGuidance": "Titrate up over weeks.",
-    "about": "An investigational GLP-1 and glucagon dual agonist explored for weight loss and liver-related outcomes. Glucagon activity may add an energy-expenditure component alongside appetite effects. Dosed weekly with upward titration."
+    "about": "An investigational GLP-1 and glucagon dual agonist explored for weight loss and liver-related outcomes. Glucagon activity may add an energy-expenditure component alongside appetite effects. Dosed weekly with upward titration.",
+    "sources": [
+      {
+        "title": "FDA DailyMed: official prescribing information for Survodutide",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/search.cfm?query=Survodutide"
+      },
+      {
+        "title": "PubMed: published research on Survodutide",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=Survodutide"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of Survodutide",
+        "url": "https://clinicaltrials.gov/search?term=Survodutide"
+      }
+    ]
   },
   {
     "slug": "adipotide",
@@ -199,7 +283,17 @@
     ],
     "mechanismBlurb": "Experimental fat-targeted apoptosis peptide; minimal human data.",
     "cycleGuidance": "Experimental limited data; caution.",
-    "about": "A highly experimental peptide designed to target the blood supply of fat tissue. Human safety data is very limited and it remains a research compound. Any use is purely educational and warrants extreme caution."
+    "about": "A highly experimental peptide designed to target the blood supply of fat tissue. Human safety data is very limited and it remains a research compound. Any use is purely educational and warrants extreme caution.",
+    "sources": [
+      {
+        "title": "PubMed: published research on Adipotide",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=Adipotide"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of Adipotide",
+        "url": "https://clinicaltrials.gov/search?term=Adipotide"
+      }
+    ]
   },
   {
     "slug": "aod-9604",
@@ -224,7 +318,17 @@
     ],
     "mechanismBlurb": "Modified GH fragment studied for fat metabolism.",
     "cycleGuidance": "Often dosed fasted, AM.",
-    "about": "A modified fragment of growth hormone studied for fat metabolism without the broader effects of full GH. It is often dosed daily, frequently in a fasted state. Evidence in humans is modest."
+    "about": "A modified fragment of growth hormone studied for fat metabolism without the broader effects of full GH. It is often dosed daily, frequently in a fasted state. Evidence in humans is modest.",
+    "sources": [
+      {
+        "title": "PubMed: published research on AOD-9604",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=AOD-9604"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of AOD-9604",
+        "url": "https://clinicaltrials.gov/search?term=AOD-9604"
+      }
+    ]
   },
   {
     "slug": "lemon-bottle",
@@ -244,7 +348,17 @@
       "subcutaneous"
     ],
     "mechanismBlurb": "Lipolytic injection blend marketed for localized fat (cosmetic).",
-    "about": "A cosmetic lipolytic blend marketed for localized fat rather than a single defined peptide. Its exact contents vary by source. It is used cosmetically and is not a standardized compound."
+    "about": "A cosmetic lipolytic blend marketed for localized fat rather than a single defined peptide. Its exact contents vary by source. It is used cosmetically and is not a standardized compound.",
+    "sources": [
+      {
+        "title": "PubMed: published research on Lemon Bottle",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=Lemon%20Bottle"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of Lemon Bottle",
+        "url": "https://clinicaltrials.gov/search?term=Lemon%20Bottle"
+      }
+    ]
   },
   {
     "slug": "dsip",
@@ -271,7 +385,17 @@
     ],
     "mechanismBlurb": "Peptide studied for sleep onset and regulation.",
     "cycleGuidance": "Taken before bed.",
-    "about": "Delta sleep-inducing peptide, studied for its possible role in sleep regulation and stress. It is usually taken before bed. Human evidence is limited and mixed."
+    "about": "Delta sleep-inducing peptide, studied for its possible role in sleep regulation and stress. It is usually taken before bed. Human evidence is limited and mixed.",
+    "sources": [
+      {
+        "title": "PubMed: published research on DSIP",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=DSIP"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of DSIP",
+        "url": "https://clinicaltrials.gov/search?term=DSIP"
+      }
+    ]
   },
   {
     "slug": "epithalon",
@@ -298,7 +422,17 @@
     ],
     "mechanismBlurb": "Pineal/telomere peptide used in short cycles.",
     "cycleGuidance": "Commonly run in 10–20 day cycles a few times a year.",
-    "about": "A short peptide linked in research to the pineal gland and telomere biology, often discussed in longevity contexts. It is typically run in short cycles a few times per year. Long-term human data is sparse."
+    "about": "A short peptide linked in research to the pineal gland and telomere biology, often discussed in longevity contexts. It is typically run in short cycles a few times per year. Long-term human data is sparse.",
+    "sources": [
+      {
+        "title": "PubMed: published research on Epithalon",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=Epithalon"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of Epithalon",
+        "url": "https://clinicaltrials.gov/search?term=Epithalon"
+      }
+    ]
   },
   {
     "slug": "selank",
@@ -322,7 +456,17 @@
       "subcutaneous"
     ],
     "mechanismBlurb": "Anxiolytic nootropic peptide studied for calm and focus.",
-    "about": "An anxiolytic nootropic peptide derived from a natural immune peptide, studied for calm and focus. It is commonly used nasally or subcutaneously. Research is mostly early-stage."
+    "about": "An anxiolytic nootropic peptide derived from a natural immune peptide, studied for calm and focus. It is commonly used nasally or subcutaneously. Research is mostly early-stage.",
+    "sources": [
+      {
+        "title": "PubMed: published research on Selank",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=Selank"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of Selank",
+        "url": "https://clinicaltrials.gov/search?term=Selank"
+      }
+    ]
   },
   {
     "slug": "semax",
@@ -346,7 +490,17 @@
       "subcutaneous"
     ],
     "mechanismBlurb": "Nootropic peptide studied for focus and neuroprotection.",
-    "about": "A nootropic peptide studied for focus, memory, and neuroprotection, popular in some regions for cognitive support. It is often dosed nasally. Most evidence comes from limited studies."
+    "about": "A nootropic peptide studied for focus, memory, and neuroprotection, popular in some regions for cognitive support. It is often dosed nasally. Most evidence comes from limited studies.",
+    "sources": [
+      {
+        "title": "PubMed: published research on Semax",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=Semax"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of Semax",
+        "url": "https://clinicaltrials.gov/search?term=Semax"
+      }
+    ]
   },
   {
     "slug": "bpc-157",
@@ -373,7 +527,17 @@
     ],
     "mechanismBlurb": "Body-protection peptide studied for tissue, gut, and tendon repair.",
     "cycleGuidance": "Often run 4–6 weeks, then reassess.",
-    "about": "A synthetic peptide based on a protein found in gastric juice, widely discussed for tissue, tendon, and gut repair. It is typically dosed once or twice daily over several weeks, then reassessed. Human clinical data remains limited."
+    "about": "A synthetic peptide based on a protein found in gastric juice, widely discussed for tissue, tendon, and gut repair. It is typically dosed once or twice daily over several weeks, then reassessed. Human clinical data remains limited.",
+    "sources": [
+      {
+        "title": "PubMed: published research on BPC-157",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=BPC-157"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of BPC-157",
+        "url": "https://clinicaltrials.gov/search?term=BPC-157"
+      }
+    ]
   },
   {
     "slug": "tb-500",
@@ -401,7 +565,17 @@
     ],
     "mechanismBlurb": "Actin-regulating peptide studied for recovery and flexibility.",
     "cycleGuidance": "Loading phase then weekly maintenance.",
-    "about": "A synthetic version of a region of Thymosin Beta-4, studied for recovery, flexibility, and tissue repair. It influences actin, a protein involved in cell movement and healing. Often used in a loading phase followed by weekly maintenance."
+    "about": "A synthetic version of a region of Thymosin Beta-4, studied for recovery, flexibility, and tissue repair. It influences actin, a protein involved in cell movement and healing. Often used in a loading phase followed by weekly maintenance.",
+    "sources": [
+      {
+        "title": "PubMed: published research on TB-500",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=TB-500"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of TB-500",
+        "url": "https://clinicaltrials.gov/search?term=TB-500"
+      }
+    ]
   },
   {
     "slug": "bpc-157-tb-500",
@@ -422,7 +596,21 @@
       "subcutaneous"
     ],
     "mechanismBlurb": "Combined BPC-157 + TB-500 recovery blend.",
-    "about": "A combined blend of BPC-157 and TB-500 aimed at recovery and tissue repair. The two are frequently stacked for complementary effects. Dosing is usually daily during a recovery block."
+    "about": "A combined blend of BPC-157 and TB-500 aimed at recovery and tissue repair. The two are frequently stacked for complementary effects. Dosing is usually daily during a recovery block.",
+    "sources": [
+      {
+        "title": "PubMed: published research on BPC-157 + TB-500",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=BPC-157"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of BPC-157",
+        "url": "https://clinicaltrials.gov/search?term=BPC-157"
+      },
+      {
+        "title": "PubMed: published research on TB-500",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=TB-500"
+      }
+    ]
   },
   {
     "slug": "cjc-1295",
@@ -450,7 +638,17 @@
     ],
     "mechanismBlurb": "GHRH analog that pulses growth hormone (no DAC = short-acting).",
     "cycleGuidance": "Often paired with a ghrelin mimetic; dose fasted.",
-    "about": "A growth-hormone-releasing hormone analog that prompts the body to release its own GH in pulses. The no-DAC form is short-acting and often paired with a ghrelin mimetic. Commonly dosed before bed on an empty stomach."
+    "about": "A growth-hormone-releasing hormone analog that prompts the body to release its own GH in pulses. The no-DAC form is short-acting and often paired with a ghrelin mimetic. Commonly dosed before bed on an empty stomach.",
+    "sources": [
+      {
+        "title": "PubMed: published research on CJC-1295 (no DAC)",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=CJC-1295%20%28no%20DAC%29"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of CJC-1295 (no DAC)",
+        "url": "https://clinicaltrials.gov/search?term=CJC-1295%20%28no%20DAC%29"
+      }
+    ]
   },
   {
     "slug": "cjc-1295-dac",
@@ -473,7 +671,17 @@
       "subcutaneous"
     ],
     "mechanismBlurb": "GHRH analog with DAC for a longer-acting GH elevation.",
-    "about": "A longer-acting GHRH analog that includes a drug-affinity complex, extending GH elevation over days. It is usually dosed once or twice weekly. Effects build gradually."
+    "about": "A longer-acting GHRH analog that includes a drug-affinity complex, extending GH elevation over days. It is usually dosed once or twice weekly. Effects build gradually.",
+    "sources": [
+      {
+        "title": "PubMed: published research on CJC-1295 with DAC",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=CJC-1295%20with%20DAC"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of CJC-1295 with DAC",
+        "url": "https://clinicaltrials.gov/search?term=CJC-1295%20with%20DAC"
+      }
+    ]
   },
   {
     "slug": "cjc-1295-ipamorelin",
@@ -496,7 +704,21 @@
     ],
     "mechanismBlurb": "GHRH + ghrelin-mimetic blend for synergistic GH pulses.",
     "cycleGuidance": "Commonly dosed before bed on an empty stomach.",
-    "about": "A popular blend pairing the GHRH analog CJC-1295 with the ghrelin mimetic ipamorelin for synergistic GH pulses. It is commonly taken before bed on an empty stomach. Used for recovery and body-composition goals."
+    "about": "A popular blend pairing the GHRH analog CJC-1295 with the ghrelin mimetic ipamorelin for synergistic GH pulses. It is commonly taken before bed on an empty stomach. Used for recovery and body-composition goals.",
+    "sources": [
+      {
+        "title": "PubMed: published research on CJC-1295 + Ipamorelin",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=CJC-1295"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of CJC-1295",
+        "url": "https://clinicaltrials.gov/search?term=CJC-1295"
+      },
+      {
+        "title": "PubMed: published research on Ipamorelin",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=Ipamorelin"
+      }
+    ]
   },
   {
     "slug": "ipamorelin",
@@ -519,7 +741,17 @@
       "subcutaneous"
     ],
     "mechanismBlurb": "Selective ghrelin/GH secretagogue with minimal side effects.",
-    "about": "A selective ghrelin and growth-hormone secretagogue known for a clean side-effect profile. It nudges natural GH release without strongly raising hunger or cortisol. Often dosed one to three times daily."
+    "about": "A selective ghrelin and growth-hormone secretagogue known for a clean side-effect profile. It nudges natural GH release without strongly raising hunger or cortisol. Often dosed one to three times daily.",
+    "sources": [
+      {
+        "title": "PubMed: published research on Ipamorelin",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=Ipamorelin"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of Ipamorelin",
+        "url": "https://clinicaltrials.gov/search?term=Ipamorelin"
+      }
+    ]
   },
   {
     "slug": "ghrp-2",
@@ -543,7 +775,17 @@
       "subcutaneous"
     ],
     "mechanismBlurb": "GH-releasing peptide; also raises appetite.",
-    "about": "A growth-hormone-releasing peptide that prompts GH release and also tends to increase appetite. It is dosed one to three times daily, often around training or sleep. Appetite effects vary between people."
+    "about": "A growth-hormone-releasing peptide that prompts GH release and also tends to increase appetite. It is dosed one to three times daily, often around training or sleep. Appetite effects vary between people.",
+    "sources": [
+      {
+        "title": "PubMed: published research on GHRP-2",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=GHRP-2"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of GHRP-2",
+        "url": "https://clinicaltrials.gov/search?term=GHRP-2"
+      }
+    ]
   },
   {
     "slug": "ghrp-6",
@@ -566,7 +808,17 @@
       "subcutaneous"
     ],
     "mechanismBlurb": "GH-releasing peptide with strong appetite stimulation.",
-    "about": "A growth-hormone-releasing peptide with notably strong appetite stimulation. It works through the ghrelin pathway to release GH. Dosed one to three times daily."
+    "about": "A growth-hormone-releasing peptide with notably strong appetite stimulation. It works through the ghrelin pathway to release GH. Dosed one to three times daily.",
+    "sources": [
+      {
+        "title": "PubMed: published research on GHRP-6",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=GHRP-6"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of GHRP-6",
+        "url": "https://clinicaltrials.gov/search?term=GHRP-6"
+      }
+    ]
   },
   {
     "slug": "hexarelin",
@@ -591,7 +843,17 @@
     ],
     "mechanismBlurb": "Potent GH secretagogue that desensitizes with continuous use.",
     "cycleGuidance": "Run in short cycles to limit desensitization.",
-    "about": "A potent growth-hormone secretagogue that can lose effectiveness with continuous use. For that reason it is usually run in short cycles. Dosed one or two times daily."
+    "about": "A potent growth-hormone secretagogue that can lose effectiveness with continuous use. For that reason it is usually run in short cycles. Dosed one or two times daily.",
+    "sources": [
+      {
+        "title": "PubMed: published research on Hexarelin",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=Hexarelin"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of Hexarelin",
+        "url": "https://clinicaltrials.gov/search?term=Hexarelin"
+      }
+    ]
   },
   {
     "slug": "sermorelin",
@@ -615,7 +877,21 @@
       "subcutaneous"
     ],
     "mechanismBlurb": "Prescription GHRH analog supporting natural GH release.",
-    "about": "A prescription growth-hormone-releasing hormone analog used to support natural GH output, often compounded. It is typically dosed nightly. Because it is prescription-grade, clinician guidance matters."
+    "about": "A prescription growth-hormone-releasing hormone analog used to support natural GH output, often compounded. It is typically dosed nightly. Because it is prescription-grade, clinician guidance matters.",
+    "sources": [
+      {
+        "title": "FDA DailyMed: official prescribing information for Sermorelin",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/search.cfm?query=Sermorelin"
+      },
+      {
+        "title": "PubMed: published research on Sermorelin",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=Sermorelin"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of Sermorelin",
+        "url": "https://clinicaltrials.gov/search?term=Sermorelin"
+      }
+    ]
   },
   {
     "slug": "tesamorelin",
@@ -643,7 +919,21 @@
       "subcutaneous"
     ],
     "mechanismBlurb": "Prescription GHRH analog studied for visceral fat reduction.",
-    "about": "An FDA-approved GHRH analog studied for reducing visceral abdominal fat. It supports the body's own GH release. It is a prescription medication and is dosed daily."
+    "about": "An FDA-approved GHRH analog studied for reducing visceral abdominal fat. It supports the body's own GH release. It is a prescription medication and is dosed daily.",
+    "sources": [
+      {
+        "title": "FDA DailyMed: official prescribing information for Tesamorelin",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/search.cfm?query=Tesamorelin"
+      },
+      {
+        "title": "PubMed: published research on Tesamorelin",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=Tesamorelin"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of Tesamorelin",
+        "url": "https://clinicaltrials.gov/search?term=Tesamorelin"
+      }
+    ]
   },
   {
     "slug": "hgh",
@@ -674,7 +964,21 @@
       "subcutaneous"
     ],
     "mechanismBlurb": "Recombinant human growth hormone (prescription).",
-    "about": "Recombinant human growth hormone, a prescription hormone used clinically for deficiency and studied widely for body composition and recovery. Vial strengths are measured in IU. Because it is prescription-grade, clinician oversight is important."
+    "about": "Recombinant human growth hormone, a prescription hormone used clinically for deficiency and studied widely for body composition and recovery. Vial strengths are measured in IU. Because it is prescription-grade, clinician oversight is important.",
+    "sources": [
+      {
+        "title": "FDA DailyMed: official prescribing information for HGH (Somatropin)",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/search.cfm?query=HGH%20%28Somatropin%29"
+      },
+      {
+        "title": "PubMed: published research on HGH (Somatropin)",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=HGH%20%28Somatropin%29"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of HGH (Somatropin)",
+        "url": "https://clinicaltrials.gov/search?term=HGH%20%28Somatropin%29"
+      }
+    ]
   },
   {
     "slug": "hgh-fragment-176-191",
@@ -700,7 +1004,17 @@
       "subcutaneous"
     ],
     "mechanismBlurb": "GH fragment studied for fat loss without full GH activity.",
-    "about": "A fragment of growth hormone studied specifically for fat metabolism without the full range of GH effects. It is usually dosed daily. Human evidence is limited."
+    "about": "A fragment of growth hormone studied specifically for fat metabolism without the full range of GH effects. It is usually dosed daily. Human evidence is limited.",
+    "sources": [
+      {
+        "title": "PubMed: published research on HGH Fragment 176-191",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=HGH%20Fragment%20176-191"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of HGH Fragment 176-191",
+        "url": "https://clinicaltrials.gov/search?term=HGH%20Fragment%20176-191"
+      }
+    ]
   },
   {
     "slug": "igf-1-lr3",
@@ -724,7 +1038,17 @@
       "subcutaneous"
     ],
     "mechanismBlurb": "Long-acting IGF-1 analog studied for muscle growth.",
-    "about": "A long-acting analog of insulin-like growth factor 1, studied for muscle growth and recovery. It is banned in sport and can affect blood sugar, so caution is warranted. Dosed daily in small amounts."
+    "about": "A long-acting analog of insulin-like growth factor 1, studied for muscle growth and recovery. It is banned in sport and can affect blood sugar, so caution is warranted. Dosed daily in small amounts.",
+    "sources": [
+      {
+        "title": "PubMed: published research on IGF-1 LR3",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=IGF-1%20LR3"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of IGF-1 LR3",
+        "url": "https://clinicaltrials.gov/search?term=IGF-1%20LR3"
+      }
+    ]
   },
   {
     "slug": "mots-c",
@@ -747,7 +1071,17 @@
       "subcutaneous"
     ],
     "mechanismBlurb": "Mitochondrial-derived peptide studied for metabolism and endurance.",
-    "about": "A mitochondrial-derived peptide studied for metabolism, insulin sensitivity, and endurance. It signals through pathways tied to cellular energy. Often dosed a few times per week."
+    "about": "A mitochondrial-derived peptide studied for metabolism, insulin sensitivity, and endurance. It signals through pathways tied to cellular energy. Often dosed a few times per week.",
+    "sources": [
+      {
+        "title": "PubMed: published research on MOTS-c",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=MOTS-c"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of MOTS-c",
+        "url": "https://clinicaltrials.gov/search?term=MOTS-c"
+      }
+    ]
   },
   {
     "slug": "slu-pp-332",
@@ -768,7 +1102,17 @@
       "subcutaneous"
     ],
     "mechanismBlurb": "Experimental ERR agonist studied as an 'exercise mimetic'.",
-    "about": "An experimental compound studied as an exercise mimetic by activating energy-related receptors. It is an early research molecule with little human data. Educational interest only."
+    "about": "An experimental compound studied as an exercise mimetic by activating energy-related receptors. It is an early research molecule with little human data. Educational interest only.",
+    "sources": [
+      {
+        "title": "PubMed: published research on SLU-PP-332",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=SLU-PP-332"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of SLU-PP-332",
+        "url": "https://clinicaltrials.gov/search?term=SLU-PP-332"
+      }
+    ]
   },
   {
     "slug": "kisspeptin-10",
@@ -790,7 +1134,17 @@
       "subcutaneous"
     ],
     "mechanismBlurb": "Regulates GnRH and downstream reproductive hormones.",
-    "about": "A peptide that helps regulate the hormones controlling reproduction by acting upstream of GnRH. It is studied for fertility and hormonal signaling. Because it affects reproductive hormones, clinician guidance is advisable."
+    "about": "A peptide that helps regulate the hormones controlling reproduction by acting upstream of GnRH. It is studied for fertility and hormonal signaling. Because it affects reproductive hormones, clinician guidance is advisable.",
+    "sources": [
+      {
+        "title": "PubMed: published research on Kisspeptin-10",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=Kisspeptin-10"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of Kisspeptin-10",
+        "url": "https://clinicaltrials.gov/search?term=Kisspeptin-10"
+      }
+    ]
   },
   {
     "slug": "thymalin",
@@ -810,7 +1164,17 @@
       "subcutaneous"
     ],
     "mechanismBlurb": "Thymic peptide studied for immune modulation.",
-    "about": "A thymus-derived peptide studied for immune modulation, typically run in short cycles. It is of interest in aging and immune-support contexts. Human data is limited."
+    "about": "A thymus-derived peptide studied for immune modulation, typically run in short cycles. It is of interest in aging and immune-support contexts. Human data is limited.",
+    "sources": [
+      {
+        "title": "PubMed: published research on Thymalin",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=Thymalin"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of Thymalin",
+        "url": "https://clinicaltrials.gov/search?term=Thymalin"
+      }
+    ]
   },
   {
     "slug": "thymosin-alpha-1",
@@ -834,7 +1198,17 @@
       "subcutaneous"
     ],
     "mechanismBlurb": "Immune-modulating thymic peptide.",
-    "about": "An immune-modulating thymic peptide approved in some countries for certain conditions. It is studied for immune support and is usually dosed a couple of times per week. Clinician guidance is advisable."
+    "about": "An immune-modulating thymic peptide approved in some countries for certain conditions. It is studied for immune support and is usually dosed a couple of times per week. Clinician guidance is advisable.",
+    "sources": [
+      {
+        "title": "PubMed: published research on Thymosin Alpha-1",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=Thymosin%20Alpha-1"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of Thymosin Alpha-1",
+        "url": "https://clinicaltrials.gov/search?term=Thymosin%20Alpha-1"
+      }
+    ]
   },
   {
     "slug": "foxo4-dri",
@@ -855,7 +1229,17 @@
       "subcutaneous"
     ],
     "mechanismBlurb": "Experimental senolytic peptide that targets senescent cells.",
-    "about": "An experimental senolytic peptide designed to target aged, senescent cells. It is an early research molecule with minimal human safety data. Educational interest only."
+    "about": "An experimental senolytic peptide designed to target aged, senescent cells. It is an early research molecule with minimal human safety data. Educational interest only.",
+    "sources": [
+      {
+        "title": "PubMed: published research on FOXO4-DRI",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=FOXO4-DRI"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of FOXO4-DRI",
+        "url": "https://clinicaltrials.gov/search?term=FOXO4-DRI"
+      }
+    ]
   },
   {
     "slug": "glow",
@@ -878,7 +1262,17 @@
       "subcutaneous"
     ],
     "mechanismBlurb": "Blend (GHK-Cu, BPC-157, TB-500) marketed for skin and recovery.",
-    "about": "A blended product combining GHK-Cu, BPC-157, and TB-500, marketed for skin appearance and recovery. It packages several peptides into one vial. Used cosmetically and for recovery."
+    "about": "A blended product combining GHK-Cu, BPC-157, and TB-500, marketed for skin appearance and recovery. It packages several peptides into one vial. Used cosmetically and for recovery.",
+    "sources": [
+      {
+        "title": "PubMed: published research on Glow",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=Glow"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of Glow",
+        "url": "https://clinicaltrials.gov/search?term=Glow"
+      }
+    ]
   },
   {
     "slug": "klow",
@@ -898,7 +1292,17 @@
       "subcutaneous"
     ],
     "mechanismBlurb": "Multi-peptide recovery blend (KPV, GHK-Cu, BPC-157, TB-500).",
-    "about": "A multi-peptide recovery blend that typically includes KPV, GHK-Cu, BPC-157, and TB-500. It bundles healing and anti-inflammatory peptides together. Dosed daily during a recovery block."
+    "about": "A multi-peptide recovery blend that typically includes KPV, GHK-Cu, BPC-157, and TB-500. It bundles healing and anti-inflammatory peptides together. Dosed daily during a recovery block.",
+    "sources": [
+      {
+        "title": "PubMed: published research on Klow",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=Klow"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of Klow",
+        "url": "https://clinicaltrials.gov/search?term=Klow"
+      }
+    ]
   },
   {
     "slug": "melanotan-1",
@@ -925,7 +1329,17 @@
       "subcutaneous"
     ],
     "mechanismBlurb": "Melanocortin agonist studied for skin pigmentation.",
-    "about": "A melanocortin agonist studied for skin pigmentation and protection. It is unapproved for general use in most places. Educational interest only."
+    "about": "A melanocortin agonist studied for skin pigmentation and protection. It is unapproved for general use in most places. Educational interest only.",
+    "sources": [
+      {
+        "title": "PubMed: published research on Melanotan 1",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=Melanotan%201"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of Melanotan 1",
+        "url": "https://clinicaltrials.gov/search?term=Melanotan%201"
+      }
+    ]
   },
   {
     "slug": "melanotan-2",
@@ -951,7 +1365,17 @@
       "subcutaneous"
     ],
     "mechanismBlurb": "Melanocortin agonist affecting tanning and libido.",
-    "about": "A melanocortin agonist that affects skin tanning and can also influence libido. It is unapproved for general use and may cause nausea or darkening of moles. Educational interest only."
+    "about": "A melanocortin agonist that affects skin tanning and can also influence libido. It is unapproved for general use and may cause nausea or darkening of moles. Educational interest only.",
+    "sources": [
+      {
+        "title": "PubMed: published research on Melanotan 2",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=Melanotan%202"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of Melanotan 2",
+        "url": "https://clinicaltrials.gov/search?term=Melanotan%202"
+      }
+    ]
   },
   {
     "slug": "pt-141",
@@ -978,7 +1402,21 @@
       "nasal"
     ],
     "mechanismBlurb": "Melanocortin agonist for libido; taken before activity.",
-    "about": "Also called bremelanotide, a melanocortin agonist used for libido and sexual function. The approved version is prescription. It is typically taken as needed before activity."
+    "about": "Also called bremelanotide, a melanocortin agonist used for libido and sexual function. The approved version is prescription. It is typically taken as needed before activity.",
+    "sources": [
+      {
+        "title": "FDA DailyMed: official prescribing information for PT-141",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/search.cfm?query=PT-141"
+      },
+      {
+        "title": "PubMed: published research on PT-141",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=PT-141"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of PT-141",
+        "url": "https://clinicaltrials.gov/search?term=PT-141"
+      }
+    ]
   },
   {
     "slug": "oxytocin",
@@ -1001,7 +1439,21 @@
       "nasal"
     ],
     "mechanismBlurb": "Neuropeptide involved in bonding and social connection.",
-    "about": "A natural neuropeptide involved in bonding, trust, and social connection. As a prescription hormone it has defined medical uses. It is usually taken as needed."
+    "about": "A natural neuropeptide involved in bonding, trust, and social connection. As a prescription hormone it has defined medical uses. It is usually taken as needed.",
+    "sources": [
+      {
+        "title": "FDA DailyMed: official prescribing information for Oxytocin",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/search.cfm?query=Oxytocin"
+      },
+      {
+        "title": "PubMed: published research on Oxytocin",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=Oxytocin"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of Oxytocin",
+        "url": "https://clinicaltrials.gov/search?term=Oxytocin"
+      }
+    ]
   },
   {
     "slug": "ghk-cu",
@@ -1028,7 +1480,17 @@
       "topical"
     ],
     "mechanismBlurb": "Copper peptide studied for skin, healing, and anti-aging.",
-    "about": "A copper-binding peptide studied for skin health, wound healing, and anti-aging. It is used both topically and by injection. Generally considered gentle, with growing cosmetic interest."
+    "about": "A copper-binding peptide studied for skin health, wound healing, and anti-aging. It is used both topically and by injection. Generally considered gentle, with growing cosmetic interest.",
+    "sources": [
+      {
+        "title": "PubMed: published research on GHK-Cu",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=GHK-Cu"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of GHK-Cu",
+        "url": "https://clinicaltrials.gov/search?term=GHK-Cu"
+      }
+    ]
   },
   {
     "slug": "glutathione",
@@ -1052,7 +1514,17 @@
       "intramuscular"
     ],
     "mechanismBlurb": "Master antioxidant tripeptide.",
-    "about": "The body's master antioxidant, a small tripeptide central to detoxification and cellular protection. It is used for general wellness and skin goals. Often dosed a few times per week."
+    "about": "The body's master antioxidant, a small tripeptide central to detoxification and cellular protection. It is used for general wellness and skin goals. Often dosed a few times per week.",
+    "sources": [
+      {
+        "title": "PubMed: published research on Glutathione",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=Glutathione"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of Glutathione",
+        "url": "https://clinicaltrials.gov/search?term=Glutathione"
+      }
+    ]
   },
   {
     "slug": "nad",
@@ -1076,7 +1548,17 @@
     ],
     "mechanismBlurb": "Coenzyme central to cellular energy and longevity pathways.",
     "cycleGuidance": "Inject slowly; rapid dosing can cause flushing.",
-    "about": "A coenzyme central to cellular energy production and pathways linked to aging and repair. It is popular in longevity and recovery contexts. Injecting it quickly can cause flushing, so it is given slowly."
+    "about": "A coenzyme central to cellular energy production and pathways linked to aging and repair. It is popular in longevity and recovery contexts. Injecting it quickly can cause flushing, so it is given slowly.",
+    "sources": [
+      {
+        "title": "PubMed: published research on NAD+",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=NAD%2B"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of NAD+",
+        "url": "https://clinicaltrials.gov/search?term=NAD%2B"
+      }
+    ]
   },
   {
     "slug": "snap-8",
@@ -1095,7 +1577,17 @@
       "topical"
     ],
     "mechanismBlurb": "Topical peptide studied for expression-line softening.",
-    "about": "A topical cosmetic peptide studied for softening expression lines, used in skincare formulations. It works at the surface rather than systemically. Cosmetic use only."
+    "about": "A topical cosmetic peptide studied for softening expression lines, used in skincare formulations. It works at the surface rather than systemically. Cosmetic use only.",
+    "sources": [
+      {
+        "title": "PubMed: published research on SNAP-8",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=SNAP-8"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of SNAP-8",
+        "url": "https://clinicaltrials.gov/search?term=SNAP-8"
+      }
+    ]
   },
   {
     "slug": "vip",
@@ -1120,7 +1612,17 @@
       "subcutaneous"
     ],
     "mechanismBlurb": "Neuropeptide studied for inflammation and CIRS protocols.",
-    "about": "Vasoactive intestinal peptide, a signaling molecule studied for inflammation and in certain chronic-illness protocols. It is usually delivered nasally. Clinician guidance is advisable."
+    "about": "Vasoactive intestinal peptide, a signaling molecule studied for inflammation and in certain chronic-illness protocols. It is usually delivered nasally. Clinician guidance is advisable.",
+    "sources": [
+      {
+        "title": "PubMed: published research on VIP",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=VIP"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of VIP",
+        "url": "https://clinicaltrials.gov/search?term=VIP"
+      }
+    ]
   },
   {
     "slug": "hyaluronic-acid",
@@ -1139,7 +1641,17 @@
       "subcutaneous"
     ],
     "mechanismBlurb": "Hydrating molecule used for skin and joints (cosmetic).",
-    "about": "A hydrating molecule naturally found in skin and joints, used cosmetically for moisture and cushioning. It is well known in skincare and joint support. Cosmetic and supportive use."
+    "about": "A hydrating molecule naturally found in skin and joints, used cosmetically for moisture and cushioning. It is well known in skincare and joint support. Cosmetic and supportive use.",
+    "sources": [
+      {
+        "title": "PubMed: published research on Hyaluronic Acid",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=Hyaluronic%20Acid"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of Hyaluronic Acid",
+        "url": "https://clinicaltrials.gov/search?term=Hyaluronic%20Acid"
+      }
+    ]
   },
   {
     "slug": "ara-290",
@@ -1165,7 +1677,17 @@
       "subcutaneous"
     ],
     "mechanismBlurb": "Investigational peptide studied for neuropathy and inflammation.",
-    "about": "Also called cibinetide, an investigational peptide studied for nerve health and inflammation without the blood effects of erythropoietin. It is dosed daily in research settings. Human data is early."
+    "about": "Also called cibinetide, an investigational peptide studied for nerve health and inflammation without the blood effects of erythropoietin. It is dosed daily in research settings. Human data is early.",
+    "sources": [
+      {
+        "title": "PubMed: published research on ARA-290",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=ARA-290"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of ARA-290",
+        "url": "https://clinicaltrials.gov/search?term=ARA-290"
+      }
+    ]
   },
   {
     "slug": "5-amino-1mq",
@@ -1187,7 +1709,17 @@
       "oral"
     ],
     "mechanismBlurb": "NNMT inhibitor studied for metabolism and fat cells.",
-    "about": "A small molecule studied as an NNMT inhibitor, of interest for metabolism and fat cells. It is usually taken orally. Most evidence is preclinical."
+    "about": "A small molecule studied as an NNMT inhibitor, of interest for metabolism and fat cells. It is usually taken orally. Most evidence is preclinical.",
+    "sources": [
+      {
+        "title": "PubMed: published research on 5-Amino-1MQ",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=5-Amino-1MQ"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of 5-Amino-1MQ",
+        "url": "https://clinicaltrials.gov/search?term=5-Amino-1MQ"
+      }
+    ]
   },
   {
     "slug": "aicar",
@@ -1208,7 +1740,17 @@
       "subcutaneous"
     ],
     "mechanismBlurb": "AMPK activator studied as an endurance 'exercise mimetic'.",
-    "about": "An AMPK activator studied as an endurance or exercise-mimetic compound. It is banned in sport and remains a research molecule. Educational interest only."
+    "about": "An AMPK activator studied as an endurance or exercise-mimetic compound. It is banned in sport and remains a research molecule. Educational interest only.",
+    "sources": [
+      {
+        "title": "PubMed: published research on AICAR",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=AICAR"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of AICAR",
+        "url": "https://clinicaltrials.gov/search?term=AICAR"
+      }
+    ]
   },
   {
     "slug": "cerebrolysin",
@@ -1228,7 +1770,17 @@
       "intramuscular"
     ],
     "mechanismBlurb": "Neurotrophic peptide mixture studied for cognition/recovery.",
-    "about": "A mixture of neurotrophic peptides studied for cognition and recovery after brain injury, and prescription in some countries. It is typically run in short daily cycles. Clinician guidance is advisable."
+    "about": "A mixture of neurotrophic peptides studied for cognition and recovery after brain injury, and prescription in some countries. It is typically run in short daily cycles. Clinician guidance is advisable.",
+    "sources": [
+      {
+        "title": "PubMed: published research on Cerebrolysin",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=Cerebrolysin"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of Cerebrolysin",
+        "url": "https://clinicaltrials.gov/search?term=Cerebrolysin"
+      }
+    ]
   },
   {
     "slug": "gonadorelin",
@@ -1251,7 +1803,21 @@
       "subcutaneous"
     ],
     "mechanismBlurb": "GnRH (prescription) supporting the HPG axis.",
-    "about": "A prescription form of GnRH used to stimulate the hormones that support testosterone and fertility. It works on the upstream signaling axis. Because it is prescription-grade, clinician oversight matters."
+    "about": "A prescription form of GnRH used to stimulate the hormones that support testosterone and fertility. It works on the upstream signaling axis. Because it is prescription-grade, clinician oversight matters.",
+    "sources": [
+      {
+        "title": "FDA DailyMed: official prescribing information for Gonadorelin Acetate",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/search.cfm?query=Gonadorelin%20Acetate"
+      },
+      {
+        "title": "PubMed: published research on Gonadorelin Acetate",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=Gonadorelin%20Acetate"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of Gonadorelin Acetate",
+        "url": "https://clinicaltrials.gov/search?term=Gonadorelin%20Acetate"
+      }
+    ]
   },
   {
     "slug": "hcg",
@@ -1278,7 +1844,21 @@
       "intramuscular"
     ],
     "mechanismBlurb": "Prescription gonadotropin supporting testosterone and fertility.",
-    "about": "Human chorionic gonadotropin, a prescription hormone used to support testosterone production and fertility. Vial strengths are measured in IU. It is dosed a few times per week under clinician guidance."
+    "about": "Human chorionic gonadotropin, a prescription hormone used to support testosterone production and fertility. Vial strengths are measured in IU. It is dosed a few times per week under clinician guidance.",
+    "sources": [
+      {
+        "title": "FDA DailyMed: official prescribing information for HCG",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/search.cfm?query=HCG"
+      },
+      {
+        "title": "PubMed: published research on HCG",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=HCG"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of HCG",
+        "url": "https://clinicaltrials.gov/search?term=HCG"
+      }
+    ]
   },
   {
     "slug": "hmg",
@@ -1304,7 +1884,21 @@
       "intramuscular"
     ],
     "mechanismBlurb": "Prescription menotropin used in fertility protocols.",
-    "about": "Human menopausal gonadotropin, a prescription hormone used in fertility protocols. Strengths are measured in IU. It is used under clinician guidance."
+    "about": "Human menopausal gonadotropin, a prescription hormone used in fertility protocols. Strengths are measured in IU. It is used under clinician guidance.",
+    "sources": [
+      {
+        "title": "FDA DailyMed: official prescribing information for HMG",
+        "url": "https://dailymed.nlm.nih.gov/dailymed/search.cfm?query=HMG"
+      },
+      {
+        "title": "PubMed: published research on HMG",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=HMG"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of HMG",
+        "url": "https://clinicaltrials.gov/search?term=HMG"
+      }
+    ]
   },
   {
     "slug": "kpv",
@@ -1327,7 +1921,17 @@
       "oral"
     ],
     "mechanismBlurb": "Anti-inflammatory tripeptide studied for gut and skin.",
-    "about": "A short anti-inflammatory tripeptide derived from a larger hormone, studied for gut and skin inflammation. It can be used by injection or orally. Research is early but promising."
+    "about": "A short anti-inflammatory tripeptide derived from a larger hormone, studied for gut and skin inflammation. It can be used by injection or orally. Research is early but promising.",
+    "sources": [
+      {
+        "title": "PubMed: published research on KPV",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=KPV"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of KPV",
+        "url": "https://clinicaltrials.gov/search?term=KPV"
+      }
+    ]
   },
   {
     "slug": "l-carnitine",
@@ -1347,7 +1951,17 @@
       "subcutaneous"
     ],
     "mechanismBlurb": "Amino-acid derivative supporting fat metabolism.",
-    "about": "An amino-acid derivative that helps shuttle fatty acids into cells to be burned for energy. It is used for fat metabolism and exercise support. Commonly dosed daily."
+    "about": "An amino-acid derivative that helps shuttle fatty acids into cells to be burned for energy. It is used for fat metabolism and exercise support. Commonly dosed daily.",
+    "sources": [
+      {
+        "title": "PubMed: published research on L-Carnitine",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=L-Carnitine"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of L-Carnitine",
+        "url": "https://clinicaltrials.gov/search?term=L-Carnitine"
+      }
+    ]
   },
   {
     "slug": "ll-37",
@@ -1368,7 +1982,17 @@
       "subcutaneous"
     ],
     "mechanismBlurb": "Antimicrobial host-defense peptide (investigational).",
-    "about": "A natural host-defense peptide studied for antimicrobial and immune roles. It is an investigational compound with limited human dosing data. Educational interest only."
+    "about": "A natural host-defense peptide studied for antimicrobial and immune roles. It is an investigational compound with limited human dosing data. Educational interest only.",
+    "sources": [
+      {
+        "title": "PubMed: published research on LL-37",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=LL-37"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of LL-37",
+        "url": "https://clinicaltrials.gov/search?term=LL-37"
+      }
+    ]
   },
   {
     "slug": "melatonin",
@@ -1390,7 +2014,17 @@
       "subcutaneous"
     ],
     "mechanismBlurb": "Hormone that regulates the sleep–wake cycle.",
-    "about": "A hormone that governs the sleep and wake cycle, widely used to support sleep onset. It is taken at night. Generally familiar and well tolerated at modest amounts."
+    "about": "A hormone that governs the sleep and wake cycle, widely used to support sleep onset. It is taken at night. Generally familiar and well tolerated at modest amounts.",
+    "sources": [
+      {
+        "title": "PubMed: published research on Melatonin",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=Melatonin"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of Melatonin",
+        "url": "https://clinicaltrials.gov/search?term=Melatonin"
+      }
+    ]
   },
   {
     "slug": "ss-31",
@@ -1417,6 +2051,16 @@
       "subcutaneous"
     ],
     "mechanismBlurb": "Mitochondria-targeted peptide studied for cellular energy.",
-    "about": "Also called elamipretide, a mitochondria-targeted peptide studied for protecting and supporting cellular energy production. It is of interest in aging and recovery. Dosed daily in research settings."
+    "about": "Also called elamipretide, a mitochondria-targeted peptide studied for protecting and supporting cellular energy production. It is of interest in aging and recovery. Dosed daily in research settings.",
+    "sources": [
+      {
+        "title": "PubMed: published research on SS-31",
+        "url": "https://pubmed.ncbi.nlm.nih.gov/?term=SS-31"
+      },
+      {
+        "title": "ClinicalTrials.gov: registered studies of SS-31",
+        "url": "https://clinicaltrials.gov/search?term=SS-31"
+      }
+    ]
   }
 ]

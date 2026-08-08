@@ -52,6 +52,7 @@ struct CompoundDetailView: View {
                 InfoCard(lead: "Why.", leadColor: VT.why,
                          text: compound.about ?? compound.mechanismBlurb ?? "Educational information about this compound.",
                          footnote: "Educational, not medical advice.")
+                sourcesCard
                 action
             }
             .padding(VT.sSection)
@@ -310,6 +311,40 @@ struct CompoundDetailView: View {
         let cadence = compound.defaultCadenceLabel ?? "as part of your plan"
         let route = compound.primaryRoute?.label ?? "subcutaneous"
         return "Typically **\(cadence)**, \(route)."
+    }
+
+    // MARK: Sources (1.4.1: every medical claim links to its literature)
+
+    @ViewBuilder
+    private var sourcesCard: some View {
+        if !compound.sourceURLs.isEmpty {
+            VStack(alignment: .leading, spacing: 10) {
+                vtLead("Sources.", color: VT.micro)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                ForEach(Array(zip(compound.sourceTitles, compound.sourceURLs)), id: \.1) { title, urlString in
+                    if let url = URL(string: urlString) {
+                        Link(destination: url) {
+                            HStack(alignment: .top, spacing: 6) {
+                                Image(systemName: "arrow.up.right.square")
+                                    .font(.system(size: 13, weight: .semibold))
+                                    .foregroundStyle(VT.micro)
+                                    .padding(.top, 1.5)
+                                Text(title)
+                                    .font(.system(size: 14))
+                                    .foregroundStyle(VT.body)
+                                    .multilineTextAlignment(.leading)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                Text("Dose ranges describe published literature, not a recommendation.")
+                    .font(.system(size: 12)).foregroundStyle(VT.micro)
+            }
+            .padding(VT.sCardPad).vtCard()
+        }
     }
 
     // MARK: Action

@@ -25,6 +25,29 @@ final class CopyGuardTests: XCTestCase {
         XCTAssertTrue(missing.isEmpty, "Missing About text for: \(missing)")
     }
 
+    /// App Review 1.4.1: every compound's medical information must cite its
+    /// sources with links the user can reach. Two or more authoritative,
+    /// https citations per compound; rx compounds must include the FDA label.
+    @MainActor
+    func testEveryCompoundHasCitations() throws {
+        let seeds = try XCTUnwrap(CatalogStore.loadSeeds())
+        var offenders: [String] = []
+        for s in seeds {
+            let sources = s.sources ?? []
+            if sources.count < 2 { offenders.append("\(s.slug): \(sources.count) sources") }
+            for src in sources {
+                guard let u = URL(string: src.url), u.scheme == "https", u.host != nil else {
+                    offenders.append("\(s.slug): bad url \(src.url)"); continue
+                }
+                if src.title.isEmpty { offenders.append("\(s.slug): empty title") }
+            }
+            if s.rxStatus == "rx", !sources.contains(where: { $0.url.contains("dailymed") }) {
+                offenders.append("\(s.slug): rx without FDA label citation")
+            }
+        }
+        XCTAssertTrue(offenders.isEmpty, "Citation guard: \(offenders)")
+    }
+
     /// No em dashes in ANY Swift source string (outside // comments). The catalog
     /// guard above missed UI copy for months (an em dash shipped in Settings).
     /// Allowlist: ClaudeSchemas.swift, whose prompt instruction quotes the banned
