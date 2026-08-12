@@ -7,8 +7,8 @@ Where Vita is, how it got here, and what's worth doing next. This is a living do
 ## Status at a glance
 
 - **Working, full vertical slice.** All four tabs + onboarding + labs + calculator + settings are built and run on device and simulator.
-- **159 unit tests**, green. Pure-logic engines (scheduling, reconstitution, streaks, diary series, lab flagging) and services are well-covered; there are **no UI/snapshot tests and no CI** yet.
-- **~12k lines of Swift**, single app target, iOS 26 / Swift 6.
+- **323 unit tests and 8 UI tests**, green. Pure-logic engines (scheduling, reconstitution, streaks, diary series, lab flagging) and services are well-covered; there are **no snapshot tests and no CI** yet.
+- Single app target, iOS 26 / Swift 6 with complete strict-concurrency checking.
 - **Distribution:** personal / TestFlight-style only. The Anthropic key is embedded per-device (Keychain), which is fine for personal use but **cannot** ship to the App Store as-is (see [Distribution & security](#1-distribution--security-highest-leverage)).
 
 ---
@@ -112,7 +112,7 @@ English only. No `Localizable.strings` yet; strings are inline. Externalize befo
 The backlog above is filed as GitHub issues:
 
 - [#1 M11 — Lab marker-over-time trend charts](https://github.com/advegaf/vita/issues/1)
-- [#2 Set up CI (build + 159 tests)](https://github.com/advegaf/vita/issues/2)
+- [#2 Set up CI (build + 323 tests)](https://github.com/advegaf/vita/issues/2)
 - [#3 Distribution: proxy backend for the Anthropic key](https://github.com/advegaf/vita/issues/3)
 - [#4 Split into SPM modules](https://github.com/advegaf/vita/issues/4)
 - [#5 Enable CloudKit sync](https://github.com/advegaf/vita/issues/5)
