@@ -65,7 +65,9 @@ final class LabServiceTests: XCTestCase {
         let svc = LabService(context: ctx)
         let old = Date().addingTimeInterval(-90 * 86400)
         svc.savePanel(panelDTO(nil, glucose: 96, ldl: 122), scanData: nil, mediaType: nil, at: old)
-        let recent = svc.savePanel(panelDTO("2026-05-20", glucose: 104, ldl: 90), scanData: nil, mediaType: nil)
+        // Both panels dated relative to now: a hardcoded "recent" date rots the
+        // moment the wall clock passes it (the older panel then sorts newer).
+        let recent = svc.savePanel(panelDTO(nil, glucose: 104, ldl: 90), scanData: nil, mediaType: nil)
 
         let all = svc.panels()
         let d = LabService.deltaVsPrevious(markerKey: "glucose_fasting", panel: recent, allPanels: all)
