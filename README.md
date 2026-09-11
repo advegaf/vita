@@ -5,7 +5,7 @@
 <h1 align="center">Vita</h1>
 
 <p align="center">
-  An educational peptide tracking app for iPhone. Pick the compounds you are tracking, read about them, build a schedule, log doses, keep a diary, read your lab work, and ask an assistant that has your own stack in front of it.
+  An educational peptide tracking app for iPhone. Build a schedule, log the doses against it, keep a diary, read your bloodwork, and ask an assistant that already has your own stack in front of it.
 </p>
 
 <p align="center">
