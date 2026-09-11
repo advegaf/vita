@@ -1,94 +1,135 @@
-# Vita
+<p align="center">
+  <img src="docs/images/logo.png" width="120" alt="Vita">
+</p>
 
-**An iOS 26 educational peptide-tracking app.** Pick the compounds you're tracking, learn about them, build a schedule, log doses, keep a diary, read lab work, and ask an AI grounded in your own stack — in a calm, warm, "fields"-inspired interface.
+<h1 align="center">Vita</h1>
 
-Native SwiftUI · SwiftData · Swift 6 · Claude Opus 4.8 · local-first · light-mode.
+<p align="center">
+  An educational peptide tracking app for iPhone. Pick the compounds you are tracking, read about them, build a schedule, log doses, keep a diary, read your lab work, and ask an assistant that has your own stack in front of it.
+</p>
 
-> ## ⚠️ Educational only — not medical advice
-> Vita is a personal learning + tracking tool, **not** medical advice and **not** a medical device. AI suggestions and every dosing value are *educational ranges*, never instructions, and can be wrong. Many compounds referenced here are prescription-only or regulated and vary by jurisdiction. The bundled catalog is **unverified**. Not affiliated with any vendor. **Consult a licensed clinician.** Full terms in [DISCLAIMER.md](DISCLAIMER.md).
+<p align="center">
+  <img src="docs/images/hero.png" width="960" alt="Vita's Today screen with the next dose and a log button, the chat answering a question about recovery, and a lab marker charted over time">
+</p>
 
----
+<p align="center">
+  <sub>Build it yourself. iPhone, iOS 26. Local first, no account.</sub>
+</p>
 
-## Screenshots
+> **Educational only. This is not medical advice.**
+>
+> Vita is a personal learning and tracking tool. It is not medical advice and it
+> is not a medical device. Every AI suggestion and every dosing value in it is an
+> educational range rather than an instruction, and any of them can be wrong.
+> Many of the compounds it references are prescription only or otherwise
+> regulated, and which ones varies by where you are. The bundled catalogue is
+> unverified. Vita is not affiliated with any vendor. Talk to a licensed
+> clinician. Full terms are in [DISCLAIMER.md](DISCLAIMER.md).
 
-| Today | Stack | Compound detail |
-|:---:|:---:|:---:|
-| ![Today](docs/screenshots/today.png) | ![Stack](docs/screenshots/stack.png) | ![Detail](docs/screenshots/detail.png) |
-| **Diary** | **Settings** | **Labs** |
-| ![Diary](docs/screenshots/diary.png) | ![Settings](docs/screenshots/settings.png) | ![Labs](docs/screenshots/labs.png) |
+Four tabs, Today, Stack, Diary and Chat, plus labs, a reconstitution calculator
+and settings.
 
-*(Simulator captures with demo data.)*
+**Today** is time adaptive: a headline that changes through the day, an Up next
+card with a live countdown, a Morning, Midday and Night control that expands,
+and full size pins you tap to log. Streaks, a day complete moment, rest days,
+and a quiet card for the as needed doses that do not belong to a schedule.
 
----
+<p align="center">
+  <img src="docs/screenshots/stack.png" width="380" alt="The Stack tab listing the compounds being tracked, each with its dose and schedule">
+</p>
 
-## What it does
+**Stack** is your compounds, each with a detail screen split into Dose, Timing
+and Why, showing the active dose, a cycle ribbon reading something like "On,
+week 3 of 8", and a titration ladder. You add from a searchable catalogue of
+about 58 compounds in 6 categories, and the ones a clinician should be
+supervising carry a prescription badge.
 
-Four tabs — **Today · Stack · Diary · Chat** — plus labs, a reconstitution calculator, and settings.
+Scheduling goes deeper than daily. Every other day, weekly and as needed, plus
+cycles, which are on and off blocks that rest rather than going overdue, and
+titration, which steps a dose over time. All of it is derived live rather than
+materialised into events, so changing a schedule does not leave a trail of stale
+rows behind it.
 
-- **Today** — a time-adaptive home: a dynamic headline, an "Up next" focus card with a live countdown, an expanding Morning/Midday/Night control, and full-size "pins" you tap to log (the signature north-star tap animation). Streak, day-complete, and rest-day moments; a quiet "as needed" (PRN) card.
-- **Stack** — your compounds, each with a detail screen (Dose / Timing / Why) showing the active dose, a cycle ribbon ("On · week 3 of 8"), and a titration ladder. Add from a searchable catalog (~58 compounds, 6 categories) with a prescription (℞) badge on clinician-supervised ones.
-- **Scheduling depth** — daily / every-other-day / weekly / as-needed, plus **cycles** (on/off blocks that rest and never go overdue) and **titration** (dose stepping over time), all derived live (no event materialization).
-- **Diary** — a daily check-in on a signature 1–10 slider (energy/sleep/mood/libido) + side-effects + note, weight & measurements (with Apple Health backfill), and a Swift Charts trend with drag-scrub.
-- **Chat** — a streaming assistant grounded in your stack, goals, profile, Health, diary, and labs; it can suggest stack changes you confirm in a sheet.
-- **Labs** — scan a photo or PDF of bloodwork; Claude vision reads the values; review and save panels with high/low flags and a "vs last" delta.
-- **Reconstitution calculator** — "draw to X units" (U-100/50/40), mg↔IU, with calm warnings.
-- **Notifications** — local dose reminders, actionable from the lock screen (Log / Skip / Snooze), that disappear once a dose is logged.
-- **AI protocol generation** — onboarding turns your goals + picks into a starter stack via Claude (with a rule-based fallback when offline / no key).
+<p align="center">
+  <img src="docs/screenshots/diary.png" width="380" alt="The Diary tab with the 1 to 10 sliders for energy, sleep, mood and libido above a charted trend">
+</p>
 
-See **[ARCHITECTURE.md](ARCHITECTURE.md)** for how it's built and **[ROADMAP.md](ROADMAP.md)** for status + what's next.
+**Diary** is a daily check in on a 1 to 10 slider for energy, sleep, mood and
+libido, with side effects and a note, plus weight and measurements that backfill
+from Apple Health, and a Swift Charts trend you can drag to scrub.
 
----
+**Chat** is a streaming assistant grounded in your stack, goals, profile, Health
+data, diary and labs. It can propose changes to your stack, which you confirm in
+a sheet rather than having applied for you.
 
-## Tech stack
+**Labs** takes a photo or a PDF of bloodwork, reads the values with Claude's
+vision, and saves panels with high and low flags and a delta against the last
+one.
 
-- **iOS 26**, SwiftUI, **Swift 6** (strict concurrency), Xcode 26. Light mode only (tokens are dark-ready).
-- **SwiftData** local-first store (CloudKit-legal models; sync designed but not yet enabled).
-- **[XcodeGen](https://github.com/yonohub/XcodeGen)** — the `.xcodeproj` is generated from `project.yml` (and gitignored).
-- **Claude Opus 4.8** via the Anthropic Messages API (raw `URLSession`, no SDK): forced tool-use for structured output, vision for labs, SSE streaming for chat.
-- **HealthKit** (read-only), **Swift Charts**, **PDFKit**, local **UserNotifications**.
-- **323 unit tests** and 8 UI tests, no third-party runtime dependencies.
+The reconstitution calculator answers "draw to X units" for U-100, U-50 and
+U-40, converts mg and IU, and warns quietly rather than shouting. Dose reminders
+are local notifications you can act on from the lock screen with Log, Skip or
+Snooze, and they disappear once the dose is logged. Onboarding turns your goals
+and picks into a starter stack through Claude, falling back to a rule based one
+when there is no key or no network.
 
----
+## Build it yourself
 
-## Quickstart
+Requires macOS with Xcode 26 (the iOS 26 SDK) and
+[XcodeGen](https://github.com/yonaskolb/XcodeGen).
 
-**Requirements:** macOS with **Xcode 26** (iOS 26 SDK), and [XcodeGen](https://github.com/yonohub/XcodeGen) (`brew install xcodegen`).
-
-```bash
+```sh
 git clone https://github.com/advegaf/vita.git
 cd vita
 
-# 1. Set up local config (key + signing team — both optional for the simulator)
 cp Config/Secrets.example.xcconfig Config/Secrets.xcconfig
-#   edit Config/Secrets.xcconfig — see CONTRIBUTING.md
-
-# 2. Generate the Xcode project
 xcodegen generate
 
-# 3a. Build + run the tests on a simulator (no key or signing needed)
 xcodebuild -project Vita.xcodeproj -scheme Vita \
   -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
-
-# 3b. Or open and run
-open Vita.xcodeproj
 ```
 
-**The app runs with no API key** — onboarding falls back to a rule-based starter stack, and you can explore every screen. AI features (protocol generation, chat, lab reading) need an Anthropic key in `Config/Secrets.xcconfig`. Building for a **physical device** needs your Apple Developer Team ID (also in `Secrets.xcconfig`) — see **[CONTRIBUTING.md](CONTRIBUTING.md)**.
+`Vita.xcodeproj` is generated and gitignored, so a fresh clone has nothing to
+open until `xcodegen generate` has run.
 
----
+**It runs with no API key.** Onboarding falls back to a rule based starter stack
+and every screen is reachable. The AI parts, protocol generation, chat and lab
+reading, need an Anthropic key in `Config/Secrets.xcconfig`. Building for a
+physical device needs your Apple Developer team id in the same file. See
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
-## Handoff / Start here
+`Tools/Screenshots/ArticleImages.swift` regenerates the images on this page from
+the App Store frames in `marketing/appstore`, which it leaves alone.
 
-If you're picking this up:
+## How it is built
 
-1. **Read [ARCHITECTURE.md](ARCHITECTURE.md)** — it maps the layers and where everything lives (the data layer, the Claude integration, the design system, the scheduling engine).
-2. **Skim [ROADMAP.md](ROADMAP.md)** — what's shipped (milestones M0–M10.1) and the prioritized backlog (next up: **M11 — lab marker-over-time trend charts**).
-3. **Build it on the simulator first** (no key/signing needed) to see it run, then wire your own Anthropic key + signing team for the full experience.
-4. **`CLAUDE.md` / `AGENTS.md`** capture the build loop, conventions, and gotchas — if you continue with an AI coding agent (this project was built with one), point it there first.
-5. Good first tasks are filed as **GitHub issues** (M11, CI, an SPM module split, an a11y pass, a distribution/proxy path).
+iOS 26, SwiftUI, Swift 6 under strict concurrency, Xcode 26. Light mode only,
+though the tokens are ready for dark. SwiftData is the local first store, with
+CloudKit legal models and sync designed but not turned on.
 
----
+Claude Opus 4.8 through the Anthropic Messages API over raw `URLSession` with no
+SDK: forced tool use for structured output, vision for the lab photos, and SSE
+streaming for chat. HealthKit read only, Swift Charts, PDFKit, and local
+notifications.
 
-## License
+323 unit tests and 8 UI tests, with no third party runtime dependencies.
 
-MIT — see [LICENSE](LICENSE). Bundled Inter Tight font under SIL OFL 1.1. Educational-use disclaimer in [DISCLAIMER.md](DISCLAIMER.md).
+[ARCHITECTURE.md](ARCHITECTURE.md) maps the layers and says where everything
+lives: the data layer, the Claude integration, the design system, the scheduling
+engine. [ROADMAP.md](ROADMAP.md) has what has shipped, milestones M0 through
+M10.1, and what is next, which is M11, lab marker trend charts over time.
+
+If you are picking this up, build it on the simulator first, with no key and no
+signing, to see it run. `CLAUDE.md` and `AGENTS.md` carry the build loop, the
+conventions and the gotchas, and this project was built with an AI coding agent,
+so point yours there first. Good first tasks are filed as GitHub issues.
+
+## Credit
+
+Built by [Angel Vega](https://github.com/advegaf).
+
+## Licence
+
+MIT. See [LICENSE](LICENSE). The bundled Inter Tight font is under the SIL Open
+Font License 1.1. The educational use disclaimer is in
+[DISCLAIMER.md](DISCLAIMER.md).
