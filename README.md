@@ -112,7 +112,7 @@ SDK: forced tool use for structured output, vision for the lab photos, and SSE
 streaming for chat. HealthKit read only, Swift Charts, PDFKit, and local
 notifications.
 
-323 unit tests and 8 UI tests, with no third party runtime dependencies.
+324 unit tests and 8 UI tests, with no third party runtime dependencies.
 
 [ARCHITECTURE.md](ARCHITECTURE.md) maps the layers and says where everything
 lives: the data layer, the Claude integration, the design system, the scheduling
