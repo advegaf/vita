@@ -99,4 +99,31 @@ final class CopyGuardTests: XCTestCase {
         }
         XCTAssertTrue(offenders.isEmpty, "Middle-dot separators in code: \(offenders)")
     }
+
+    /// App Review 5.1.1(iv): no custom screen may talk about Apple Health while
+    /// letting the user leave without the system permission sheet. Onboarding
+    /// (whose Continue and Skip buttons only advance the wizard) therefore
+    /// carries no Health copy and no authorization call at all. Health is
+    /// connected from Diary and Settings, where the button raises the system
+    /// sheet directly. Rejected on 1.0.0 build 7; this pins the fix.
+    func testOnboardingNeverPrimesHealthPermission() throws {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("Vita/Features/Onboarding")
+        let fm = FileManager.default
+        guard let files = fm.enumerator(at: root, includingPropertiesForKeys: nil) else {
+            throw XCTSkip("source tree not available in this test environment")
+        }
+        var offenders: [String] = []
+        for case let url as URL in files where url.pathExtension == "swift" {
+            guard let text = try? String(contentsOf: url, encoding: .utf8) else { continue }
+            for (n, line) in text.components(separatedBy: "\n").enumerated() {
+                let code = line.components(separatedBy: "//").first ?? line
+                if code.contains("HealthKitService") || code.contains("Apple Health") {
+                    offenders.append("\(url.lastPathComponent):\(n + 1)")
+                }
+            }
+        }
+        XCTAssertTrue(offenders.isEmpty, "Health priming in onboarding: \(offenders)")
+    }
 }

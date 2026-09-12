@@ -1,16 +1,19 @@
 import SwiftUI
 import SwiftData
 
-/// Onboarding step: connect Apple Health so vita can factor in sleep, HRV, and
-/// weight, plus a small editable age/sex/weight profile. Fully skippable —
-/// generation still runs on goals + picked peptides (+ any entered profile).
+/// Onboarding step: a small editable age/sex/weight/height profile that helps
+/// ground generation. Skippable; generation still runs on goals + picked
+/// peptides.
+///
+/// This screen deliberately carries NO Apple Health affordance. A custom screen
+/// that talks about Health while letting the user leave without the system
+/// permission sheet violates App Review 5.1.1(iv) (rejected on 1.0.0 build 7).
+/// Health is connected from Diary and Settings, where the Connect button raises
+/// the system sheet directly with nothing in between.
 struct HealthConnectView: View {
     @Bindable var model: OnboardingModel
     @Environment(\.modelContext) private var context
 
-    @State private var connecting = false
-    @State private var connected = false
-    @State private var healthNote: String?
     @State private var ageText = ""
     @State private var sex = ""                 // "" | female | male | other
     @State private var weightText = ""
@@ -35,13 +38,12 @@ struct HealthConnectView: View {
                         Text("Step 4")
                             .font(.system(size: 12, weight: .medium)).tracking(0.4)
                             .textCase(.uppercase).foregroundStyle(VT.micro)
-                        Text("Connect Apple Health?").vtHeadlineStyle()
-                        Text("Vita can factor in your sleep, HRV, and weight when it suggests a plan. Read-only, and you can skip.")
+                        Text("A bit about you.").vtHeadlineStyle()
+                        Text("Age, sex, and body measurements help Vita size its educational suggestions. Every field is optional.")
                             .font(.system(size: 16)).foregroundStyle(VT.body).padding(.top, 2)
                     }
                     .padding(.top, 8)
 
-                    connectCard
                     profileCard
                 }
                 .padding(VT.sSection)
@@ -67,7 +69,7 @@ struct HealthConnectView: View {
         .animation(.easeInOut(duration: 0.2), value: editing)
         .task {
             #if DEBUG
-            if ProcessInfo.processInfo.environment["VITA_HEALTH_FOCUS"] == "1" {
+            if ProcessInfo.processInfo.environment["VITA_PROFILE_FOCUS"] == "1" {
                 try? await Task.sleep(nanoseconds: 500_000_000)
                 editing = true
             }
@@ -75,39 +77,8 @@ struct HealthConnectView: View {
         }
     }
 
-    private var connectCard: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Image(systemName: connected ? "checkmark.seal.fill" : "heart.text.square")
-                .font(.system(size: 34)).foregroundStyle(connected ? VT.why : VT.dose)
-            Text(connected ? "Apple Health connected." : "Pull your recent vitals automatically.")
-                .font(.system(size: 16)).foregroundStyle(VT.body).lineSpacing(3)
-            if !connected {
-                // Secondary action: a tonal (not solid) cyan pill, so the only
-                // solid-filled surface in the app stays the charcoal pill.
-                Button(action: connect) {
-                    HStack(spacing: 8) {
-                        if connecting { ProgressView().tint(VT.dose) }
-                        Text(connecting ? "Connecting…" : "Connect Apple Health")
-                            .font(.system(size: 16, weight: .semibold)).foregroundStyle(VT.dose)
-                    }
-                    .frame(maxWidth: .infinity).padding(.vertical, 13)
-                    .background(VT.dose.opacity(0.10), in: Capsule())
-                }
-                .buttonStyle(.plain).allowsHitTesting(!connecting)
-            }
-            if let healthNote {
-                Text(healthNote).font(.system(size: 13)).foregroundStyle(VT.micro)
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(VT.sCardPad).vtCard()
-    }
-
     private var profileCard: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("ABOUT YOU")
-                .font(.system(size: 12, weight: .medium)).tracking(0.4)
-                .textCase(.uppercase).foregroundStyle(VT.micro)
             vtPlainField("Age", text: $ageText, suffix: "yrs", keyboard: .numberPad, focus: $editing)
             VStack(alignment: .leading, spacing: 6) {
                 Text("Sex").font(.system(size: 13)).foregroundStyle(VT.micro)
@@ -177,48 +148,7 @@ struct HealthConnectView: View {
         }
     }
 
-    /// Fills the height field(s) from a cm value in whichever unit is active.
-    private func fillHeight(_ cm: Double) {
-        if heightUnit == .cm {
-            if heightCmText.isEmpty { heightCmText = Units.trim(cm) }
-        } else if feetText.isEmpty && inchesText.isEmpty {
-            let fi = Units.cmToFeetInches(cm)
-            feetText = String(fi.feet); inchesText = String(fi.inches)
-        }
-    }
-
     // MARK: - Actions
-
-    private func connect() {
-        connecting = true
-        Task {
-            let granted = await HealthKitService.shared.requestAuthorization()
-            if granted {
-                // Quick reads (weight + height + age + sex) fill the form fast…
-                let v = await HealthKitService.shared.profileVitals()
-                await MainActor.run {
-                    if let w = v.weightKg, w > 0, weightText.isEmpty {
-                        weightText = weightUnit == .kg ? Units.trim(w) : Units.trim(Units.kgToLb(w))
-                    }
-                    if let h = v.heightCm, h > 0 { fillHeight(h) }
-                    if let a = v.ageYears, ageText.isEmpty { ageText = String(a) }
-                    if let s = v.biologicalSex, sex.isEmpty { sex = s }
-                    connected = true
-                    connecting = false
-                }
-                // …the full vitals (sleep/HRV/steps) load in the background for AI grounding.
-                let snap = await HealthKitService.shared.snapshot()
-                await MainActor.run { model.healthSnapshot = snap }
-            } else {
-                await MainActor.run {
-                    healthNote = HealthKitService.isAvailable
-                        ? "Couldn't reach Apple Health. You can enter your details below."
-                        : "Apple Health isn't available on this device."
-                    connecting = false
-                }
-            }
-        }
-    }
 
     private func persistThenAdvance() {
         let settings = CatalogStore.fetchOrCreateSettings(context)

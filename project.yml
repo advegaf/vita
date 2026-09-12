@@ -10,7 +10,7 @@ settings:
   base:
     SWIFT_VERSION: "6.0"
     MARKETING_VERSION: "1.0.0"
-    CURRENT_PROJECT_VERSION: "7"
+    CURRENT_PROJECT_VERSION: "8"
     # DEVELOPMENT_TEAM is supplied per-developer via Config/Secrets.xcconfig
     # (see Config/Secrets.example.xcconfig) so no team ID lives in the repo.
     CODE_SIGN_STYLE: Automatic
@@ -61,7 +61,7 @@ targets:
         # HTTPS-only traffic (Anthropic API): exempt encryption — skips the
         # per-build export-compliance question on TestFlight uploads.
         ITSAppUsesNonExemptEncryption: false
-        NSHealthShareUsageDescription: vita reads your recent sleep, HRV, heart rate, weight, and steps to ground its educational suggestions. Read-only, and you can skip it.
+        NSHealthShareUsageDescription: Vita reads your recent sleep, HRV, heart rate, weight, and steps so its educational suggestions reflect your own data. Read-only.
         # Required by App Store Connect whenever the HealthKit capability is present
         # (upload error ITMS-90683), even though the app never writes to Health.
         NSHealthUpdateUsageDescription: Vita does not write any data to Apple Health. This permission is required by the HealthKit capability; all access is read-only.

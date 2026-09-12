@@ -23,8 +23,9 @@ final class LabGroundingTests: XCTestCase {
             values: [.init(markerKey: "tsh", name: "TSH", value: 2.0, unit: "mIU/L", refLow: 0.4, refHigh: 4.0)],
             summary: "", disclaimer: "x"),
             scanData: nil, mediaType: nil, at: Date().addingTimeInterval(-90 * 86400))
-        // recent panel with two out-of-range
-        svc.savePanel(LabPanelDTO(panelDate: "2026-05-20", sourceLabName: "B",
+        // recent panel with two out-of-range. Dated relative to now: a hardcoded
+        // date rots once the wall clock passes it (the older panel sorts newer).
+        svc.savePanel(LabPanelDTO(panelDate: nil, sourceLabName: "B",
             values: [
                 .init(markerKey: "glucose_fasting", name: "Glucose, Fasting", value: 104, unit: "mg/dL", refLow: 70, refHigh: 99),
                 .init(markerKey: "vitamin_d", name: "Vitamin D", value: 22, unit: "ng/mL", refLow: 30, refHigh: 100),
