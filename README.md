@@ -114,6 +114,12 @@ notifications.
 
 324 unit tests and 8 UI tests, with no third party runtime dependencies.
 
+I built it with Claude Code and Codex working like a small team. One agent plans the work and
+writes a spec for each piece, subagents write the code from those specs, and the two tools review
+each other's changes. I approve the plan before any code gets written, I read every diff before
+it's committed, and nothing ships until the tests pass. Anything that touches security or user
+data I write or check line by line myself.
+
 [ARCHITECTURE.md](ARCHITECTURE.md) maps the layers and says where everything
 lives: the data layer, the Claude integration, the design system, the scheduling
 engine. [ROADMAP.md](ROADMAP.md) has what has shipped, milestones M0 through
@@ -121,8 +127,8 @@ M10.1, and what is next, which is M11, lab marker trend charts over time.
 
 If you are picking this up, build it on the simulator first, with no key and no
 signing, to see it run. `CLAUDE.md` and `AGENTS.md` carry the build loop, the
-conventions and the gotchas, and this project was built with an AI coding agent,
-so point yours there first. Good first tasks are filed as GitHub issues.
+conventions and the gotchas, and since this project was built with coding agents,
+point yours there first. Good first tasks are filed as GitHub issues.
 
 ## Credit
 
